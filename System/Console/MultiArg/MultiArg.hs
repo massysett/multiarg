@@ -1,7 +1,7 @@
 module System.Console.MultiArg.MultiArg where
 
 import qualified Control.Monad.Exception.Synchronous as E
-import Data.Text ( Text, pack, unpack, isPrefixOf )
+import Data.Text ( Text, pack, unpack, isPrefixOf, singleton, cons )
 import qualified Data.Text as X
 import qualified Data.Set as Set
 import Data.Set ( Set )
@@ -11,7 +11,7 @@ import Test.QuickCheck
 data Expecting = ExpCharOpt ShortOpt
                  | ExpExactLong LongOpt
                  | ExpApproxLong (Set LongOpt)
-                 deriving Show
+                 deriving (Show, Eq)
 
 data Saw = SawNoPendingShorts
          | SawWrongPendingShort Char
@@ -25,20 +25,26 @@ data Saw = SawNoPendingShorts
          | SawWrongLongArg Text
          | SawNoMatches Text
          | SawMultipleMatches (Set LongOpt) Text
-         deriving Show
+         deriving (Show, Eq)
            
-
 class Error e where
   unexpected :: Expecting -> Saw -> e
 
-data SimpleError = SimpleError Expecting Saw deriving Show
+data SimpleError = SimpleError Expecting Saw deriving (Show, Eq)
 instance Error SimpleError where unexpected = SimpleError
 
 data Failed e a = Good a
               | Failed e
+              deriving (Show, Eq)
 
 data TextNonEmpty = TextNonEmpty Char Text
                     deriving (Show, Eq)
+
+instance Arbitrary TextNonEmpty where
+  arbitrary = do
+    c <- arbitrary
+    t <- arbitrary
+    return $ TextNonEmpty c t
 
 textHead :: Text -> Maybe (Char, Text)
 textHead t = case X.null t of
@@ -90,7 +96,7 @@ instance Arbitrary Text where
     s <- arbitrary
     return . pack $ s
 
-newtype ShortOpt = ShortOpt Char deriving Show
+newtype ShortOpt = ShortOpt Char deriving (Show, Eq)
 instance Arbitrary ShortOpt where
   arbitrary = do
     c <- suchThat arbitrary (/= '-')
@@ -101,10 +107,61 @@ shortOpt c = case c of
   '-' -> error "short option must not be a dash"
   x -> ShortOpt x
 
-newtype NoPendingShorts = NoPendingShorts ParseSt
+------------------------------------------------------------
+-- pendingShortOpt and tests
+------------------------------------------------------------
 
-prop_noPendingShorts :: (ShortOpt, ParseSt) -> Bool
-prop_noPendingShorts = undefined
+-- | Generates a list of Text where the first Text has a first letter
+-- matching the one given.
+matchingRemaining :: Char -> Gen [Text]
+matchingRemaining c = do
+  restWord <- arbitrary
+  let firstWord = c `cons` restWord
+  restWords <- arbitrary
+  return $ firstWord : restWords
+
+data NoPendingShorts = NoPendingShorts ParseSt ShortOpt deriving Show
+instance Arbitrary NoPendingShorts where
+  arbitrary = do
+    o <- arbitrary
+    let (ShortOpt c) = o
+    r <- oneof [matchingRemaining c, arbitrary]
+    return $ NoPendingShorts (ParseSt Nothing r) o
+
+-- | If there are no pending short options, pendingShortOpt must
+-- return SawNoPendingShorts and the input state must be unchanged.
+prop_noPendingShorts :: NoPendingShorts -> Bool
+prop_noPendingShorts (NoPendingShorts st so) = exp == actual where
+  exp = (Failed $ SimpleError (ExpCharOpt so) SawNoPendingShorts, st)
+  (Parser f) = pendingShortOpt so
+  actual = f st
+
+
+data WrongPendingShort = WrongPendingShort ParseSt ShortOpt
+                         deriving Show
+instance Arbitrary WrongPendingShort where
+  arbitrary = do
+    o <- arbitrary
+    let (ShortOpt c) = o
+    r <- oneof [matchingRemaining c, arbitrary]
+    firstLetter <- suchThat arbitrary (/= c)
+    rest <- arbitrary
+    let st = ParseSt (Just (TextNonEmpty firstLetter rest)) r
+    return $ WrongPendingShort st o
+
+-- | If there is a pending short option, but it is the wrong one,
+-- pendingShortOpt must retur SawWrongPendingShort and the input state
+-- must be unchanged.
+prop_WrongPendingShort :: WrongPendingShort -> Bool
+prop_WrongPendingShort (WrongPendingShort st so) = exp == act where
+  (ShortOpt c) = so
+  exp = (Failed err, st) where
+    err = SimpleError (ExpCharOpt so) (SawWrongPendingShort wrong)
+    wrong = case pendingShort st of
+      Nothing -> error "prop_WrongPendingShort error"
+      (Just (TextNonEmpty ch _)) -> ch
+  (Parser f) = pendingShortOpt so
+  act = f st
 
 pendingShortOpt :: (Error e) => ShortOpt -> Parser e ShortOpt
 pendingShortOpt so@(ShortOpt c) = Parser $ \s ->
@@ -118,6 +175,8 @@ pendingShortOpt so@(ShortOpt c) = Parser $ \s ->
       False -> E.throw $ SawWrongPendingShort first
       True -> return s { pendingShort = toTextNonEmpty rest }
 
+------------------------------------------------------------
+------------------------------------------------------------
 nonPendingShortOpt :: (Error e) => ShortOpt -> Parser e ShortOpt
 nonPendingShortOpt so@(ShortOpt c) = Parser $ \s ->
   let err saw = ((Failed (unexpected (ExpCharOpt so) saw)), s)
