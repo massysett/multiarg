@@ -1,9 +1,11 @@
 module System.Console.MultiArg.MultiArg where
 
+import qualified Control.Monad.Exception.Synchronous as E
 import Data.Text ( Text, pack, unpack, isPrefixOf )
 import qualified Data.Text as X
 import qualified Data.Set as Set
 import Data.Set ( Set )
+import Control.Monad ( when )
 
 data Expecting = ExpCharOpt Char
                  | ExpExactLong Text
@@ -80,81 +82,78 @@ instance Monad (Parser e) where
       False -> (Failed e, s')
 
 pendingShortOpt :: (Error e) => Char -> Parser e Char
-pendingShortOpt c = Parser f where
-  f s = let
-    err saw = ((Failed (unexpected (ExpCharOpt c) saw)), s) in
-    case pendingShort s of
-      Nothing -> err SawNoPendingShorts
-      (Just (TextNonEmpty first rest)) ->
-        case c == first of
-          False -> err (SawWrongPendingShort first)
-          True -> let
-            newSt = s { pendingShort = toTextNonEmpty rest }
-            in (Good c, newSt)
-
+pendingShortOpt c = Parser $ \s ->
+  let err saw = ((Failed (unexpected (ExpCharOpt c) saw)), s)
+      good st = (Good c, st)
+  in E.switch err good $ do
+    (TextNonEmpty first rest) <- case pendingShort s of
+      Nothing -> E.throw SawNoPendingShorts
+      (Just tne) -> return tne
+    case c == first of
+      False -> E.throw $ SawWrongPendingShort first
+      True -> return s { pendingShort = toTextNonEmpty rest }
 
 nonPendingShortOpt :: (Error e) => Char -> Parser e Char
-nonPendingShortOpt c = Parser $ \s -> let
-  err saw = ((Failed (unexpected (ExpCharOpt c) saw)), s) in
-  case pendingShort s of
-    (Just ps) -> err (SawStillPendingShorts ps)
-    Nothing -> case remaining s of
-      [] -> err SawNoArgsLeft
-      (a:as) -> case textHead a of
-        Nothing -> err SawEmptyArg
-        (Just (maybeDash, word)) -> case maybeDash == '-' of
-          False -> err $ SawNotShortArg a
-          True -> case textHead word of
-            Nothing -> err SawSingleDashArg
-            (Just (letter, arg)) -> case letter == c of
-              False -> err $ SawWrongShortArg c
-              True -> let
-                newSt = s { pendingShort = toTextNonEmpty arg
-                          , remaining = as }
-                in (Good c, newSt)
+nonPendingShortOpt c = Parser $ \s ->
+  let err saw = ((Failed (unexpected (ExpCharOpt c) saw)), s)
+      good st = (Good c, st)
+  in E.switch err good $ do
+    case pendingShort s of
+      (Just ps) -> E.throw $ SawStillPendingShorts ps
+      Nothing -> return ()
+    (a:as) <- case remaining s of
+      [] -> E.throw SawNoArgsLeft
+      x -> return x
+    (maybeDash, word) <- case textHead a of
+      Nothing -> E.throw SawEmptyArg
+      (Just w) -> return w
+    when (maybeDash /= '-') $ E.throw (SawNotShortArg a)
+    (letter, arg) <- case textHead word of
+      Nothing -> E.throw SawSingleDashArg
+      (Just w) -> return w
+    when (letter /= c) $ E.throw (SawWrongShortArg letter)
+    return s { pendingShort = toTextNonEmpty arg
+             , remaining = as }
 
 data LongOptGroup = LongOptGroup Text (Set Text)
 
 exactLongOpt :: (Error e) => Text -> Parser e Text
 exactLongOpt t = Parser $ \s -> let
-  err saw = ((Failed (unexpected (ExpExactLong t) saw)), s) in
-  case pendingShort s of
-    (Just ps) -> err $ SawStillPendingShorts ps
-    Nothing -> case remaining s of
-      [] -> err SawNoArgsLeft
-      (x:xs) -> let
-        (pre, suf) = X.splitAt 2 x
-        in case pre == pack "--" of
-          False -> err $ SawNotLongArg x
-          True -> case suf == t of
-            False -> err $ SawWrongLongArg suf
-            True -> let
-              s' = s { remaining = xs }
-              in (Good t, s')
+  err saw = ((Failed (unexpected (ExpExactLong t) saw)), s)
+  good st = (Good t, st)
+  in E.switch err good $ do
+    case pendingShort s of
+      (Just ps) -> E.throw $ SawStillPendingShorts ps
+      Nothing -> return ()
+    (x:xs) <- case remaining s of
+      [] -> E.throw SawNoArgsLeft
+      ls -> return ls
+    let (pre, suf) = X.splitAt 2 x
+    when (pre /= pack "--") $ E.throw (SawNotLongArg x)
+    when (suf /= t) $ E.throw (SawWrongLongArg suf)
+    return s { remaining = xs }
 
 -- | Examines the next word. If it is a non-GNU long option, and it
 -- matches a Text in the set unambiguously, returns a tuple of the
 -- word actually found and the matching word in the set.
 approxLongOpt :: (Error e) => Set Text -> Parser e (Text, Text)
 approxLongOpt ts = Parser $ \s -> let
-  err saw = ((Failed (unexpected (ExpApproxLong ts) saw)), s) in
-  case pendingShort s of
-    (Just ps) -> err $ SawStillPendingShorts ps
-    Nothing -> case remaining s of
-      [] -> err SawNoArgsLeft
-      (x:xs) -> let
-        (pre, suf) = X.splitAt 2 x
-        in case pre == pack "--" of
-          False -> err $ SawNotLongArg x
-          True -> let
-            p t = suf `isPrefixOf` t
-            matches = Set.filter p ts
-            in case Set.null matches of
-              True -> err $ SawNoMatches suf
-              False -> case Set.size matches > 1 of
-                True -> err $ SawMultipleMatches matches suf
-                False -> let
-                  s' = s { remaining = xs }
-                  r = (suf, head . Set.toList $ matches)
-                  in (Good r, s')
-
+  err saw = ((Failed (unexpected (ExpApproxLong ts) saw)), s)
+  good (found, match, st) = (Good (found, match), st)
+  in E.switch err good $ do
+    case pendingShort s of
+      (Just ps) -> E.throw $ SawStillPendingShorts ps
+      Nothing -> return ()
+    (x:xs) <- case remaining s of
+      [] -> E.throw SawNoArgsLeft
+      r -> return r
+    let (pre, suf) = X.splitAt 2 x
+    when (pre /= pack "--") (E.throw (SawNotLongArg x))
+    let p t = suf `isPrefixOf` t
+        matches = Set.filter p ts
+    case Set.toList matches of
+      [] -> E.throw (SawNoMatches suf)
+      (m:[]) -> let
+        st' = s { remaining = xs }
+        in return (suf, m, st')
+      ms -> E.throw (SawMultipleMatches matches suf)
