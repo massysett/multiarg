@@ -7,6 +7,7 @@ import qualified Data.Set as Set
 import Data.Set ( Set )
 import Control.Monad ( when )
 import Test.QuickCheck
+import Text.Printf ( printf )
 
 data Expecting = ExpCharOpt ShortOpt
                  | ExpExactLong LongOpt
@@ -163,6 +164,33 @@ prop_WrongPendingShort (WrongPendingShort st so) = exp == act where
   (Parser f) = pendingShortOpt so
   act = f st
 
+data GoodPendingShort = GoodPendingShort ParseSt ShortOpt
+                        deriving Show
+instance Arbitrary GoodPendingShort where
+  arbitrary = do
+    o <- arbitrary
+    let (ShortOpt firstLetter) = o
+    restWord <- arbitrary
+    restWords <- oneof [matchingRemaining firstLetter, arbitrary]
+    let st = ParseSt (Just (TextNonEmpty firstLetter restWord)) restWords
+    return $ GoodPendingShort st o
+
+-- | If the pending short option is good, return the input pending
+-- short option, and a state where the pending shorts are reduced but
+-- the remaining options stay the same.
+
+prop_goodPendingShort :: GoodPendingShort -> Bool
+prop_goodPendingShort (GoodPendingShort st so) = exp == act where
+  newPendingShort = toTextNonEmpty rest
+  rest = case pendingShort st of
+    Nothing -> error "prop_goodPendingShort error"
+    (Just (TextNonEmpty _ rs)) -> rs
+  rem = remaining st
+  newSt = ParseSt newPendingShort rem
+  exp = (Good so, newSt)
+  (Parser f) = pendingShortOpt so
+  act = f st :: (Failed SimpleError ShortOpt, ParseSt)
+
 pendingShortOpt :: (Error e) => ShortOpt -> Parser e ShortOpt
 pendingShortOpt so@(ShortOpt c) = Parser $ \s ->
   let err saw = ((Failed (unexpected (ExpCharOpt so) saw)), s)
@@ -176,6 +204,10 @@ pendingShortOpt so@(ShortOpt c) = Parser $ \s ->
       True -> return s { pendingShort = toTextNonEmpty rest }
 
 ------------------------------------------------------------
+------------------------------------------------------------
+
+------------------------------------------------------------
+-- nonPendingShortOpt and tests
 ------------------------------------------------------------
 nonPendingShortOpt :: (Error e) => ShortOpt -> Parser e ShortOpt
 nonPendingShortOpt so@(ShortOpt c) = Parser $ \s ->
@@ -260,3 +292,12 @@ approxLongOpt ts = Parser $ \s -> let
         st' = s { remaining = xs }
         in return (suf, m, st')
       ms -> E.throw (SawMultipleMatches matches suf)
+
+tests :: [(String, IO ())]
+tests = [ ("prop_noPendingShorts", quickCheck prop_noPendingShorts)
+        , ("prop_WrongPendingShort", quickCheck prop_WrongPendingShort)
+        , ("prop_goodPendingShort", quickCheck prop_goodPendingShort)
+        ]
+
+main :: IO ()
+main = mapM_ (\(s, a) -> printf "%-25s: " s >> a) tests
