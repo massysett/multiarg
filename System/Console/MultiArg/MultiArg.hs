@@ -1,6 +1,5 @@
 module System.Console.MultiArg.MultiArg where
 
-import qualified Control.Monad.Trans.State.Lazy as St
 import Data.Text ( Text, pack, unpack, isPrefixOf )
 import qualified Data.Text as X
 import qualified Data.Set as Set
