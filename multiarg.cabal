@@ -17,8 +17,11 @@ Library
         base ==4.*,
         text ==0.11.*,
         explicit-exception ==0.1.*,
-        containers ==0.4.*
+        containers ==0.4.*,
+        QuickCheck ==2.4.*
         
 
     Exposed-modules:
         System.Console.MultiArg.MultiArg
+
+    ghc-options: -Wall
