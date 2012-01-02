@@ -1,0 +1,22 @@
+Name: multiarg
+Version: 0.1.0.0
+Cabal-version: >=1.8
+Build-Type: Simple
+License: MIT
+Copyright: 2011 Omari Norman.
+author: Omari Norman
+maintainer: omari@smileystation.com
+stability: Experimental
+homepage: http://www.smileystation.com/pantry
+bug-reports: omari@smileystation.com
+synopsis: Command line parser of multiple arguments
+description: Command line parser of multiple arguments
+
+Library
+    Build-depends:
+        base ==4.*,
+        text ==0.11.*,
+        transformers == 0.2.*
+
+    Exposed-modules:
+        System.Console.MultiArg.MultiArg
