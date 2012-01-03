@@ -370,11 +370,18 @@ stopper = Parser $ \s -> let
     return newSt
 
 many :: Parser e a -> Parser e [a]
-many p@(Parser f) = Parser $ \s ->
-  let r t = case f t of
-        (Good g, st') -> g : r st'
-        (Failed e, st') -> []
-  in r f
+many (Parser f) = Parser $ \s ->
+  let r = parseRepeat s f
+  in (Good (fst r), snd r)
+
+parseRepeat :: ParseSt
+          -> (ParseSt -> (Failed e a, ParseSt))
+          -> ([a], ParseSt)
+parseRepeat st1 f = case f st1 of
+  (Good a, st') -> let
+    (ls, finalSt) = parseRepeat st' f
+    in (a : ls, finalSt)
+  (Failed _, _) -> ([], st1)
 
 tests :: [(String, IO ())]
 tests = [ ("prop_noPendingShorts", quickCheck prop_noPendingShorts)
