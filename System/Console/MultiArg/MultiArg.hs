@@ -1,7 +1,8 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 module System.Console.MultiArg.MultiArg where
 
 import qualified Control.Monad.Exception.Synchronous as E
-import Data.Text ( Text, pack, unpack, isPrefixOf, singleton, cons )
+import Data.Text ( Text, pack, unpack, isPrefixOf, cons )
 import qualified Data.Text as X
 import qualified Data.Set as Set
 import Data.Set ( Set )
@@ -26,6 +27,7 @@ data Saw = SawNoPendingShorts
          | SawWrongLongArg Text
          | SawNoMatches Text
          | SawMultipleMatches (Set LongOpt) Text
+         | SawPendingLong Text
          deriving (Show, Eq)
            
 class Error e where
@@ -58,6 +60,7 @@ toTextNonEmpty t = case textHead t of
   (Just (c, r)) -> Just $ TextNonEmpty c r
 
 data ParseSt = ParseSt { pendingShort :: Maybe TextNonEmpty
+                       , pendingLongArg :: Maybe Text
                        , remaining :: [Text]
                        } deriving (Show, Eq)
 
@@ -78,8 +81,8 @@ instance Monad (Parser e) where
 (<|>) (Parser l) (Parser r) = Parser $ \s ->
   let (a1, s') = l s
   in case a1 of
-    (Good g) -> (a1, s')
-    (Failed t) -> case s' == s of
+    (Good _) -> (a1, s')
+    (Failed _) -> case s' == s of
       True -> r s
       False -> (a1, s')
 
@@ -127,13 +130,14 @@ instance Arbitrary NoPendingShorts where
     o <- arbitrary
     let (ShortOpt c) = o
     r <- oneof [matchingRemaining c, arbitrary]
-    return $ NoPendingShorts (ParseSt Nothing r) o
+    l <- arbitrary
+    return $ NoPendingShorts (ParseSt Nothing l r) o
 
 -- | If there are no pending short options, pendingShortOpt must
 -- return SawNoPendingShorts and the input state must be unchanged.
 prop_noPendingShorts :: NoPendingShorts -> Bool
-prop_noPendingShorts (NoPendingShorts st so) = exp == actual where
-  exp = (Failed $ SimpleError (ExpCharOpt so) SawNoPendingShorts, st)
+prop_noPendingShorts (NoPendingShorts st so) = ex == actual where
+  ex = (Failed $ SimpleError (ExpCharOpt so) SawNoPendingShorts, st)
   (Parser f) = pendingShortOpt so
   actual = f st
 
@@ -147,16 +151,16 @@ instance Arbitrary WrongPendingShort where
     r <- oneof [matchingRemaining c, arbitrary]
     firstLetter <- suchThat arbitrary (/= c)
     rest <- arbitrary
-    let st = ParseSt (Just (TextNonEmpty firstLetter rest)) r
+    l <- arbitrary
+    let st = ParseSt (Just (TextNonEmpty firstLetter rest)) l r
     return $ WrongPendingShort st o
 
 -- | If there is a pending short option, but it is the wrong one,
 -- pendingShortOpt must retur SawWrongPendingShort and the input state
 -- must be unchanged.
 prop_WrongPendingShort :: WrongPendingShort -> Bool
-prop_WrongPendingShort (WrongPendingShort st so) = exp == act where
-  (ShortOpt c) = so
-  exp = (Failed err, st) where
+prop_WrongPendingShort (WrongPendingShort st so) = ex == act where
+  ex = (Failed err, st) where
     err = SimpleError (ExpCharOpt so) (SawWrongPendingShort wrong)
     wrong = case pendingShort st of
       Nothing -> error "prop_WrongPendingShort error"
@@ -172,7 +176,8 @@ instance Arbitrary GoodPendingShort where
     let (ShortOpt firstLetter) = o
     restWord <- arbitrary
     restWords <- oneof [matchingRemaining firstLetter, arbitrary]
-    let st = ParseSt (Just (TextNonEmpty firstLetter restWord)) restWords
+    l <- arbitrary
+    let st = ParseSt (Just (TextNonEmpty firstLetter restWord)) l restWords
     return $ GoodPendingShort st o
 
 -- | If the pending short option is good, return the input pending
@@ -180,14 +185,15 @@ instance Arbitrary GoodPendingShort where
 -- the remaining options stay the same.
 
 prop_goodPendingShort :: GoodPendingShort -> Bool
-prop_goodPendingShort (GoodPendingShort st so) = exp == act where
+prop_goodPendingShort (GoodPendingShort st so) = ex == act where
   newPendingShort = toTextNonEmpty rest
   rest = case pendingShort st of
     Nothing -> error "prop_goodPendingShort error"
     (Just (TextNonEmpty _ rs)) -> rs
-  rem = remaining st
-  newSt = ParseSt newPendingShort rem
-  exp = (Good so, newSt)
+  re = remaining st
+  newSt = st { pendingShort = newPendingShort,
+               remaining = re }
+  ex = (Good so, newSt)
   (Parser f) = pendingShortOpt so
   act = f st :: (Failed SimpleError ShortOpt, ParseSt)
 
@@ -196,12 +202,11 @@ pendingShortOpt so@(ShortOpt c) = Parser $ \s ->
   let err saw = ((Failed (unexpected (ExpCharOpt so) saw)), s)
       good st = (Good so, st)
   in E.switch err good $ do
-    (TextNonEmpty first rest) <- case pendingShort s of
-      Nothing -> E.throw SawNoPendingShorts
-      (Just tne) -> return tne
-    case c == first of
-      False -> E.throw $ SawWrongPendingShort first
-      True -> return s { pendingShort = toTextNonEmpty rest }
+    maybe (return ()) (E.throw . SawPendingLong) (pendingLongArg s)
+    (TextNonEmpty first rest) <-
+      maybe (E.throw SawNoPendingShorts) return (pendingShort s)
+    when (c /= first) (E.throw $ SawWrongPendingShort first)
+    return s { pendingShort = toTextNonEmpty rest }
 
 ------------------------------------------------------------
 ------------------------------------------------------------
@@ -214,9 +219,8 @@ nonPendingShortOpt so@(ShortOpt c) = Parser $ \s ->
   let err saw = ((Failed (unexpected (ExpCharOpt so) saw)), s)
       good st = (Good so, st)
   in E.switch err good $ do
-    case pendingShort s of
-      (Just ps) -> E.throw $ SawStillPendingShorts ps
-      Nothing -> return ()
+    maybe (return ()) (E.throw . SawStillPendingShorts) (pendingShort s)
+    maybe (return ()) (E.throw . SawPendingLong) (pendingLongArg s)
     (a:as) <- case remaining s of
       [] -> E.throw SawNoArgsLeft
       x -> return x
@@ -257,16 +261,29 @@ exactLongOpt lo@(LongOpt t) = Parser $ \s -> let
   err saw = ((Failed (unexpected (ExpExactLong lo) saw)), s)
   good st = (Good lo, st)
   in E.switch err good $ do
-    case pendingShort s of
-      (Just ps) -> E.throw $ SawStillPendingShorts ps
-      Nothing -> return ()
+    maybe (return ()) (E.throw . SawPendingLong) (pendingLongArg s)
+    maybe (return ()) (E.throw . SawStillPendingShorts) (pendingShort s)
     (x:xs) <- case remaining s of
       [] -> E.throw SawNoArgsLeft
       ls -> return ls
-    let (pre, suf) = X.splitAt 2 x
+    let (pre, word, afterEq) = splitLongWord x
     when (pre /= pack "--") $ E.throw (SawNotLongArg x)
-    when (suf /= t) $ E.throw (SawWrongLongArg suf)
-    return s { remaining = xs }
+    when (word /= t) $ E.throw (SawWrongLongArg word)
+    return s { remaining = xs
+             , pendingLongArg = afterEq }
+
+-- | Takes a single Text and returns a tuple, where the first element
+-- is the first two letters, the second element is everything from the
+-- third letter to the equal sign, and the third element is Nothing if
+-- there is no equal sign, or Just Text with everything after the
+-- equal sign if there is one.
+splitLongWord :: Text -> (Text, Text, Maybe Text)
+splitLongWord t = (f, s, r) where
+  (f, rest) = X.splitAt 2 t
+  (s, withEq) = X.break (== '=') rest
+  r = case textHead withEq of
+    Nothing -> Nothing
+    (Just (_, afterEq)) -> Just afterEq
 
 -- | Examines the next word. If it is a non-GNU long option, and it
 -- matches a Text in the set unambiguously, returns a tuple of the
@@ -276,22 +293,22 @@ approxLongOpt ts = Parser $ \s -> let
   err saw = ((Failed (unexpected (ExpApproxLong ts) saw)), s)
   good (found, match, st) = (Good (found, match), st)
   in E.switch err good $ do
-    case pendingShort s of
-      (Just ps) -> E.throw $ SawStillPendingShorts ps
-      Nothing -> return ()
+    maybe (return ()) (E.throw . SawStillPendingShorts) (pendingShort s)
+    maybe (return ()) (E.throw . SawPendingLong) (pendingLongArg s)
     (x:xs) <- case remaining s of
       [] -> E.throw SawNoArgsLeft
       r -> return r
-    let (pre, suf) = X.splitAt 2 x
+    let (pre, word, afterEq) = splitLongWord x
     when (pre /= pack "--") (E.throw (SawNotLongArg x))
-    let p (LongOpt t) = suf `isPrefixOf` t
+    let p (LongOpt t) = word `isPrefixOf` t
         matches = Set.filter p ts
     case Set.toList matches of
-      [] -> E.throw (SawNoMatches suf)
+      [] -> E.throw (SawNoMatches word)
       (m:[]) -> let
-        st' = s { remaining = xs }
-        in return (suf, m, st')
-      ms -> E.throw (SawMultipleMatches matches suf)
+        st' = s { remaining = xs
+                , pendingLongArg = afterEq }
+        in return (word, m, st')
+      _ -> E.throw (SawMultipleMatches matches word)
 
 tests :: [(String, IO ())]
 tests = [ ("prop_noPendingShorts", quickCheck prop_noPendingShorts)
