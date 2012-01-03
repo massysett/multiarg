@@ -45,10 +45,6 @@ class Error e where
 data SimpleError = SimpleError Expecting Saw deriving (Show, Eq)
 instance Error SimpleError where unexpected = SimpleError
 
-data Failed e a = Good a
-              | Failed e
-              deriving (Show, Eq)
-
 data TextNonEmpty = TextNonEmpty Char Text
                     deriving (Show, Eq)
 
@@ -67,6 +63,10 @@ toTextNonEmpty :: Text -> Maybe TextNonEmpty
 toTextNonEmpty t = case textHead t of
   Nothing -> Nothing
   (Just (c, r)) -> Just $ TextNonEmpty c r
+
+data Failed e a = Good a
+              | Failed e
+              deriving (Show, Eq)
 
 data ParseSt = ParseSt { pendingShort :: Maybe TextNonEmpty
                        , pendingLongArg :: Maybe Text
@@ -368,6 +368,13 @@ stopper = Parser $ \s -> let
     let newSt = s { sawStopper = True
                   , remaining = xs }
     return newSt
+
+many :: Parser e a -> Parser e [a]
+many p@(Parser f) = Parser $ \s ->
+  let r t = case f t of
+        (Good g, st') -> g : r st'
+        (Failed e, st') -> []
+  in r f
 
 tests :: [(String, IO ())]
 tests = [ ("prop_noPendingShorts", quickCheck prop_noPendingShorts)
