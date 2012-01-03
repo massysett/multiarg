@@ -18,7 +18,8 @@ Library
         text ==0.11.*,
         explicit-exception ==0.1.*,
         containers ==0.4.*,
-        QuickCheck ==2.4.*
+        QuickCheck ==2.4.*,
+        transformers == 0.2.*
         
 
     Exposed-modules:
