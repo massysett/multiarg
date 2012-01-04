@@ -5,6 +5,15 @@ import System.Console.MultiArg.Option
 import Data.Text ( Text )
 import Data.Set ( Set )
 
+class Error e where
+  unexpected :: Expecting -> Saw -> e
+  changeExpecting :: Expecting -> e -> e
+
+data SimpleError = SimpleError Expecting Saw deriving (Show, Eq)
+instance Error SimpleError where
+  unexpected = SimpleError
+  changeExpecting exp' (SimpleError exp s) = SimpleError exp' s
+
 data Expecting = ExpCharOpt ShortOpt
                  | ExpExactLong LongOpt
                  | ExpApproxLong (Set LongOpt)

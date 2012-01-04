@@ -2,6 +2,7 @@
 module System.Console.MultiArg.Prim where
 
 import qualified System.Console.MultiArg.Error as E
+import System.Console.MultiArg.Error ( unexpected )
 import System.Console.MultiArg.Option
   ( TextNonEmpty ( TextNonEmpty ),
     ShortOpt,
@@ -25,15 +26,6 @@ import Test.QuickCheck ( Arbitrary ( arbitrary ),
                          suchThat )
 import Text.Printf ( printf )
 import Data.Maybe ( isNothing, fromMaybe )
-
-class Error e where
-  unexpected :: E.Expecting -> E.Saw -> e
-  changeExpecting :: E.Expecting -> e -> e
-
-data SimpleError = SimpleError E.Expecting E.Saw deriving (Show, Eq)
-instance Error SimpleError where
-  unexpected = SimpleError
-  changeExpecting exp' (SimpleError exp s) = SimpleError exp' s
 
 textHead :: Text -> Maybe (Char, Text)
 textHead t = case X.null t of
@@ -62,7 +54,7 @@ newtype ParserSE s e a =
   deriving (Monad, Functor, Applicative)
 
 type ParserE e a = ParserSE ()
-type Parser a = ParserSE () SimpleError a
+type Parser a = ParserSE () E.SimpleError a
 
 runParserSE :: s
                -> [Text]
@@ -112,7 +104,7 @@ noConsumed = undefined
 
 infix 0 <?>
 
-pendingShortOpt :: (Error e) => ShortOpt -> ParserSE s e ShortOpt
+pendingShortOpt :: (E.Error e) => ShortOpt -> ParserSE s e ShortOpt
 pendingShortOpt so = ParserSE $ do
   s <- lift get
   let err saw = throwT (unexpected (E.ExpCharOpt so) saw)
@@ -123,7 +115,7 @@ pendingShortOpt so = ParserSE $ do
   lift $ put s { pendingShort = toTextNonEmpty rest } 
   return so
 
-nonPendingShortOpt :: (Error e) => ShortOpt -> ParserSE s e ShortOpt
+nonPendingShortOpt :: (E.Error e) => ShortOpt -> ParserSE s e ShortOpt
 nonPendingShortOpt so = ParserSE $ do
   let err saw = throwT (unexpected (E.ExpCharOpt so) saw)
   s <- lift get
@@ -145,7 +137,7 @@ nonPendingShortOpt so = ParserSE $ do
                , remaining = as }
   return so
 
-exactLongOpt :: (Error e)
+exactLongOpt :: (E.Error e)
                 => LongOpt
                 -> ParserSE s e (LongOpt, Maybe Text)
 exactLongOpt lo = ParserSE $ do
@@ -179,7 +171,7 @@ splitLongWord t = (f, s, r) where
 -- | Examines the next word. If it matches a Text in the set
 -- unambiguously, returns a tuple of the word actually found and the
 -- matching word in the set.
-approxLongOpt :: (Error e)
+approxLongOpt :: (E.Error e)
                  => Set LongOpt
                  -> ParserSE s e (Text, LongOpt, Maybe Text)
 approxLongOpt ts = ParserSE $ do
@@ -201,7 +193,7 @@ approxLongOpt ts = ParserSE $ do
       return (word, m, afterEq)
     _ -> err (E.SawMultipleMatches matches word)
 
-pendingShortOptArg :: (Error e) => ParserSE s e Text
+pendingShortOptArg :: (E.Error e) => ParserSE s e Text
 pendingShortOptArg = ParserSE $ do
   let err saw = throwT $ unexpected E.ExpPendingShortArg saw
   s <- lift get
@@ -211,7 +203,7 @@ pendingShortOptArg = ParserSE $ do
   lift $ put s { pendingShort = Nothing }
   return a
 
-stopper :: (Error e) => ParserSE s e ()
+stopper :: (E.Error e) => ParserSE s e ()
 stopper = ParserSE $ do
   let err saw = throwT $ unexpected E.ExpStopper saw
   s <- lift get
@@ -238,7 +230,7 @@ try (ParserSE l) = ParserSE $ do
 -- it looks like an option (that is, it starts with a dash.) Consider
 -- whether you should be using nonOptionPosArg instead. However this
 -- can be useful when parsing command line options after a stopper.
-nextArg :: (Error e) => ParserSE s e Text
+nextArg :: (E.Error e) => ParserSE s e Text
 nextArg = ParserSE $ do
   let err saw = throwT $ unexpected E.ExpNextArg saw
   s <- lift get
@@ -252,7 +244,7 @@ nextArg = ParserSE $ do
 -- | Returns the next string on the command line as long as there are
 -- no pendings and as long as the next string does not begin with a
 -- dash.
-nonOptionPosArg :: (Error e) => ParserSE s e Text
+nonOptionPosArg :: (E.Error e) => ParserSE s e Text
 nonOptionPosArg = ParserSE $ do
   let err saw = throwT $ unexpected E.ExpNonOptionPosArg saw
   s <- lift get
@@ -289,7 +281,7 @@ many (ParserSE l) = ParserSE $ do
   return result
 
 -- | Succeeds if there is no more input left.
-end :: (Error e) => ParserSE s e ()
+end :: (E.Error e) => ParserSE s e ()
 end = ParserSE $ do
   let err saw = throwT $ unexpected E.ExpEnd saw
   s <- lift get
@@ -318,88 +310,3 @@ modifySt f = ParserSE $ do
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-
-option :: a -> ParserSE s e a -> ParserSE s e a
-option x p = p <|> return x
-
-optionMaybe :: ParserSE s e a -> ParserSE s e (Maybe a)
-optionMaybe p = option Nothing (liftM Just p)
-
-choice :: e -> [ParserSE s e a] -> ParserSE s e a
-choice e ls = foldl (<|>) (zero e) ls
-
-shortOpt :: (Error e)
-            => ShortOpt
-            -> ParserSE s e ShortOpt
-shortOpt s = pendingShortOpt s <|> nonPendingShortOpt s
-
-shortOptional :: (Error e)
-                 => ShortOpt
-                 -> ParserSE s e (ShortOpt, Maybe Text)
-shortOptional s = do
-  so <- shortOpt s
-  a <- optionMaybe (pendingShortOptArg <|> nonOptionPosArg)
-  return (so, a)
-
-shortSingle :: (Error e) =>
-               ShortOpt
-               -> ParserSE s e (ShortOpt, Text)
-shortSingle s = do
-  so <- shortOpt s
-  a <- pendingShortOptArg <|> nextArg
-  return (so, a)
-
-shortDouble :: (Error e)
-               => ShortOpt
-               -> ParserSE s e (ShortOpt, Text, Text)
-shortDouble s = do
-  (so, a1) <- shortSingle s
-  a2 <- nextArg
-  return (so, a1, a2)
-
-shortVariable :: (Error e)
-                 => ShortOpt
-                 -> ParserSE s e (ShortOpt, [Text])
-shortVariable s = do
-  so <- shortOpt s
-  firstArg <- optionMaybe pendingShortOptArg
-  rest <- many nonOptionPosArg
-  let result = maybe rest ( : rest ) firstArg
-  return (so, result)
-
-nonGNUexactLongOpt :: (Error e)
-                      => LongOpt
-                      -> ParserSE s e LongOpt
-nonGNUexactLongOpt l = try $ do
-  (lo, maybeArg) <- exactLongOpt l
-  case maybeArg of
-    Nothing -> return lo
-    (Just t) ->
-      zero (unexpected (E.ExpNonGNUExactLong l)
-            (E.SawGNULongOptArg t))
-
-matchApproxLongOpt :: (Error e)
-                      => LongOpt
-                      -> Set LongOpt
-                      -> ParserSE s e (Text, LongOpt, Maybe Text)
-matchApproxLongOpt l s = try $ do
-  a@(t, lo, _) <- approxLongOpt s
-  if lo == l
-    then return a
-    else zero (unexpected (E.ExpMatchingApproxLong l s)
-               (E.SawNotMatchingApproxLong t lo))
-
-matchNonGNUApproxLongOpt :: (Error e)
-                            => LongOpt
-                            -> Set LongOpt
-                            -> ParserSE s e (Text, LongOpt)
-matchNonGNUApproxLongOpt l s = try $ do
-  a@(t, lo, arg) <- matchApproxLongOpt l s
-  let err b = zero (unexpected (E.ExpNonGNUMatchingApproxLong l s)
-                    (E.SawMatchingApproxLongWithArg b))
-  maybe (return (t, lo)) err arg
-
--- | Examines the possible words in Set. If there are no pendings,
--- then get the next word and see if it matches one of the words in
--- Set. If so, returns the word actually parsed and the matching word
--- from Set. If there is no match, fails without consuming any input.
