@@ -348,6 +348,7 @@ nonOptionPosArg = ParserSE $ do
   lift $ put s { remaining = xs }
   return x
 
+
 parseRepeat :: ParseSt s
           -> (ParseSt s -> (Exceptional e a, ParseSt s))
           -> ([a], ParseSt s)
@@ -479,3 +480,7 @@ matchNonGNUApproxLongOpt l s = try $ do
                     (SawMatchingApproxLongWithArg b))
   maybe (return (t, lo)) err arg
 
+-- | Examines the possible words in Set. If there are no pendings,
+-- then get the next word and see if it matches one of the words in
+-- Set. If so, returns the word actually parsed and the matching word
+-- from Set. If there is no match, fails without consuming any input.
