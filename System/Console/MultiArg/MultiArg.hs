@@ -392,8 +392,11 @@ shortDouble s = do
   a2 <- nextArg
   return (so, a1, a2)
 
-{-
 shortVariable :: ShortOpt -> Parser (ShortOpt, [Text])
 shortVariable s = do
   so <- shortOpt s
--}
+  firstArg <- optionMaybe pendingShortOptArg
+  rest <- many nonOptionPosArg
+  let result = maybe rest ( : rest ) firstArg
+  return (so, result)
+
