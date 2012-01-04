@@ -30,6 +30,10 @@ data Expecting = ExpCharOpt ShortOpt
                  | ExpNextArg
                  | ExpNonOptionPosArg
                  | ExpEnd
+                 | ExpNonGNUExactLong LongOpt
+                 | ExpNonGNUApproxLong (Set LongOpt)
+                 | ExpMatchingApproxLong LongOpt (Set LongOpt)
+                 | ExpNonGNUMatchingApproxLong LongOpt (Set LongOpt)
                  deriving (Show, Eq)
 
 data Saw = SawNoPendingShorts
@@ -52,6 +56,9 @@ data Saw = SawNoPendingShorts
          | SawNotStopper
          | SawLeadingDashArg Text
          | SawMoreInput
+         | SawGNULongOptArg Text
+         | SawNotMatchingApproxLong Text LongOpt
+         | SawMatchingApproxLongWithArg Text -- Text of the argument
          deriving (Show, Eq)
            
 newtype ShortOpt = ShortOpt Char deriving (Show, Eq)
@@ -131,6 +138,10 @@ newtype ParserSE s e a =
 
 type ParserE e a = ParserSE ()
 type Parser a = ParserSE () SimpleError a
+
+-- | Always fails without consuming any input.
+zero :: e -> ParserSE s e a
+zero e = ParserSE $ throwT e
 
 (<|>) :: ParserSE s e a -> ParserSE s e a -> ParserSE s e a
 (<|>) (ParserSE l) (ParserSE r) = ParserSE $ do
@@ -371,6 +382,9 @@ option x p = p <|> return x
 optionMaybe :: ParserSE s e a -> ParserSE s e (Maybe a)
 optionMaybe p = option Nothing (liftM Just p)
 
+choice :: e -> [ParserSE s e a] -> ParserSE s e a
+choice e ls = foldl (<|>) (zero e) ls
+
 shortOpt :: (Error e)
             => ShortOpt
             -> ParserSE s e ShortOpt
@@ -410,3 +424,34 @@ shortVariable s = do
   let result = maybe rest ( : rest ) firstArg
   return (so, result)
 
+nonGNUexactLongOpt :: (Error e)
+                      => LongOpt
+                      -> ParserSE s e LongOpt
+nonGNUexactLongOpt l = try $ do
+  (lo, maybeArg) <- exactLongOpt l
+  case maybeArg of
+    Nothing -> return lo
+    (Just t) ->
+      zero (unexpected (ExpNonGNUExactLong l)
+            (SawGNULongOptArg t))
+
+matchApproxLongOpt :: (Error e)
+                      => LongOpt
+                      -> Set LongOpt
+                      -> ParserSE s e (Text, LongOpt, Maybe Text)
+matchApproxLongOpt l s = try $ do
+  a@(t, lo, _) <- approxLongOpt s
+  if lo == l
+    then return a
+    else zero (unexpected (ExpMatchingApproxLong l s)
+               (SawNotMatchingApproxLong t lo))
+
+matchNonGNUApproxLongOpt :: (Error e)
+                            => LongOpt
+                            -> Set LongOpt
+                            -> ParserSE s e (Text, LongOpt)
+matchNonGNUApproxLongOpt l s = try $ do
+  a@(t, lo, arg) <- matchApproxLongOpt l s
+  let err b = zero (unexpected (ExpNonGNUMatchingApproxLong l s)
+                    (SawMatchingApproxLongWithArg b))
+  maybe (return (t, lo)) err arg
