@@ -371,33 +371,42 @@ option x p = p <|> return x
 optionMaybe :: ParserSE s e a -> ParserSE s e (Maybe a)
 optionMaybe p = option Nothing (liftM Just p)
 
-shortOpt :: ShortOpt -> Parser ShortOpt
+shortOpt :: (Error e)
+            => ShortOpt
+            -> ParserSE s e ShortOpt
 shortOpt s = pendingShortOpt s <|> nonPendingShortOpt s
 
-shortOptional :: ShortOpt -> Parser (ShortOpt, Maybe Text)
+shortOptional :: (Error e)
+                 => ShortOpt
+                 -> ParserSE s e (ShortOpt, Maybe Text)
 shortOptional s = do
   so <- shortOpt s
   a <- optionMaybe (pendingShortOptArg <|> nonOptionPosArg)
   return (so, a)
 
-shortSingle :: ShortOpt -> Parser (ShortOpt, Text)
+shortSingle :: (Error e) =>
+               ShortOpt
+               -> ParserSE s e (ShortOpt, Text)
 shortSingle s = do
   so <- shortOpt s
   a <- pendingShortOptArg <|> nextArg
   return (so, a)
 
-shortDouble :: ShortOpt -> Parser (ShortOpt, Text, Text)
+shortDouble :: (Error e)
+               => ShortOpt
+               -> ParserSE s e (ShortOpt, Text, Text)
 shortDouble s = do
   (so, a1) <- shortSingle s
   a2 <- nextArg
   return (so, a1, a2)
 
-shortVariable :: ShortOpt -> Parser (ShortOpt, [Text])
+shortVariable :: (Error e)
+                 => ShortOpt
+                 -> ParserSE s e (ShortOpt, [Text])
 shortVariable s = do
   so <- shortOpt s
   firstArg <- optionMaybe pendingShortOptArg
   rest <- many nonOptionPosArg
   let result = maybe rest ( : rest ) firstArg
   return (so, result)
-
 
