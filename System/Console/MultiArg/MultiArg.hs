@@ -7,7 +7,8 @@ import Control.Applicative ( Applicative )
 import Control.Monad.Exception.Synchronous
   ( ExceptionalT, runExceptionalT, throwT, Exceptional(Success, Exception) )
 import Control.Monad.Trans.State.Lazy ( State, get, runState, put,
-                                        modify )
+                                        modify, runStateT )
+import Data.Functor.Identity ( runIdentity )
 import qualified Control.Monad.Trans.State.Lazy as St
 import Data.Text ( Text, pack, unpack, isPrefixOf, cons )
 import qualified Data.Text as X
@@ -312,6 +313,26 @@ nonOptionPosArg = ParserSE $ do
     _ -> return ()
   lift $ put s { remaining = xs }
   return x
+
+parseRepeat :: ParseSt s
+          -> (ParseSt s -> (Exceptional e a, ParseSt s))
+          -> ([a], ParseSt s)
+parseRepeat st1 f = case f st1 of
+  (Success a, st') -> let
+    (ls, finalSt) = parseRepeat st' f
+    in (a : ls, finalSt)
+  (Exception _, _) -> ([], st1)
+
+many :: ParserSE s e a -> ParserSE s e [a]
+many (ParserSE l) = ParserSE $ do
+  s <- lift get
+  let f st = runIdentity
+             . flip runStateT st
+             . runExceptionalT
+             $ l
+      (result, finalSt) = parseRepeat s f
+  lift $ put finalSt
+  return result
 
 -- | Succeeds if there is no more input left.
 end :: (Error e) => ParserSE s e ()
