@@ -132,12 +132,30 @@ data ParseSt s = ParseSt { pendingShort :: Maybe TextNonEmpty
                          , userState :: s
                          } deriving (Show, Eq)
 
+defaultState :: s -> [Text] -> ParseSt s
+defaultState user ts = ParseSt { pendingShort = Nothing
+                               , remaining = ts
+                               , sawStopper = False
+                               , userState = user }
+
 newtype ParserSE s e a =
-  ParserSE { runParser :: ExceptionalT e (State (ParseSt s)) a }
+  ParserSE { unParserSE :: ExceptionalT e (State (ParseSt s)) a }
   deriving (Monad, Functor, Applicative)
 
 type ParserE e a = ParserSE ()
 type Parser a = ParserSE () SimpleError a
+
+runParserSE :: (Error e)
+               => s
+               -> [Text]
+               -> ParserSE s e a
+               -> Exceptional e (a, s)
+runParserSE user ts (ParserSE c) = let
+  s = defaultState user ts
+  in case flip runState s . runExceptionalT $ c of
+    ((Success g), s') -> Success (g, userState s')
+    ((Exception e), _) -> Exception e
+
 
 -- | Always fails without consuming any input.
 zero :: e -> ParserSE s e a
