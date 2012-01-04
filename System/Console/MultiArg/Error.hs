@@ -1,6 +1,7 @@
 module System.Console.MultiArg.Error where
 
 import System.Console.MultiArg.Option
+  ( LongOpt, ShortOpt, TextNonEmpty )
 import Data.Text ( Text )
 import Data.Set ( Set )
 

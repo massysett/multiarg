@@ -1,8 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module System.Console.MultiArg.Prim where
 
-import qualified Control.Monad.Exception.Synchronous as E
-import System.Console.MultiArg.Error
+import qualified System.Console.MultiArg.Error as E
 import System.Console.MultiArg.Option
   ( TextNonEmpty ( TextNonEmpty ),
     ShortOpt,
@@ -28,10 +27,10 @@ import Text.Printf ( printf )
 import Data.Maybe ( isNothing, fromMaybe )
 
 class Error e where
-  unexpected :: Expecting -> Saw -> e
-  changeExpecting :: Expecting -> e -> e
+  unexpected :: E.Expecting -> E.Saw -> e
+  changeExpecting :: E.Expecting -> e -> e
 
-data SimpleError = SimpleError Expecting Saw deriving (Show, Eq)
+data SimpleError = SimpleError E.Expecting E.Saw deriving (Show, Eq)
 instance Error SimpleError where
   unexpected = SimpleError
   changeExpecting exp' (SimpleError exp s) = SimpleError exp' s
@@ -116,32 +115,32 @@ infix 0 <?>
 pendingShortOpt :: (Error e) => ShortOpt -> ParserSE s e ShortOpt
 pendingShortOpt so = ParserSE $ do
   s <- lift get
-  let err saw = throwT (unexpected (ExpCharOpt so) saw)
-  when (sawStopper s) (err SawAlreadyStopper)
+  let err saw = throwT (unexpected (E.ExpCharOpt so) saw)
+  when (sawStopper s) (err E.SawAlreadyStopper)
   (TextNonEmpty first rest) <-
-    maybe (err SawNoPendingShorts) return (pendingShort s)
-  when (unShortOpt so /= first) (err $ SawWrongPendingShort first)
+    maybe (err E.SawNoPendingShorts) return (pendingShort s)
+  when (unShortOpt so /= first) (err $ E.SawWrongPendingShort first)
   lift $ put s { pendingShort = toTextNonEmpty rest } 
   return so
 
 nonPendingShortOpt :: (Error e) => ShortOpt -> ParserSE s e ShortOpt
 nonPendingShortOpt so = ParserSE $ do
-  let err saw = throwT (unexpected (ExpCharOpt so) saw)
+  let err saw = throwT (unexpected (E.ExpCharOpt so) saw)
   s <- lift get
-  maybe (return ()) (err . SawStillPendingShorts) (pendingShort s)
-  when (sawStopper s) (err SawAlreadyStopper)
+  maybe (return ()) (err . E.SawStillPendingShorts) (pendingShort s)
+  when (sawStopper s) (err E.SawAlreadyStopper)
   (a:as) <- case remaining s of
-    [] -> err SawNoArgsLeft
+    [] -> err E.SawNoArgsLeft
     x -> return x
   (maybeDash, word) <- case textHead a of
-    Nothing -> err SawEmptyArg
+    Nothing -> err E.SawEmptyArg
     (Just w) -> return w
-  when (maybeDash /= '-') $ err (SawNotShortArg a)
+  when (maybeDash /= '-') $ err (E.SawNotShortArg a)
   (letter, arg) <- case textHead word of
-    Nothing -> err SawSingleDashArg
+    Nothing -> err E.SawSingleDashArg
     (Just w) -> return w
-  when (letter /= unShortOpt so) $ err (SawWrongShortArg letter)
-  when (letter == '-') $ err SawNewStopper
+  when (letter /= unShortOpt so) $ err (E.SawWrongShortArg letter)
+  when (letter == '-') $ err E.SawNewStopper
   lift $ put s { pendingShort = toTextNonEmpty arg
                , remaining = as }
   return so
@@ -150,17 +149,17 @@ exactLongOpt :: (Error e)
                 => LongOpt
                 -> ParserSE s e (LongOpt, Maybe Text)
 exactLongOpt lo = ParserSE $ do
-  let err saw = throwT (unexpected (ExpExactLong lo) saw)
+  let err saw = throwT (unexpected (E.ExpExactLong lo) saw)
   s <- lift get
-  maybe (return ()) (err . SawStillPendingShorts) (pendingShort s)
-  when (sawStopper s) (err SawAlreadyStopper)
+  maybe (return ()) (err . E.SawStillPendingShorts) (pendingShort s)
+  when (sawStopper s) (err E.SawAlreadyStopper)
   (x:xs) <- case remaining s of
-    [] -> err SawNoArgsLeft
+    [] -> err E.SawNoArgsLeft
     ls -> return ls
   let (pre, word, afterEq) = splitLongWord x
-  when (pre /= pack "--") $ err (SawNotLongArg x)
-  when (X.null word && isNothing afterEq) (err SawNewStopper)
-  when (word /= unLongOpt lo) $ err (SawWrongLongArg word)
+  when (pre /= pack "--") $ err (E.SawNotLongArg x)
+  when (X.null word && isNothing afterEq) (err E.SawNewStopper)
+  when (word /= unLongOpt lo) $ err (E.SawWrongLongArg word)
   lift $ put s { remaining = xs }
   return (lo, afterEq)
 
@@ -185,44 +184,44 @@ approxLongOpt :: (Error e)
                  -> ParserSE s e (Text, LongOpt, Maybe Text)
 approxLongOpt ts = ParserSE $ do
   s <- lift get
-  let err saw = throwT $ unexpected (ExpApproxLong ts) saw
-  maybe (return ()) (err . SawStillPendingShorts) (pendingShort s)
+  let err saw = throwT $ unexpected (E.ExpApproxLong ts) saw
+  maybe (return ()) (err . E.SawStillPendingShorts) (pendingShort s)
   (x:xs) <- case remaining s of
-    [] -> err SawNoArgsLeft
+    [] -> err E.SawNoArgsLeft
     r -> return r
   let (pre, word, afterEq) = splitLongWord x
-  when (pre /= pack "--") (err (SawNotLongArg x))
-  when (X.null word && isNothing afterEq) (err SawNewStopper)
+  when (pre /= pack "--") (err (E.SawNotLongArg x))
+  when (X.null word && isNothing afterEq) (err E.SawNewStopper)
   let p t = word `isPrefixOf` (unLongOpt t)
       matches = Set.filter p ts
   case Set.toList matches of
-    [] -> err (SawNoMatches word)
+    [] -> err (E.SawNoMatches word)
     (m:[]) -> do
       lift $ put s { remaining = xs }
       return (word, m, afterEq)
-    _ -> err (SawMultipleMatches matches word)
+    _ -> err (E.SawMultipleMatches matches word)
 
 pendingShortOptArg :: (Error e) => ParserSE s e Text
 pendingShortOptArg = ParserSE $ do
-  let err saw = throwT $ unexpected ExpPendingShortArg saw
+  let err saw = throwT $ unexpected E.ExpPendingShortArg saw
   s <- lift get
-  when (sawStopper s) (err SawAlreadyStopper)
+  when (sawStopper s) (err E.SawAlreadyStopper)
   let f (TextNonEmpty c t) = return (c `cons` t)
-  a <- maybe (err SawNoPendingShortArg) f (pendingShort s)
+  a <- maybe (err E.SawNoPendingShortArg) f (pendingShort s)
   lift $ put s { pendingShort = Nothing }
   return a
 
 stopper :: (Error e) => ParserSE s e ()
 stopper = ParserSE $ do
-  let err saw = throwT $ unexpected ExpStopper saw
+  let err saw = throwT $ unexpected E.ExpStopper saw
   s <- lift get
-  maybe (return ()) (err . SawStillPendingShorts) (pendingShort s)
-  when (sawStopper s) $ err SawAlreadyStopper
+  maybe (return ()) (err . E.SawStillPendingShorts) (pendingShort s)
+  when (sawStopper s) $ err E.SawAlreadyStopper
   (x:xs) <- case remaining s of
-    [] -> err SawNoArgsLeft
+    [] -> err E.SawNoArgsLeft
     r -> return r
-  when (not $ pack "--" `isPrefixOf` x) (err SawNotStopper)
-  when (X.length x /= 2) (err SawNotStopper)
+  when (not $ pack "--" `isPrefixOf` x) (err E.SawNotStopper)
+  when (X.length x /= 2) (err E.SawNotStopper)
   lift $ put s { sawStopper = True
                , remaining = xs }
 
@@ -241,11 +240,11 @@ try (ParserSE l) = ParserSE $ do
 -- can be useful when parsing command line options after a stopper.
 nextArg :: (Error e) => ParserSE s e Text
 nextArg = ParserSE $ do
-  let err saw = throwT $ unexpected ExpNextArg saw
+  let err saw = throwT $ unexpected E.ExpNextArg saw
   s <- lift get
-  maybe (return ()) (err . SawStillPendingShorts) (pendingShort s)
+  maybe (return ()) (err . E.SawStillPendingShorts) (pendingShort s)
   (x:xs) <- case remaining s of
-    [] -> err SawNoArgsLeft
+    [] -> err E.SawNoArgsLeft
     r -> return r
   lift $ put s { remaining = xs }
   return x
@@ -255,14 +254,14 @@ nextArg = ParserSE $ do
 -- dash.
 nonOptionPosArg :: (Error e) => ParserSE s e Text
 nonOptionPosArg = ParserSE $ do
-  let err saw = throwT $ unexpected ExpNonOptionPosArg saw
+  let err saw = throwT $ unexpected E.ExpNonOptionPosArg saw
   s <- lift get
-  maybe (return ()) (err . SawStillPendingShorts) (pendingShort s)
+  maybe (return ()) (err . E.SawStillPendingShorts) (pendingShort s)
   (x:xs) <- case remaining s of
-    [] -> err SawNoArgsLeft
+    [] -> err E.SawNoArgsLeft
     r -> return r
   case textHead x of
-    Just ('-', _) -> err $ SawLeadingDashArg x
+    Just ('-', _) -> err $ E.SawLeadingDashArg x
     Nothing -> return ()
     _ -> return ()
   lift $ put s { remaining = xs }
@@ -292,10 +291,10 @@ many (ParserSE l) = ParserSE $ do
 -- | Succeeds if there is no more input left.
 end :: (Error e) => ParserSE s e ()
 end = ParserSE $ do
-  let err saw = throwT $ unexpected ExpEnd saw
+  let err saw = throwT $ unexpected E.ExpEnd saw
   s <- lift get
-  maybe (return ()) (err . SawStillPendingShorts) (pendingShort s)
-  when (not . null . remaining $ s) (err SawMoreInput)
+  maybe (return ()) (err . E.SawStillPendingShorts) (pendingShort s)
+  when (not . null . remaining $ s) (err E.SawMoreInput)
   return ()
 
 -- | Gets the user state.
@@ -376,8 +375,8 @@ nonGNUexactLongOpt l = try $ do
   case maybeArg of
     Nothing -> return lo
     (Just t) ->
-      zero (unexpected (ExpNonGNUExactLong l)
-            (SawGNULongOptArg t))
+      zero (unexpected (E.ExpNonGNUExactLong l)
+            (E.SawGNULongOptArg t))
 
 matchApproxLongOpt :: (Error e)
                       => LongOpt
@@ -387,8 +386,8 @@ matchApproxLongOpt l s = try $ do
   a@(t, lo, _) <- approxLongOpt s
   if lo == l
     then return a
-    else zero (unexpected (ExpMatchingApproxLong l s)
-               (SawNotMatchingApproxLong t lo))
+    else zero (unexpected (E.ExpMatchingApproxLong l s)
+               (E.SawNotMatchingApproxLong t lo))
 
 matchNonGNUApproxLongOpt :: (Error e)
                             => LongOpt
@@ -396,8 +395,8 @@ matchNonGNUApproxLongOpt :: (Error e)
                             -> ParserSE s e (Text, LongOpt)
 matchNonGNUApproxLongOpt l s = try $ do
   a@(t, lo, arg) <- matchApproxLongOpt l s
-  let err b = zero (unexpected (ExpNonGNUMatchingApproxLong l s)
-                    (SawMatchingApproxLongWithArg b))
+  let err b = zero (unexpected (E.ExpNonGNUMatchingApproxLong l s)
+                    (E.SawMatchingApproxLongWithArg b))
   maybe (return (t, lo)) err arg
 
 -- | Examines the possible words in Set. If there are no pendings,
