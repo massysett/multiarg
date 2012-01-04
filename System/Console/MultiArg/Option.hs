@@ -6,7 +6,7 @@ import qualified Data.Text as X
 import Data.Text ( Text, pack, unpack, isPrefixOf, cons )
 import Control.Monad ( when )
 
-newtype ShortOpt = ShortOpt Char deriving (Show, Eq)
+newtype ShortOpt = ShortOpt { unShortOpt :: Char } deriving (Show, Eq)
 instance Arbitrary ShortOpt where
   arbitrary = do
     c <- suchThat arbitrary (/= '-')
@@ -22,7 +22,7 @@ makeShortOpt c = case c of
   '-' -> error "short option must not be a dash"
   x -> ShortOpt x
 
-data LongOpt = LongOpt Text deriving (Show, Eq, Ord)
+data LongOpt = LongOpt { unLongOpt :: Text } deriving (Show, Eq, Ord)
 instance Arbitrary LongOpt where
   arbitrary = do
     t <- suchThat randText isValidLongOptText
@@ -42,4 +42,13 @@ isValidLongOptText t = maybe False (const True) $ do
     Nothing -> return ()
   when (X.null t) Nothing
   return ()
+
+data TextNonEmpty = TextNonEmpty Char Text
+                    deriving (Show, Eq)
+
+instance Arbitrary TextNonEmpty where
+  arbitrary = do
+    c <- arbitrary
+    t <- randText
+    return $ TextNonEmpty c t
 
