@@ -145,8 +145,7 @@ newtype ParserSE s e a =
 type ParserE e a = ParserSE ()
 type Parser a = ParserSE () SimpleError a
 
-runParserSE :: (Error e)
-               => s
+runParserSE :: s
                -> [Text]
                -> ParserSE s e a
                -> Exceptional e (a, s)
@@ -156,6 +155,12 @@ runParserSE user ts (ParserSE c) = let
     ((Success g), s') -> Success (g, userState s')
     ((Exception e), _) -> Exception e
 
+runParser :: [Text]
+             -> ParserSE () e a
+             -> Exceptional e a
+runParser ts c = case runParserSE () ts c of
+  (Success (g, _)) -> Success g
+  (Exception e) -> Exception e
 
 -- | Always fails without consuming any input.
 zero :: e -> ParserSE s e a
@@ -473,3 +478,4 @@ matchNonGNUApproxLongOpt l s = try $ do
   let err b = zero (unexpected (ExpNonGNUMatchingApproxLong l s)
                     (SawMatchingApproxLongWithArg b))
   maybe (return (t, lo)) err arg
+
