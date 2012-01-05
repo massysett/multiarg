@@ -144,7 +144,8 @@ pendingShortOpt so = ParserSE $ do
 -- * the next argument is an empty string
 -- * the next argument does not begin with a dash
 -- * the next argument is a single dash
--- * the next argument is a short option but it does not match the one given
+-- * the next argument is a short option but it does not match
+--   the one given
 -- * the next argument is a stopper
 --
 -- Otherwise, consumes the next argument, puts any remaining letters
@@ -243,6 +244,8 @@ pendingShortOptArg = ParserSE $ do
   increment
   return a
 
+-- FIXME BROKEN the increment is going to be overwritten by the
+-- put. Make a single function that puts and increments.
 stopper :: (E.Error e) => ParserSE s e ()
 stopper = ParserSE $ do
   let err saw = throwT $ unexpected E.ExpStopper saw
@@ -323,6 +326,40 @@ parseRepeat st1 f = case f st1 of
     (ls, finalGoodSt, failure, finalBadSt) = parseRepeat st' f
     in (a : ls, finalGoodSt, failure, finalBadSt)
   (Exception e, st') -> ([], st1, e, st')
+
+manyTill :: ParserSE s e a
+            -> ParserSE s e b
+            -> ParserSE s e ([a], b)
+manyTill (ParserSE r) (ParserSE f) = ParserSE $ do
+  s <- lift get
+  let unwrap fn st = runIdentity
+                     . flip runStateT st
+                     . runExceptionalT
+                     $ fn
+      fr = unwrap r
+      ff = unwrap f
+      till = parseTill s fr ff
+  lift (put (lastSt till))
+  case lastResult till of
+    (Success g) -> return (goods till, g)
+    (Exception e) -> throwT e
+
+data Till a s e b =
+  Till { goods :: [a]
+       , lastSt :: ParseSt s
+       , lastResult :: Exceptional e b }
+
+parseTill :: ParseSt s
+             -> (ParseSt s -> (Exceptional e a, ParseSt s))
+             -> (ParseSt s -> (Exceptional e b, ParseSt s))
+             -> Till a s e b
+parseTill s fr ff = case ff s of
+  (Success b, st') -> Till [] st' (Success b)
+  (Exception e, st') -> case fr s of
+    (Exception re, st'') -> Till [] st'' (Exception re)
+    (Success a, st'') -> let
+      t = parseTill st'' fr ff
+      in Till (a : goods t) (lastSt t) (lastResult t)
 
 many :: ParserSE s e a -> ParserSE s e [a]
 many (ParserSE l) = ParserSE $ do

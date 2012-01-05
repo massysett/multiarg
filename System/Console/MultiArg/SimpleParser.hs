@@ -47,13 +47,24 @@ data Result o =
   deriving Show
 
 parse :: (Show o)
-         => [OptSpec o]
+         => Bool -- ^ Allow intersperse?
+         -> [OptSpec o]
          -> [String]
          -> Either SimpleError [Result o]
-parse os ss = toEither $ runParser (map pack ss) (parser os)
+parse i os ss = toEither $ runParser (map pack ss) (f os) where
+  f = if i then parseIntersperse else parseNoIntersperse
 
-parser :: (Show o) => [OptSpec o] -> Parser [Result o]
-parser os = do
+parseNoIntersperse :: Show o => [OptSpec o] -> Parser [Result o]
+parseNoIntersperse = undefined
+{-
+parseNoIntersperse os = do
+  let e = E.unexpected E.ExpOptionOrPosArg E.SawNoOptionOrPosArg
+      opts = choice e (map optSpec os)
+  rs <- many 
+-}
+
+parseIntersperse :: (Show o) => [OptSpec o] -> Parser [Result o]
+parseIntersperse os = do
   let e = E.unexpected E.ExpOptionOrPosArg E.SawNoOptionOrPosArg
       optsAndStopper = choice e (optSpecs ++ rest)
       rest = [stopperParser, posArgParser]
