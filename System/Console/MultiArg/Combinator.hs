@@ -1,14 +1,15 @@
 module System.Console.MultiArg.Combinator where
 
-import Data.Text ( Text )
+import Data.Text ( Text, isPrefixOf )
 import Data.Set ( Set )
+import qualified Data.Set as Set
 import Control.Monad ( liftM )
 
 import System.Console.MultiArg.Prim
   ( (<|>), ParserSE, zero, try, approxLongOpt,
     nextArg, pendingShortOptArg, nonOptionPosArg,
     pendingShortOpt, nonPendingShortOpt, many,
-    exactLongOpt )
+    exactLongOpt, nextArg )
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt )
 import qualified System.Console.MultiArg.Error as E
@@ -63,7 +64,16 @@ matchNonGNUApproxLongOpt l s = try $ do
 matchApproxWord :: (Error e)
                    => Set Text
                    -> ParserSE s e (Text, Text)
-matchApproxWord = undefined
+matchApproxWord s = try $ do
+  a <- nextArg
+  let p t = a `isPrefixOf` t
+      matches = Set.filter p s
+      err saw = zero (unexpected (E.ExpApproxWord s) saw)
+  case Set.toList matches of
+    [] -> err (E.SawNoMatches a)
+    (x:[]) -> return (a, x)
+    ls -> err (E.SawMultipleApproxMatches matches a)
+
 shortNoArg :: (Error e)
             => ShortOpt
             -> ParserSE s e ShortOpt
@@ -73,7 +83,7 @@ shortOptionalArg :: (Error e)
                  => ShortOpt
                  -> ParserSE s e (ShortOpt, Maybe Text)
 shortOptionalArg s = do
-  so <- shortOpt s
+  so <- shortNoArg s
   a <- optionMaybe (pendingShortOptArg <|> nonOptionPosArg)
   return (so, a)
 
@@ -81,7 +91,7 @@ shortSingleArg :: (Error e) =>
                ShortOpt
                -> ParserSE s e (ShortOpt, Text)
 shortSingleArg s = do
-  so <- shortOpt s
+  so <- shortNoArg s
   a <- pendingShortOptArg <|> nextArg
   return (so, a)
 
@@ -97,7 +107,7 @@ shortVariableArg :: (Error e)
                  => ShortOpt
                  -> ParserSE s e (ShortOpt, [Text])
 shortVariableArg s = do
-  so <- shortOpt s
+  so <- shortNoArg s
   firstArg <- optionMaybe pendingShortOptArg
   rest <- many nonOptionPosArg
   let result = maybe rest ( : rest ) firstArg
@@ -106,25 +116,44 @@ shortVariableArg s = do
 longNoArg :: (Error e)
            => LongOpt
            -> ParserSE s e LongOpt
-longNoArg = undefined
+longNoArg = nonGNUexactLongOpt
 
 longOptionalArg :: (Error e)
                    => LongOpt
                    -> ParserSE s e (LongOpt, Maybe Text)
-longOptionalArg = undefined
+longOptionalArg = exactLongOpt
 
 longSingleArg :: (Error e)
                  => LongOpt
                  -> ParserSE s e (LongOpt, Text)
-longSingleArg = undefined
+longSingleArg l = do
+  (lo, mt) <- longOptionalArg l
+  case mt of
+    (Just t) -> return (lo, t)
+    Nothing -> do
+      a <- nextArg
+      return (l, a)
 
 longDoubleArg :: (Error e)
                  => LongOpt
                  -> ParserSE s e (LongOpt, Text, Text)
-longDoubleArg = undefined
+longDoubleArg l = do
+  (lo, mt) <- longOptionalArg l
+  case mt of
+    (Just t) -> do
+      a2 <- nextArg
+      return (lo, t, a2)
+    Nothing -> do
+      a1 <- nextArg
+      a2 <- nextArg
+      return (lo, a1, a2)
 
 longVariableArg :: (Error e)
                    => LongOpt
                    -> ParserSE s e (LongOpt, [Text])
-longVariableArg = undefined
+longVariableArg l = do
+  (lo, mt) <- longOptionalArg l
+  rest <- many nonOptionPosArg
+  return (lo, maybe rest (:rest) mt)
+
 
