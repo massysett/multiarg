@@ -56,7 +56,7 @@ parser os = do
       optsAndPosArgs = choice e (optSpecs ++ [posArgParser])
       optSpecs = map optSpec os
   rs <- many optsAndPosArgs
-  end
+  --end
   return rs
 
 posArgParser :: Parser (Result o)
