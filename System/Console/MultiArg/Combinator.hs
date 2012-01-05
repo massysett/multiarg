@@ -52,7 +52,7 @@ matchNonGNUApproxLongOpt :: (Error e)
                             -> Set LongOpt
                             -> ParserSE s e (Text, LongOpt)
 matchNonGNUApproxLongOpt l s = try $ do
-  a@(t, lo, arg) <- matchApproxLongOpt l s
+  (t, lo, arg) <- matchApproxLongOpt l s
   let err b = zero (unexpected (E.ExpNonGNUMatchingApproxLong l s)
                     (E.SawMatchingApproxLongWithArg b))
   maybe (return (t, lo)) err arg
@@ -72,7 +72,7 @@ matchApproxWord s = try $ do
   case Set.toList matches of
     [] -> err (E.SawNoMatches a)
     (x:[]) -> return (a, x)
-    ls -> err (E.SawMultipleApproxMatches matches a)
+    _ -> err (E.SawMultipleApproxMatches matches a)
 
 shortNoArg :: (Error e)
             => ShortOpt

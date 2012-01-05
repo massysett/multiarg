@@ -23,6 +23,9 @@ Library
         
 
     Exposed-modules:
-        System.Console.MultiArg.MultiArg
+        System.Console.MultiArg.Combinator,
+        System.Console.MultiArg.Error,
+        System.Console.MultiArg.Option,
+        System.Console.MultiArg.Prim
 
     ghc-options: -Wall
