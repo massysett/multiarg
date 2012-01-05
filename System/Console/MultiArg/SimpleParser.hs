@@ -55,17 +55,15 @@ parse os ss = toEither $ runParser (map pack ss) (parser os)
 parser :: (Show o) => [OptSpec o] -> Parser [Result o]
 parser os = do
   let e = E.unexpected E.ExpOptionOrPosArg E.SawNoOptionOrPosArg
-      optsAndPosArgs =
-        choice e (optSpecs ++ [posArgParser, stopperParser])
+      optsAndStopper = choice e (optSpecs ++ rest)
+      rest = [stopperParser, posArgParser]
       optSpecs = map optSpec os
-  rs <- many optsAndPosArgs
+  rs <- many (require optsAndStopper)
   end
   return rs
 
 stopperParser :: Parser (Result o)
-stopperParser = do
-  stopper
-  return Stopper
+stopperParser = stopper >> return Stopper
 
 posArgParser :: Parser (Result o)
 posArgParser = do

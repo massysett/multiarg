@@ -258,6 +258,17 @@ stopper = ParserSE $ do
   lift $ put s { sawStopper = True
                , remaining = xs }
 
+require :: ParserSE s e a -> ParserSE s e a
+require (ParserSE l) = ParserSE $ do
+  s <- lift get
+  let (e, s') = flip runState s . runExceptionalT $ l
+  case e of
+    (Success _) -> l
+    (Exception err) ->
+      if noConsumed s s'
+      then increment >> l
+      else l
+
 try :: ParserSE s e a -> ParserSE s e a
 try (ParserSE l) = ParserSE $ do
   s <- lift get
