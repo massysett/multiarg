@@ -23,6 +23,7 @@ Library
         
 
     Exposed-modules:
+        System.Console.MultiArg,
         System.Console.MultiArg.Combinator,
         System.Console.MultiArg.Error,
         System.Console.MultiArg.Option,

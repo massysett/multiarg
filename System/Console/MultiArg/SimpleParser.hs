@@ -1,17 +1,25 @@
-module System.Console.MultiArg.SimpleParser where
+module System.Console.MultiArg.SimpleParser (
+  ArgSpec(..),
+  OptSpec(..),
+  Result(..),
+  SimpleError,
+  parse ) where
 
 import System.Console.MultiArg.Prim
 import System.Console.MultiArg.Combinator
 import System.Console.MultiArg.Option
+import System.Console.MultiArg.Prim ( runParser )
+import Control.Monad.Exception.Synchronous ( toEither )
+import System.Console.MultiArg.Error ( SimpleError )
 import qualified System.Console.MultiArg.Error as E
-import Data.Text ( Text, pack )
+import Data.Text ( Text, pack, unpack )
 
 data ArgSpec = SFlag | SOptionalArg | SOneArg | STwoArg | SVariableArgs
              deriving Show
 
 data OptSpec o = OptSpec { label :: o
                          , shortOpts :: [Char]
-                         , longOpts :: [Text]
+                         , longOpts :: [String]
                          , argSpec :: ArgSpec }
                deriving Show
 
@@ -19,20 +27,26 @@ data Result o =
   Flag { fLabel :: o }
 
   | OptionalArg { oLabel :: o
-                , oArg :: Maybe Text }
+                , oArg :: Maybe String }
 
   | OneArg   { sLabel :: o
-             , sArg1 :: Text }
+             , sArg1 :: String }
 
   | TwoArg   { dLabel :: o
-             , dArg1 :: Text
-             , dArg2 :: Text }
+             , dArg1 :: String
+             , dArg2 :: String }
 
   | VariableArgs { vLabel :: o
-                 , vArgs :: [Text] }
+                 , vArgs :: [String] }
 
-  | PosArg { posArg :: Text }
+  | PosArg { posArg :: String }
   deriving Show
+
+parse :: (Show o)
+         => [OptSpec o]
+         -> [String]
+         -> Either SimpleError [Result o]
+parse os ss = toEither $ runParser (map pack ss) (parser os)
 
 parser :: (Show o) => [OptSpec o] -> Parser [Result o]
 parser os = do
@@ -46,7 +60,7 @@ parser os = do
 posArgParser :: Parser (Result o)
 posArgParser = do
   a <- nonOptionPosArg
-  return $ PosArg a
+  return $ PosArg (unpack a)
 
 optSpec :: (Show o) => OptSpec o -> Parser (Result o)
 optSpec o = choice e ls where
@@ -63,33 +77,33 @@ shortOpt l s c = let
       return (Flag l)
     SOptionalArg -> do
       (_, mt) <- shortOptionalArg so
-      return (OptionalArg l mt)
+      return (OptionalArg l (fmap unpack mt))
     SOneArg -> do
       (_, t) <- shortSingleArg so
-      return (OneArg l t)
+      return (OneArg l (unpack t))
     STwoArg -> do
       (_, t1, t2) <- shortDoubleArg so
-      return (TwoArg l t1 t2)
+      return (TwoArg l (unpack t1) (unpack t2))
     SVariableArgs -> do
       (_, ts) <- shortVariableArg so
-      return (VariableArgs l ts)
+      return (VariableArgs l (map unpack ts))
     
-longOpt :: o -> ArgSpec -> Text -> Parser (Result o)
+longOpt :: o -> ArgSpec -> String -> Parser (Result o)
 longOpt l s c = let
-  lo = makeLongOpt c in case s of
+  lo = makeLongOpt (pack c) in case s of
     SFlag -> do
       _ <- longNoArg lo
       return (Flag l)
     SOptionalArg -> do
       (_, mt) <- longOptionalArg lo
-      return (OptionalArg l mt)
+      return (OptionalArg l (fmap unpack mt))
     SOneArg -> do
       (_, t) <- longSingleArg lo
-      return (OneArg l t)
+      return (OneArg l (unpack t))
     STwoArg -> do
       (_, t1, t2) <- longDoubleArg lo
-      return (TwoArg l t1 t2)
+      return (TwoArg l (unpack t1) (unpack t2))
     SVariableArgs -> do
       (_, ts) <- longVariableArg lo
-      return (VariableArgs l ts)
+      return (VariableArgs l (map unpack ts))
     
