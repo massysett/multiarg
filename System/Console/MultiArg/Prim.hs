@@ -79,36 +79,50 @@ runParser ts c = case runParserSE () ts c of
 zero :: e -> ParserSE s e a
 zero e = ParserSE $ throwT e
 
+-- | Runs the first parser. If it fails without consuming any input,
+-- then runs the second parser. If the first parser succeeds, then
+-- returns the result of the first parser. If the first parser fails
+-- and consumes input, then returns the result of the first parser.
 (<|>) :: ParserSE s e a -> ParserSE s e a -> ParserSE s e a
 (<|>) (ParserSE l) (ParserSE r) = ParserSE $ do
   s <- lift get
   let (a1, s') = flip runState s . runExceptionalT $ l
   case a1 of
-    (Success g) -> lift (put s') >> return g
+    (Success g) -> l
     (Exception f) ->
-      if noConsumed s s' then r
-      else lift (put s') >> throwT f
+      if noConsumed s s' then r else l
 
 infixr 1 <|>
 
 noConsumed :: ParseSt st -> ParseSt st -> Bool
 noConsumed l r = counter l == counter r
 
+-- | Runs the parser given. If it succeeds, then returns the result of
+-- the parser. If it fails and consumes input, returns the result of
+-- the parser. If it fails without consuming any input, then changes
+-- the error using the function given.
 (<?>) :: ParserSE s e a -> (e -> e) -> ParserSE s e a
 (<?>) (ParserSE l) f = ParserSE $ do
   s <- lift get
   let (a1, s') = flip runState s . runExceptionalT $ l
   case a1 of
-    (Success g) -> lift (put s') >> return g
+    (Success g) -> l
     (Exception e') ->
-      if noConsumed s s' then throwT (f e')
-      else lift (put s') >> throwT e'
+      if noConsumed s s' then throwT (f e') else l
 
 infix 0 <?>
 
+-- | Increments the count of how many times the state has been
+-- modified.
 increment :: ExceptionalT e (State (ParseSt s)) ()
 increment = lift $ modify (\s -> s { counter = succ . counter $ s } )
 
+-- | Parses only pending short options. Fails without consuming any
+-- input if there has already been a stopper or if there are no
+-- pending short options. Fails without consuming any input if there
+-- is a pending short option, but it does not match the short option
+-- given. Succeeds and consumes a pending short option if it matches
+-- the short option given; returns the short option parsed.
 pendingShortOpt :: (E.Error e) => ShortOpt -> ParserSE s e ShortOpt
 pendingShortOpt so = ParserSE $ do
   s <- lift get
@@ -121,6 +135,22 @@ pendingShortOpt so = ParserSE $ do
   increment
   return so
 
+-- | Parses only non-pending short options. Fails without consuming
+-- any input if, in order:
+--
+-- * there are pending short options
+-- * there has already been a stopper
+-- * there are no arguments left to parse
+-- * the next argument is an empty string
+-- * the next argument does not begin with a dash
+-- * the next argument is a single dash
+-- * the next argument is a short option but it does not match the one given
+-- * the next argument is a stopper
+--
+-- Otherwise, consumes the next argument, puts any remaining letters
+-- from the argument into a pending short, and removes the first word
+-- from remaining arguments to be parsed. Returns the short option
+-- parsed.
 nonPendingShortOpt :: (E.Error e) => ShortOpt -> ParserSE s e ShortOpt
 nonPendingShortOpt so = ParserSE $ do
   let err saw = throwT (unexpected (E.ExpCharOpt so) saw)
