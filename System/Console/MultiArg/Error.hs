@@ -28,6 +28,8 @@ data Expecting = ExpCharOpt ShortOpt
                  | ExpMatchingApproxLong LongOpt (Set LongOpt)
                  | ExpNonGNUMatchingApproxLong LongOpt (Set LongOpt)
                  | ExpApproxWord (Set Text)
+                 | ExpOption Text
+                 | ExpOptionOrPosArg
                  deriving (Show, Eq)
 
 data Saw = SawNoPendingShorts
@@ -54,4 +56,6 @@ data Saw = SawNoPendingShorts
          | SawNotMatchingApproxLong Text LongOpt
          | SawMatchingApproxLongWithArg Text -- Text of the argument
          | SawMultipleApproxMatches (Set Text) Text
+         | SawNoOption
+         | SawNoOptionOrPosArg
          deriving (Show, Eq)

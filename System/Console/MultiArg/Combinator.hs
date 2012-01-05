@@ -156,4 +156,3 @@ longVariableArg l = do
   rest <- many nonOptionPosArg
   return (lo, maybe rest (:rest) mt)
 
-
