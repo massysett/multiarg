@@ -3,6 +3,7 @@ module System.Console.MultiArg.SimpleParser (
   OptSpec(..),
   Result(..),
   SimpleError,
+  getArgs,
   parse ) where
 
 import System.Console.MultiArg.Prim
@@ -13,8 +14,9 @@ import Control.Monad.Exception.Synchronous ( toEither )
 import System.Console.MultiArg.Error ( SimpleError )
 import qualified System.Console.MultiArg.Error as E
 import Data.Text ( Text, pack, unpack )
+import System.Environment ( getArgs )
 
-data ArgSpec = SFlag | SOptionalArg | SOneArg | STwoArg | SVariableArgs
+data ArgSpec = SNoArg | SOptionalArg | SOneArg | STwoArg | SVariableArgs
              deriving Show
 
 data OptSpec o = OptSpec { label :: o
@@ -24,7 +26,7 @@ data OptSpec o = OptSpec { label :: o
                deriving Show
 
 data Result o =
-  Flag { fLabel :: o }
+  NoArg { fLabel :: o }
 
   | OptionalArg { oLabel :: o
                 , oArg :: Maybe String }
@@ -72,9 +74,9 @@ optSpec o = choice e ls where
 shortOpt :: o -> ArgSpec -> Char -> Parser (Result o)
 shortOpt l s c = let
   so = makeShortOpt c in case s of
-    SFlag -> do
+    SNoArg -> do
       _ <- shortNoArg so
-      return (Flag l)
+      return (NoArg l)
     SOptionalArg -> do
       (_, mt) <- shortOptionalArg so
       return (OptionalArg l (fmap unpack mt))
@@ -91,9 +93,9 @@ shortOpt l s c = let
 longOpt :: o -> ArgSpec -> String -> Parser (Result o)
 longOpt l s c = let
   lo = makeLongOpt (pack c) in case s of
-    SFlag -> do
+    SNoArg -> do
       _ <- longNoArg lo
-      return (Flag l)
+      return (NoArg l)
     SOptionalArg -> do
       (_, mt) <- longOptionalArg lo
       return (OptionalArg l (fmap unpack mt))
