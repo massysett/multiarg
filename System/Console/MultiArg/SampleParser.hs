@@ -20,5 +20,5 @@ specs = [ OptSpec "bytes"        "c" ["bytes"]                 SOneArg
 main :: IO ()
 main = do
   as <- getArgs
-  let r = parse specs as
+  let r = parse StopOptions specs as
   print r

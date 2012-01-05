@@ -1,6 +1,7 @@
 module System.Console.MultiArg.SimpleParser (
   ArgSpec(..),
   OptSpec(..),
+  Intersperse(..),
   Result(..),
   SimpleError,
   getArgs,
@@ -46,22 +47,51 @@ data Result o =
   | Stopper
   deriving Show
 
+data Intersperse = Intersperse | StopOptions
+
 parse :: (Show o)
-         => Bool -- ^ Allow intersperse?
+         => Intersperse
          -> [OptSpec o]
          -> [String]
          -> Either SimpleError [Result o]
 parse i os ss = toEither $ runParser (map pack ss) (f os) where
-  f = if i then parseIntersperse else parseNoIntersperse
+  f = case i of Intersperse -> parseIntersperse
+                StopOptions -> parseNoIntersperse
 
 parseNoIntersperse :: Show o => [OptSpec o] -> Parser [Result o]
-parseNoIntersperse = undefined
-{-
 parseNoIntersperse os = do
   let e = E.unexpected E.ExpOptionOrPosArg E.SawNoOptionOrPosArg
       opts = choice e (map optSpec os)
-  rs <- many 
--}
+  (rs, firstArg) <- manyTill opts afterArgs
+  case firstArg of
+    EndOfInput -> return rs
+    fa -> do
+      as <- noIntersperseArgs
+      let first = case fa of
+            (FirstArg s) -> PosArg s
+            AAStopper -> Stopper
+      return $ rs ++ ( first : as )
+
+noIntersperseArgs :: Parser [Result o]
+noIntersperseArgs = do
+  as <- many nextArg
+  let r = map PosArg . map unpack $ as
+  return r
+
+data AfterArgs = EndOfInput | FirstArg String | AAStopper
+
+afterArgs :: Parser AfterArgs
+afterArgs = parseFirst <|> parseEnd <|> parseStopper where
+  parseFirst = do
+    a <- nonOptionPosArg
+    let aS = unpack a
+    return $ FirstArg aS
+  parseEnd = do
+    end
+    return EndOfInput
+  parseStopper = do
+    _ <- stopperParser
+    return AAStopper
 
 parseIntersperse :: (Show o) => [OptSpec o] -> Parser [Result o]
 parseIntersperse os = do
