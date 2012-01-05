@@ -41,13 +41,15 @@ data ParseSt s = ParseSt { pendingShort :: Maybe TextNonEmpty
                          , remaining :: [Text]
                          , sawStopper :: Bool
                          , userState :: s
+                         , counter :: Int
                          } deriving (Show, Eq)
 
 defaultState :: s -> [Text] -> ParseSt s
 defaultState user ts = ParseSt { pendingShort = Nothing
                                , remaining = ts
                                , sawStopper = False
-                               , userState = user }
+                               , userState = user
+                               , counter = 0 }
 
 newtype ParserSE s e a =
   ParserSE { unParserSE :: ExceptionalT e (State (ParseSt s)) a }
@@ -90,7 +92,7 @@ zero e = ParserSE $ throwT e
 infixr 1 <|>
 
 noConsumed :: ParseSt st -> ParseSt st -> Bool
-noConsumed = undefined
+noConsumed l r = counter l == counter r
 
 (<?>) :: ParserSE s e a -> (e -> e) -> ParserSE s e a
 (<?>) (ParserSE l) f = ParserSE $ do
@@ -104,6 +106,9 @@ noConsumed = undefined
 
 infix 0 <?>
 
+increment :: ExceptionalT e (State (ParseSt s)) ()
+increment = lift $ modify (\s -> s { counter = succ . counter $ s } )
+
 pendingShortOpt :: (E.Error e) => ShortOpt -> ParserSE s e ShortOpt
 pendingShortOpt so = ParserSE $ do
   s <- lift get
@@ -112,7 +117,8 @@ pendingShortOpt so = ParserSE $ do
   (TextNonEmpty first rest) <-
     maybe (err E.SawNoPendingShorts) return (pendingShort s)
   when (unShortOpt so /= first) (err $ E.SawWrongPendingShort first)
-  lift $ put s { pendingShort = toTextNonEmpty rest } 
+  lift $ put s { pendingShort = toTextNonEmpty rest }
+  increment
   return so
 
 nonPendingShortOpt :: (E.Error e) => ShortOpt -> ParserSE s e ShortOpt
@@ -135,6 +141,7 @@ nonPendingShortOpt so = ParserSE $ do
   when (letter == '-') $ err E.SawNewStopper
   lift $ put s { pendingShort = toTextNonEmpty arg
                , remaining = as }
+  increment
   return so
 
 exactLongOpt :: (E.Error e)
@@ -153,6 +160,7 @@ exactLongOpt lo = ParserSE $ do
   when (X.null word && isNothing afterEq) (err E.SawNewStopper)
   when (word /= unLongOpt lo) $ err (E.SawWrongLongArg word)
   lift $ put s { remaining = xs }
+  increment
   return (lo, afterEq)
 
 -- | Takes a single Text and returns a tuple, where the first element
@@ -190,6 +198,7 @@ approxLongOpt ts = ParserSE $ do
     [] -> err (E.SawNoMatches word)
     (m:[]) -> do
       lift $ put s { remaining = xs }
+      increment
       return (word, m, afterEq)
     _ -> err (E.SawMultipleMatches matches word)
 
@@ -201,6 +210,7 @@ pendingShortOptArg = ParserSE $ do
   let f (TextNonEmpty c t) = return (c `cons` t)
   a <- maybe (err E.SawNoPendingShortArg) f (pendingShort s)
   lift $ put s { pendingShort = Nothing }
+  increment
   return a
 
 stopper :: (E.Error e) => ParserSE s e ()
@@ -214,6 +224,7 @@ stopper = ParserSE $ do
     r -> return r
   when (not $ pack "--" `isPrefixOf` x) (err E.SawNotStopper)
   when (X.length x /= 2) (err E.SawNotStopper)
+  increment
   lift $ put s { sawStopper = True
                , remaining = xs }
 
@@ -239,6 +250,7 @@ nextArg = ParserSE $ do
     [] -> err E.SawNoArgsLeft
     r -> return r
   lift $ put s { remaining = xs }
+  increment
   return x
 
 -- | Returns the next string on the command line as long as there are
@@ -257,6 +269,7 @@ nonOptionPosArg = ParserSE $ do
     Nothing -> return ()
     _ -> return ()
   lift $ put s { remaining = xs }
+  increment
   return x
 
 
