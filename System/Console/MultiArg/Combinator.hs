@@ -9,7 +9,7 @@ import System.Console.MultiArg.Prim
   ( (<|>), ParserSE, zero, try, approxLongOpt,
     nextArg, pendingShortOptArg, nonOptionPosArg,
     pendingShortOpt, nonPendingShortOpt, many,
-    exactLongOpt, nextArg )
+    exactLongOpt, nextArg, (<?>))
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt )
 import qualified System.Console.MultiArg.Error as E
@@ -131,7 +131,7 @@ longSingleArg l = do
   case mt of
     (Just t) -> return (lo, t)
     Nothing -> do
-      a <- nextArg
+      a <- nextArg <?> const (E.unexpected E.ExpLongOptArg E.SawNoArgsLeft)
       return (l, a)
 
 longDoubleArg :: (Error e)

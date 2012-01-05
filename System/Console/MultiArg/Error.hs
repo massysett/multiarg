@@ -17,7 +17,7 @@ instance Error SimpleError where
 data Expecting = ExpCharOpt ShortOpt
                  | ExpExactLong LongOpt
                  | ExpApproxLong (Set LongOpt)
-                 | ExpPendingLongOptArg
+                 | ExpLongOptArg
                  | ExpPendingShortArg
                  | ExpStopper
                  | ExpNextArg
