@@ -285,7 +285,8 @@ nextArg = ParserSE $ do
 
 -- | Returns the next string on the command line as long as there are
 -- no pendings and as long as the next string does not begin with a
--- dash.
+-- dash. If there has already been a stopper, then will return the
+-- next string even if it starts with a dash.
 nonOptionPosArg :: (E.Error e) => ParserSE s e Text
 nonOptionPosArg = ParserSE $ do
   let err saw = throwT $ unexpected E.ExpNonOptionPosArg saw
@@ -294,23 +295,23 @@ nonOptionPosArg = ParserSE $ do
   (x:xs) <- case remaining s of
     [] -> err E.SawNoArgsLeft
     r -> return r
-  case textHead x of
-    Just ('-', _) -> err $ E.SawLeadingDashArg x
-    Nothing -> return ()
-    _ -> return ()
+  result <- if sawStopper s
+            then return x
+            else case textHead x of
+              Just ('-', _) -> err $ E.SawLeadingDashArg x              
+              _ -> return x
   lift $ put s { remaining = xs }
   increment
-  return x
-
+  return result
 
 parseRepeat :: ParseSt s
           -> (ParseSt s -> (Exceptional e a, ParseSt s))
-          -> ([a], ParseSt s)
+          -> ([a], ParseSt s, e, ParseSt s)
 parseRepeat st1 f = case f st1 of
   (Success a, st') -> let
-    (ls, finalSt) = parseRepeat st' f
-    in (a : ls, finalSt)
-  (Exception _, _) -> ([], st1)
+    (ls, finalGoodSt, failure, finalBadSt) = parseRepeat st' f
+    in (a : ls, finalGoodSt, failure, finalBadSt)
+  (Exception e, st') -> ([], st1, e, st')
 
 many :: ParserSE s e a -> ParserSE s e [a]
 many (ParserSE l) = ParserSE $ do
@@ -319,9 +320,10 @@ many (ParserSE l) = ParserSE $ do
              . flip runStateT st
              . runExceptionalT
              $ l
-      (result, finalSt) = parseRepeat s f
-  lift $ put finalSt
-  return result
+      (result, finalGoodSt, failure, finalBadSt) = parseRepeat s f
+  if noConsumed finalGoodSt finalBadSt
+    then (lift . put $ finalGoodSt) >> return result
+    else (lift . put $ finalBadSt) >> throwT failure
 
 -- | Succeeds if there is no more input left.
 end :: (E.Error e) => ParserSE s e ()

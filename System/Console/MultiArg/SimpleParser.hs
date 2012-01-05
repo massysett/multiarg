@@ -42,6 +42,8 @@ data Result o =
                  , vArgs :: [String] }
 
   | PosArg { posArg :: String }
+    
+  | Stopper
   deriving Show
 
 parse :: (Show o)
@@ -53,11 +55,17 @@ parse os ss = toEither $ runParser (map pack ss) (parser os)
 parser :: (Show o) => [OptSpec o] -> Parser [Result o]
 parser os = do
   let e = E.unexpected E.ExpOptionOrPosArg E.SawNoOptionOrPosArg
-      optsAndPosArgs = choice e (optSpecs ++ [posArgParser])
+      optsAndPosArgs =
+        choice e (optSpecs ++ [posArgParser, stopperParser])
       optSpecs = map optSpec os
   rs <- many optsAndPosArgs
-  --end
+  end
   return rs
+
+stopperParser :: Parser (Result o)
+stopperParser = do
+  stopper
+  return Stopper
 
 posArgParser :: Parser (Result o)
 posArgParser = do
