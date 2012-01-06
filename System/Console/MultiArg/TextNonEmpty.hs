@@ -1,7 +1,11 @@
 module System.Console.MultiArg.TextNonEmpty where
 
-import Test.QuickCheck ( Arbitrary ( arbitrary ) )
-import System.Console.MultiArg.QuickCheckHelpers ( randText )
+import Test.QuickCheck
+  ( Arbitrary ( arbitrary ), CoArbitrary ( coarbitrary ),
+    (><), variant )
+import System.Console.MultiArg.QuickCheckHelpers 
+  ( randText, WText(WText), unWText )
+                                                   
 import Data.Text ( Text )
 
 data TextNonEmpty = TextNonEmpty Char Text
@@ -12,3 +16,8 @@ instance Arbitrary TextNonEmpty where
     c <- arbitrary
     t <- randText
     return $ TextNonEmpty c t
+
+instance CoArbitrary TextNonEmpty where
+  coarbitrary (TextNonEmpty c t)  = vc >< vt where
+    vc = coarbitrary c
+    vt = coarbitrary (WText t)

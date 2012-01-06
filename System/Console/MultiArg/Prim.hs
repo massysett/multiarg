@@ -66,7 +66,10 @@ import Data.Set ( Set )
 import Control.Monad ( when, liftM )
 import Control.Monad.Trans.Class ( lift )
 import Test.QuickCheck ( Arbitrary ( arbitrary ),
-                         suchThat )
+                         suchThat,
+                         CoArbitrary ( coarbitrary ),
+                         (><) )
+import System.Console.MultiArg.QuickCheckHelpers ( WText(WText) )
 import Test.QuickCheck.Gen ( oneof )
 import Text.Printf ( printf )
 import Data.Maybe ( isNothing, isJust, fromJust, fromMaybe )
@@ -102,6 +105,13 @@ instance Arbitrary ParseStNoUser where
     c <- arbitrary
     return . ParseStNoUser $ ParseSt ps rem ss () c
 
+instance CoArbitrary ParseStNoUser where
+  coarbitrary (ParseStNoUser (ParseSt ps r ss u c)) =
+    coarbitrary ps
+    >< coarbitrary (map WText r)
+    >< coarbitrary ss
+    >< coarbitrary u
+    >< coarbitrary c
 
 defaultState :: s -> [Text] -> ParseSt s
 defaultState user ts = ParseSt { pendingShort = Nothing
@@ -116,6 +126,16 @@ defaultState user ts = ParseSt { pendingShort = Nothing
 newtype ParserSE s e a =
   ParserSE { unParserSE :: ExceptionalT e (State (ParseSt s)) a }
   deriving (Monad, Functor, Applicative)
+
+newtype TestParserSE =
+  TestParserSE { unTestParserSE :: ParserSE () E.SimpleError Int }
+  
+newtype WExceptional e a =
+  WExceptional { unWExceptional :: Exceptional e a }
+                       deriving Show
+
+instance Arbitrary TestParserSE where
+  arbitrary = undefined
 
 -- | A parser without user state (more precisely, its user state is
 -- the empty tuple) but with a parameterizable error type. @ParserE e
