@@ -47,28 +47,28 @@ module System.Console.MultiArg.Prim (
 import qualified System.Console.MultiArg.Error as E
 import System.Console.MultiArg.Error ( unexpected )
 import System.Console.MultiArg.Option
-  ( TextNonEmpty ( TextNonEmpty ),
-    ShortOpt,
+  (ShortOpt,
     unShortOpt,
     LongOpt,
     unLongOpt )
+import System.Console.MultiArg.TextNonEmpty
+  ( TextNonEmpty ( TextNonEmpty ) )
 import Control.Applicative ( Applicative )
 import Control.Monad.Exception.Synchronous
   ( ExceptionalT, runExceptionalT, throwT, Exceptional(Success, Exception) )
 import Control.Monad.Trans.State.Lazy ( State, get, runState, put,
                                         modify, runStateT )
 import Data.Functor.Identity ( runIdentity )
-import qualified Control.Monad.Trans.State.Lazy as St
-import Data.Text ( Text, pack, unpack, isPrefixOf, cons )
+import Data.Text ( Text, pack, isPrefixOf, cons )
 import qualified Data.Text as X
 import qualified Data.Set as Set
 import Data.Set ( Set )
-import Control.Monad ( when, liftM )
+import Control.Monad ( when )
 import Control.Monad.Trans.Class ( lift )
 import Test.QuickCheck ( Arbitrary ( arbitrary ),
                          suchThat )
 import Text.Printf ( printf )
-import Data.Maybe ( isNothing, fromMaybe )
+import Data.Maybe ( isNothing )
 
 textHead :: Text -> Maybe (Char, Text)
 textHead t = case X.null t of
@@ -98,7 +98,7 @@ defaultState user ts = ParseSt { pendingShort = Nothing
 -- top of a State monad. @ParserSE s e a@ is a parser with user state
 -- s, error type e, and return type a.
 newtype ParserSE s e a =
-  ParserSE { unParserSE :: ExceptionalT e (State (ParseSt s)) a }
+  ParserSE { _unParserSE :: ExceptionalT e (State (ParseSt s)) a }
   deriving (Monad, Functor, Applicative)
 
 -- | A parser without user state (more precisely, its user state is
@@ -145,8 +145,8 @@ zero e = ParserSE $ throwT e
   s <- lift get
   let (a1, s') = flip runState s . runExceptionalT $ l
   case a1 of
-    (Success g) -> l
-    (Exception f) ->
+    (Success _) -> l
+    (Exception _) ->
       if noConsumed s s' then r else l
 
 infixr 1 <|>
@@ -165,7 +165,7 @@ noConsumed old new = counter old >= counter new
   s <- lift get
   let (a1, s') = flip runState s . runExceptionalT $ l
   case a1 of
-    (Success g) -> l
+    (Success _) -> l
     (Exception e') ->
       if noConsumed s s' then throwT (f e') else l
 
@@ -175,7 +175,7 @@ infix 0 <?>
 -- the state has been modified.
 increment :: ParseSt s -> ExceptionalT e (State (ParseSt s)) ()
 increment s = lift (put s) >>
-  lift (modify (\s -> s { counter = succ . counter $ s } ))
+  lift (modify (\st -> st { counter = succ . counter $ st } ))
 
 -- | Parses only pending short options. Fails without consuming any
 -- input if there has already been a stopper or if there are no
@@ -471,7 +471,7 @@ parseTill :: ParseSt s
              -> Till a s e b
 parseTill s fr ff = case ff s of
   (Success b, st') -> Till [] st' (Success b)
-  (Exception e, st') -> case fr s of
+  (Exception _, _) -> case fr s of
     (Exception re, st'') -> Till [] st'' (Exception re)
     (Success a, st'') -> let
       t = parseTill st'' fr ff

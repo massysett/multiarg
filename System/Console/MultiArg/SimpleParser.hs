@@ -10,11 +10,10 @@ module System.Console.MultiArg.SimpleParser (
 import System.Console.MultiArg.Prim
 import System.Console.MultiArg.Combinator
 import System.Console.MultiArg.Option
-import System.Console.MultiArg.Prim ( runParser )
 import Control.Monad.Exception.Synchronous ( toEither )
 import System.Console.MultiArg.Error ( SimpleError )
 import qualified System.Console.MultiArg.Error as E
-import Data.Text ( Text, pack, unpack )
+import Data.Text ( pack, unpack )
 import System.Environment ( getArgs )
 
 data ArgSpec = SNoArg | SOptionalArg | SOneArg | STwoArg | SVariableArgs
@@ -65,11 +64,13 @@ parseNoIntersperse os = do
   (rs, firstArg) <- manyTill (opts <?> expOptionOrPosArg) afterArgs
   case firstArg of
     EndOfInput -> return rs
-    fa -> do
+    (FirstArg s) -> do
       as <- noIntersperseArgs
-      let first = case fa of
-            (FirstArg s) -> PosArg s
-            AAStopper -> Stopper
+      let first = PosArg s
+      return $ rs ++ ( first : as )
+    AAStopper -> do
+      as <- noIntersperseArgs
+      let first = Stopper
       return $ rs ++ ( first : as )
 
 noIntersperseArgs :: Parser [Result o]

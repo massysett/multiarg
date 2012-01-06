@@ -1,7 +1,8 @@
 module System.Console.MultiArg.Error where
 
 import System.Console.MultiArg.Option
-  ( LongOpt, ShortOpt, TextNonEmpty )
+  ( LongOpt, ShortOpt )
+import System.Console.MultiArg.TextNonEmpty ( TextNonEmpty )
 import Data.Text ( Text )
 import Data.Set ( Set )
 
@@ -12,7 +13,7 @@ class Error e where
 data SimpleError = SimpleError Expecting Saw deriving (Show, Eq)
 instance Error SimpleError where
   unexpected = SimpleError
-  changeExpecting exp' (SimpleError exp s) = SimpleError exp' s
+  changeExpecting exp' (SimpleError _ s) = SimpleError exp' s
 
 data Expecting = ExpCharOpt ShortOpt
                  | ExpExactLong LongOpt
