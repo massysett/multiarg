@@ -1,5 +1,48 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module System.Console.MultiArg.Prim where
+-- | Parser primitives. These are the only functions that have access
+-- to the internals of the parser.
+module System.Console.MultiArg.Prim (
+  -- * Parser types
+  ParserSE,
+  ParserE,
+  Parser,
+  
+  -- * Running a parser
+  runParserSE,
+  runParser,
+  
+  -- * Higher-level parser combinators
+  zero,
+  (<|>),
+  (<?>),
+  try,
+  many,
+  manyTill,
+  
+  -- * Parsers
+  -- ** Short options and arguments
+  pendingShortOpt,
+  nonPendingShortOpt,
+  pendingShortOptArg,  
+  
+  -- ** Long options and arguments
+  exactLongOpt,
+  approxLongOpt,
+
+  -- ** Stoppers
+  stopper,
+  
+  -- ** Positional (non-option) arguments
+  nextArg,
+  nonOptionPosArg,
+  
+  -- ** Miscellaneous
+  end,
+  
+  -- * User state
+  getSt,
+  putSt,
+  modifySt ) where
 
 import qualified System.Console.MultiArg.Error as E
 import System.Console.MultiArg.Error ( unexpected )
@@ -51,13 +94,26 @@ defaultState user ts = ParseSt { pendingShort = Nothing
                                , userState = user
                                , counter = 0 }
 
+-- | The parser type. Inside this is an ExceptionalT transformer on
+-- top of a State monad. @ParserSE s e a@ is a parser with user state
+-- s, error type e, and return type a.
 newtype ParserSE s e a =
   ParserSE { unParserSE :: ExceptionalT e (State (ParseSt s)) a }
   deriving (Monad, Functor, Applicative)
 
+-- | A parser without user state (more precisely, its user state is
+-- the empty tuple) but with a parameterizable error type. @ParserE e
+-- a@ is a parser user state @()@ and error type e and return type a.
 type ParserE e a = ParserSE ()
+
+-- | A parser without user state (more precisely, its user state is
+-- the empty tuple) and with an error type SimpleError. @Parser a@ is
+-- a parser with user state @()@ and error type SimpleError and return
+-- type a.
 type Parser a = ParserSE () E.SimpleError a
 
+-- | Runs a parser with user state s. Returns the parse result and the
+-- new user state.
 runParserSE :: s
                -> [Text]
                -> ParserSE s e a
@@ -68,6 +124,7 @@ runParserSE user ts (ParserSE c) = let
     ((Success g), s') -> Success (g, userState s')
     ((Exception e), _) -> Exception e
 
+-- | Runs a parser without user state.
 runParser :: [Text]
              -> ParserSE () e a
              -> Exceptional e a
@@ -94,8 +151,10 @@ zero e = ParserSE $ throwT e
 
 infixr 1 <|>
 
+-- | noConsumed old new sees if any input was consumed between when
+-- old was the state and when new was the state.
 noConsumed :: ParseSt st -> ParseSt st -> Bool
-noConsumed l r = counter l == counter r
+noConsumed old new = counter old >= counter new
 
 -- | Runs the parser given. If it succeeds, then returns the result of
 -- the parser. If it fails and consumes input, returns the result of
@@ -112,10 +171,11 @@ noConsumed l r = counter l == counter r
 
 infix 0 <?>
 
--- | Increments the count of how many times the state has been
--- modified.
-increment :: ExceptionalT e (State (ParseSt s)) ()
-increment = lift $ modify (\s -> s { counter = succ . counter $ s } )
+-- | Installs a new state, and increments the count of how many times
+-- the state has been modified.
+increment :: ParseSt s -> ExceptionalT e (State (ParseSt s)) ()
+increment s = lift (put s) >>
+  lift (modify (\s -> s { counter = succ . counter $ s } ))
 
 -- | Parses only pending short options. Fails without consuming any
 -- input if there has already been a stopper or if there are no
@@ -131,21 +191,27 @@ pendingShortOpt so = ParserSE $ do
   (TextNonEmpty first rest) <-
     maybe (err E.SawNoPendingShorts) return (pendingShort s)
   when (unShortOpt so /= first) (err $ E.SawWrongPendingShort first)
-  lift $ put s { pendingShort = toTextNonEmpty rest }
-  increment
+  increment s { pendingShort = toTextNonEmpty rest }
   return so
 
 -- | Parses only non-pending short options. Fails without consuming
 -- any input if, in order:
 --
 -- * there are pending short options
+--
 -- * there has already been a stopper
+--
 -- * there are no arguments left to parse
+--
 -- * the next argument is an empty string
+--
 -- * the next argument does not begin with a dash
+--
 -- * the next argument is a single dash
+--
 -- * the next argument is a short option but it does not match
 --   the one given
+--
 -- * the next argument is a stopper
 --
 -- Otherwise, consumes the next argument, puts any remaining letters
@@ -170,11 +236,38 @@ nonPendingShortOpt so = ParserSE $ do
     (Just w) -> return w
   when (letter /= unShortOpt so) $ err (E.SawWrongShortArg letter)
   when (letter == '-') $ err E.SawNewStopper
-  lift $ put s { pendingShort = toTextNonEmpty arg
-               , remaining = as }
-  increment
+  increment s { pendingShort = toTextNonEmpty arg
+              , remaining = as }
   return so
 
+-- | Parses an exact long option. That is, the text of the
+-- command-line option must exactly match the text of the
+-- option. Returns the option, and any argument that is attached to
+-- the same word of the option with an equal sign (for example,
+-- @--follow=\/dev\/random@ will return @Just \"\/dev\/random\"@ for the
+-- argument.) If there is no equal sign, returns Nothing for the
+-- argument. If there is an equal sign but there is nothing after it,
+-- returns @Just \"\"@ for the argument.
+--
+-- If you do not want your long option to have equal signs and
+-- GNU-style option arguments, wrap this parser in something that will
+-- fail if there is an option argument.
+--
+-- Fails without consuming any input if:
+--
+-- * there are pending short options
+--
+-- * a stopper has been parsed
+--
+-- * there are no arguments left on the command line
+--
+-- * the next argument on the command line does not begin with
+--   two dashes
+--
+-- * the next argument on the command line is @--@ (a stopper)
+--
+-- * the next argument on the command line does begin with two
+--   dashes but its text does not match the argument we're looking for
 exactLongOpt :: (E.Error e)
                 => LongOpt
                 -> ParserSE s e (LongOpt, Maybe Text)
@@ -190,8 +283,7 @@ exactLongOpt lo = ParserSE $ do
   when (pre /= pack "--") $ err (E.SawNotLongArg x)
   when (X.null word && isNothing afterEq) (err E.SawNewStopper)
   when (word /= unLongOpt lo) $ err (E.SawWrongLongArg word)
-  lift $ put s { remaining = xs }
-  increment
+  increment s { remaining = xs }
   return (lo, afterEq)
 
 -- | Takes a single Text and returns a tuple, where the first element
@@ -228,11 +320,23 @@ approxLongOpt ts = ParserSE $ do
   case Set.toList matches of
     [] -> err (E.SawNoMatches word)
     (m:[]) -> do
-      lift $ put s { remaining = xs }
-      increment
+      increment s { remaining = xs }
       return (word, m, afterEq)
     _ -> err (E.SawMultipleMatches matches word)
 
+-- | Parses only pending short option arguments. For example, for the
+-- @tail@ command, if you enter the option @-c25@, then after parsing
+-- the @-c@ option the @25@ becomes a pending short option argument
+-- because it was in the same command line argument as the @-c@.
+--
+-- Fails without consuming any input if:
+--
+-- * a stopper has already been parsed
+--
+-- * there are no pending short option arguments
+--
+-- On success, returns the text of the pending short option argument
+-- (this text cannot be empty).
 pendingShortOptArg :: (E.Error e) => ParserSE s e Text
 pendingShortOptArg = ParserSE $ do
   let err saw = throwT $ unexpected E.ExpPendingShortArg saw
@@ -240,12 +344,11 @@ pendingShortOptArg = ParserSE $ do
   when (sawStopper s) (err E.SawAlreadyStopper)
   let f (TextNonEmpty c t) = return (c `cons` t)
   a <- maybe (err E.SawNoPendingShortArg) f (pendingShort s)
-  lift $ put s { pendingShort = Nothing }
-  increment
+  increment s { pendingShort = Nothing }
   return a
 
--- FIXME BROKEN the increment is going to be overwritten by the
--- put. Make a single function that puts and increments.
+-- | Parses a "stopper" - that is, a double dash. Changes the internal
+-- state of the parser to reflect that a stopper has been seen.
 stopper :: (E.Error e) => ParserSE s e ()
 stopper = ParserSE $ do
   let err saw = throwT $ unexpected E.ExpStopper saw
@@ -257,10 +360,10 @@ stopper = ParserSE $ do
     r -> return r
   when (not $ pack "--" `isPrefixOf` x) (err E.SawNotStopper)
   when (X.length x /= 2) (err E.SawNotStopper)
-  increment
-  lift $ put s { sawStopper = True
+  increment s { sawStopper = True
                , remaining = xs }
 
+{-
 require :: ParserSE s e a -> ParserSE s e a
 require (ParserSE l) = ParserSE $ do
   s <- lift get
@@ -271,7 +374,10 @@ require (ParserSE l) = ParserSE $ do
       if noConsumed s s'
       then increment >> l
       else l
+-}
 
+-- | try p behaves just like p, but if p fails, try p will not consume
+-- any input.
 try :: ParserSE s e a -> ParserSE s e a
 try (ParserSE l) = ParserSE $ do
   s <- lift get
@@ -293,8 +399,7 @@ nextArg = ParserSE $ do
   (x:xs) <- case remaining s of
     [] -> err E.SawNoArgsLeft
     r -> return r
-  lift $ put s { remaining = xs }
-  increment
+  increment s { remaining = xs }
   return x
 
 -- | Returns the next string on the command line as long as there are
@@ -314,8 +419,7 @@ nonOptionPosArg = ParserSE $ do
             else case textHead x of
               Just ('-', _) -> err $ E.SawLeadingDashArg x              
               _ -> return x
-  lift $ put s { remaining = xs }
-  increment
+  increment s { remaining = xs }
   return result
 
 parseRepeat :: ParseSt s
@@ -327,6 +431,18 @@ parseRepeat st1 f = case f st1 of
     in (a : ls, finalGoodSt, failure, finalBadSt)
   (Exception e, st') -> ([], st1, e, st')
 
+-- | manyTill p e runs parser p repeatedly until parser e succeeds.
+--
+-- More precisely, first it runs parser e. If parser e succeeds, then
+-- manyTill returns the result of all the preceding successful parses
+-- of p. If parser e fails (it does not matter whether e consumed any
+-- input or not), manyTill runs parser p again. What happens next
+-- depends on whether p succeeded or failed. If p succeeded, then the
+-- loop starts over by running parser e again. If p failed (it does
+-- not matter whether it consumed any input or not), then manyTill
+-- fails. The state of the parser is updated to reflect its state
+-- after the failed run of p, and the parser is left in a failed
+-- state.
 manyTill :: ParserSE s e a
             -> ParserSE s e b
             -> ParserSE s e ([a], b)
@@ -361,6 +477,20 @@ parseTill s fr ff = case ff s of
       t = parseTill st'' fr ff
       in Till (a : goods t) (lastSt t) (lastResult t)
 
+-- | many p runs parser p zero or more times and returns all the
+-- results. This proceeds like this: parser p is run and, if it
+-- succeeds, the result is saved and parser p is run
+-- again. Repeat. Eventually this will have to fail. If the last run
+-- of parser p fails without consuming any input, then many p runs
+-- successfully. The state of the parser is updated to reflect the
+-- successful runs of p. If the last run of parser p fails but it
+-- consumed input, then many p fails. The state of the parser is
+-- updated to reflect the state up to and including the run that
+-- partially consumed input. The parser is left in a failed state.
+--
+-- This semantic can come in handy. For example you might run a parser
+-- multiple times that parses an option and arguments to the
+-- option. If the arguments fail to parse, then many will fail.
 many :: ParserSE s e a -> ParserSE s e [a]
 many (ParserSE l) = ParserSE $ do
   s <- lift get
@@ -400,6 +530,4 @@ modifySt f = ParserSE $ do
   let u = f (userState s)
   lift $ put s { userState = u }
 
-------------------------------------------------------------
-------------------------------------------------------------
 

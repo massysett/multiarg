@@ -1,3 +1,8 @@
+-- | This is sample code using "System.Console.MultiArg". This could be
+-- a command-line parser for the version of the Unix command @tail@
+-- that is included with GNU coreutils version 8.5. "main" simply gets
+-- the command line arguments, parses them, and prints out what was
+-- parsed.
 module System.Console.MultiArg.SampleParser where
 
 import System.Console.MultiArg
@@ -20,5 +25,5 @@ specs = [ OptSpec "bytes"        "c" ["bytes"]                 SOneArg
 main :: IO ()
 main = do
   as <- getArgs
-  let r = parse StopOptions specs as
+  let r = parse Intersperse specs as
   print r

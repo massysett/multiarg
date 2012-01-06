@@ -28,6 +28,7 @@ Library
         System.Console.MultiArg.Error,
         System.Console.MultiArg.Option,
         System.Console.MultiArg.Prim,
+        System.Console.MultiArg.SampleParser,
         System.Console.MultiArg.SimpleParser
 
     ghc-options: -Wall
