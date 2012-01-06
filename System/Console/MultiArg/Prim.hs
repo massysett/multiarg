@@ -63,12 +63,14 @@ import Data.Text ( Text, pack, isPrefixOf, cons )
 import qualified Data.Text as X
 import qualified Data.Set as Set
 import Data.Set ( Set )
-import Control.Monad ( when )
+import Control.Monad ( when, liftM )
 import Control.Monad.Trans.Class ( lift )
 import Test.QuickCheck ( Arbitrary ( arbitrary ),
                          suchThat )
+import Test.QuickCheck.Gen ( oneof )
 import Text.Printf ( printf )
-import Data.Maybe ( isNothing )
+import Data.Maybe ( isNothing, isJust, fromJust, fromMaybe )
+import Data.List ( find )
 
 textHead :: Text -> Maybe (Char, Text)
 textHead t = case X.null t of
@@ -87,6 +89,20 @@ data ParseSt s = ParseSt { pendingShort :: Maybe TextNonEmpty
                          , counter :: Int
                          } deriving (Show, Eq)
 
+-- | For testing
+newtype ParseStNoUser =
+  ParseStNoUser { unParseStNoUser :: ParseSt () }
+  deriving Show
+
+instance Arbitrary ParseStNoUser where
+  arbitrary = do
+    ps <- arbitrary
+    rem <- liftM (map pack) arbitrary
+    ss <- arbitrary
+    c <- arbitrary
+    return . ParseStNoUser $ ParseSt ps rem ss () c
+
+
 defaultState :: s -> [Text] -> ParseSt s
 defaultState user ts = ParseSt { pendingShort = Nothing
                                , remaining = ts
@@ -98,7 +114,7 @@ defaultState user ts = ParseSt { pendingShort = Nothing
 -- top of a State monad. @ParserSE s e a@ is a parser with user state
 -- s, error type e, and return type a.
 newtype ParserSE s e a =
-  ParserSE { _unParserSE :: ExceptionalT e (State (ParseSt s)) a }
+  ParserSE { unParserSE :: ExceptionalT e (State (ParseSt s)) a }
   deriving (Monad, Functor, Applicative)
 
 -- | A parser without user state (more precisely, its user state is
@@ -155,6 +171,12 @@ infixr 1 <|>
 -- old was the state and when new was the state.
 noConsumed :: ParseSt st -> ParseSt st -> Bool
 noConsumed old new = counter old >= counter new
+
+prop_noConsumed :: (ParseStNoUser, ParseStNoUser) -> Bool
+prop_noConsumed p = ex == act where
+  ((ParseStNoUser old), (ParseStNoUser new)) = p
+  act = noConsumed old new
+  ex = if counter new <= counter old then True else False
 
 -- | Runs the parser given. If it succeeds, then returns the result of
 -- the parser. If it fails and consumes input, returns the result of
@@ -422,6 +444,55 @@ nonOptionPosArg = ParserSE $ do
   increment s { remaining = xs }
   return result
 
+newtype ParseStNonOptionPosArg =
+  ParseStNonOptionPosArg { unParseStNonOptionPosArg :: ParseSt () }
+  deriving Show
+
+instance Arbitrary ParseStNonOptionPosArg where
+  arbitrary = do
+    ps <- oneof [ return Nothing, arbitrary ]
+    let textDash = do
+          let first = '-'
+          rest <- arbitrary
+          return $ pack (first : rest)
+    let remWithDash = do
+          first <- textDash
+          rest <- liftM (map pack) arbitrary
+          return (first : rest)
+    rem <- oneof [ remWithDash, liftM (map pack) arbitrary ]
+    ss <- arbitrary
+    counter <- arbitrary
+    return
+      . ParseStNonOptionPosArg
+      $ ParseSt ps rem ss () counter
+
+prop_nonOptionPosArg :: ParseStNonOptionPosArg -> Bool
+prop_nonOptionPosArg (ParseStNonOptionPosArg st) = ex == act where
+  act = unwrapParser nonOptionPosArg st
+        :: (Exceptional E.SimpleError Text, ParseSt ())
+  ex = (err, st') where
+    st' = case err of
+      (Success _) -> st { remaining = tail (remaining st)
+                        , counter = succ (counter st) }
+      (Exception _) -> st
+    err = switch good [stillPending, noArgs, noStop, leadingDash]
+    uxp e = Exception (unexpected E.ExpNonOptionPosArg e)
+    good = (Success (head (remaining st)))
+    stillPending = (test, res) where
+      test = isJust (pendingShort st)
+      res = uxp (E.SawStillPendingShorts (fromJust (pendingShort st)))
+    noArgs = (test, res) where
+      test = null (remaining st)
+      res = uxp (E.SawNoArgsLeft)
+    noStop = (test, res) where
+      test = sawStopper st
+      res = (Success (head (remaining st)))
+    leadingDash = (test, res) where
+      test = (fst . fromJust . textHead . head . remaining $ st)
+             == '-'
+      res = uxp (E.SawLeadingDashArg (head . remaining $ st))
+      
+
 parseRepeat :: ParseSt s
           -> (ParseSt s -> (Exceptional e a, ParseSt s))
           -> ([a], ParseSt s, e, ParseSt s)
@@ -512,6 +583,28 @@ end = ParserSE $ do
   when (not . null . remaining $ s) (err E.SawMoreInput)
   return ()
 
+unwrapParser :: ParserSE s e a
+                -> ParseSt s
+                -> (Exceptional e a, ParseSt s)
+unwrapParser p s = (runState
+                   . runExceptionalT
+                   . unParserSE
+                   $ p) s
+
+prop_end :: ParseStNoUser -> Bool
+prop_end (ParseStNoUser st) = exp == actual where
+  actual = unwrapParser end st
+           :: (Exceptional E.SimpleError (), ParseSt ())
+  exp = if isJust (pendingShort st)
+        then (Exception (unexpected E.ExpEnd
+                         (E.SawStillPendingShorts
+                          (fromJust . pendingShort $ st)))
+              , st)
+        else if not . null . remaining $ st
+             then (Exception (unexpected E.ExpEnd
+                                 (E.SawMoreInput)), st)
+             else (Success (), st)
+
 -- | Gets the user state.
 getSt :: ParserSE s e s
 getSt = ParserSE $ do
@@ -530,4 +623,7 @@ modifySt f = ParserSE $ do
   let u = f (userState s)
   lift $ put s { userState = u }
 
-
+switch :: r -> [(Bool, r)] -> r
+switch i ls = case find fst ls of
+  (Just (_, r)) -> r
+  Nothing -> i
