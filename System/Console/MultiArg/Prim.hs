@@ -55,9 +55,11 @@ import System.Console.MultiArg.TextNonEmpty
   ( TextNonEmpty ( TextNonEmpty ) )
 import Control.Applicative ( Applicative )
 import Control.Monad.Exception.Synchronous
-  ( ExceptionalT, runExceptionalT, throwT, Exceptional(Success, Exception) )
-import Control.Monad.Trans.State.Lazy ( State, get, runState, put,
-                                        modify, runStateT )
+  ( ExceptionalT (ExceptionalT), runExceptionalT, throwT,
+    Exceptional(Success, Exception) )
+import Control.Monad.Trans.State.Lazy
+  ( State, state, get, runState, put,
+    modify, runStateT )
 import Data.Functor.Identity ( runIdentity )
 import Data.Text ( Text, pack, isPrefixOf, cons )
 import qualified Data.Text as X
@@ -68,7 +70,7 @@ import Control.Monad.Trans.Class ( lift )
 import Test.QuickCheck ( Arbitrary ( arbitrary ),
                          suchThat,
                          CoArbitrary ( coarbitrary ),
-                         (><) )
+                         (><), choose )
 import System.Console.MultiArg.QuickCheckHelpers ( WText(WText) )
 import Test.QuickCheck.Gen ( oneof )
 import Text.Printf ( printf )
@@ -130,12 +132,29 @@ newtype ParserSE s e a =
 newtype TestParserSE =
   TestParserSE { unTestParserSE :: ParserSE () E.SimpleError Int }
   
-newtype WExceptional e a =
-  WExceptional { unWExceptional :: Exceptional e a }
-                       deriving Show
+instance Show TestParserSE where
+  show _ = "<TestParserSE>"
 
 instance Arbitrary TestParserSE where
-  arbitrary = undefined
+  arbitrary = do
+    f <- arbitrary
+    let f' st = (unwrappedRes, unwrappedSt) where
+          unwrappedRes = unWExceptional wrappedRes
+          unwrappedSt = unParseStNoUser wrappedSt
+          (wrappedRes, wrappedSt) = f (ParseStNoUser st)
+    return (TestParserSE (ParserSE (ExceptionalT (state f'))))
+
+newtype WExceptional =
+  WExceptional { unWExceptional :: Exceptional E.SimpleError Int }
+                       deriving Show
+
+instance Arbitrary WExceptional where
+  arbitrary = do
+    i <- choose (0, 1 :: Int)
+    r <- case i of
+      0 -> liftM Exception arbitrary
+      1 -> liftM Success arbitrary
+    return . WExceptional $ r
 
 -- | A parser without user state (more precisely, its user state is
 -- the empty tuple) but with a parameterizable error type. @ParserE e
@@ -186,6 +205,18 @@ zero e = ParserSE $ throwT e
       if noConsumed s s' then r else l
 
 infixr 1 <|>
+
+prop_choose :: (TestParserSE, TestParserSE, ParseStNoUser) -> Bool
+prop_choose (tp1, tp2, stWrapped) = ex == act where
+  p1 = unTestParserSE $ tp1
+  p2 = unTestParserSE $ tp2
+  st = unParseStNoUser stWrapped
+  act = ((runState . runExceptionalT) (unParserSE (p1 <|> p2))) st
+  fn = case result of
+    (Success _) -> p1
+    (Exception _) -> if noConsumed st st' then p2 else p1
+  (result, st') = (runState . runExceptionalT $ (unParserSE p1)) st
+  ex = (runState. runExceptionalT $ (unParserSE fn)) st
 
 -- | noConsumed old new sees if any input was consumed between when
 -- old was the state and when new was the state.
