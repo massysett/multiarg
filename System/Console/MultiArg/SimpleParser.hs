@@ -61,7 +61,8 @@ parseNoIntersperse :: Show o => [OptSpec o] -> Parser [Result o]
 parseNoIntersperse os = do
   let e = E.unexpected E.ExpOptionOrPosArg E.SawNoOptionOrPosArg
       opts = choice e (map optSpec os)
-  (rs, firstArg) <- manyTill (opts <?> expOptionOrPosArg) afterArgs
+  rs <- manyTill (opts <?> expOptionOrPosArg) afterArgs
+  firstArg <- afterArgs
   case firstArg of
     EndOfInput -> return rs
     (FirstArg s) -> do
@@ -104,7 +105,7 @@ parseIntersperse os = do
       optsAndStopper = choice e (optSpecs ++ rest)
       rest = [stopperParser, posArgParser]
       optSpecs = map optSpec os
-  (rs, _) <- manyTill (optsAndStopper <?> expOptionOrPosArg) end
+  rs <- manyTill (optsAndStopper <?> expOptionOrPosArg) end
   end <?> error "the end parser should always succeed"
   return rs
 

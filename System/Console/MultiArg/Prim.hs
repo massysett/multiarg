@@ -535,8 +535,8 @@ parseRepeat st1 f = case f st1 of
 -- after the failed run of p, and the parser is left in a failed
 -- state.
 manyTill :: ParserSE s e a
-            -> ParserSE s e b
-            -> ParserSE s e ([a], b)
+            -> ParserSE s e end
+            -> ParserSE s e [a]
 manyTill (ParserSE r) (ParserSE f) = ParserSE $ do
   s <- lift get
   let unwrap fn st = runIdentity
@@ -547,26 +547,24 @@ manyTill (ParserSE r) (ParserSE f) = ParserSE $ do
       ff = unwrap f
       till = parseTill s fr ff
   lift (put (lastSt till))
-  case lastResult till of
-    (Success g) -> return (goods till, g)
-    (Exception e) -> throwT e
+  maybe (return . goods $ till) throwT (lastFailure till)
 
-data Till a s e b =
+data Till a s e =
   Till { goods :: [a]
        , lastSt :: ParseSt s
-       , lastResult :: Exceptional e b }
+       , lastFailure :: Maybe e }
 
 parseTill :: ParseSt s
              -> (ParseSt s -> (Exceptional e a, ParseSt s))
              -> (ParseSt s -> (Exceptional e b, ParseSt s))
-             -> Till a s e b
+             -> Till a s e
 parseTill s fr ff = case ff s of
-  (Success b, st') -> Till [] st' (Success b)
+  (Success _, _) -> Till [] s Nothing
   (Exception _, _) -> case fr s of
-    (Exception re, st'') -> Till [] st'' (Exception re)
+    (Exception re, st'') -> Till [] st'' (Just re)
     (Success a, st'') -> let
       t = parseTill st'' fr ff
-      in Till (a : goods t) (lastSt t) (lastResult t)
+      in Till (a : goods t) (lastSt t) (lastFailure t)
 
 -- | many p runs parser p zero or more times and returns all the
 -- results. This proceeds like this: parser p is run and, if it
