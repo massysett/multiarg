@@ -134,10 +134,10 @@ shortOpt l s c = let
       (_, mt) <- shortOptionalArg so
       return (OptionalArg l (fmap unpack mt))
     SOneArg -> do
-      (_, t) <- shortSingleArg so
+      (_, t) <- shortOneArg so
       return (OneArg l (unpack t))
     STwoArg -> do
-      (_, t1, t2) <- shortDoubleArg so
+      (_, t1, t2) <- shortTwoArg so
       return (TwoArg l (unpack t1) (unpack t2))
     SVariableArgs -> do
       (_, ts) <- shortVariableArg so
@@ -153,10 +153,10 @@ longOpt l s c = let
       (_, mt) <- longOptionalArg lo
       return (OptionalArg l (fmap unpack mt))
     SOneArg -> do
-      (_, t) <- longSingleArg lo
+      (_, t) <- longOneArg lo
       return (OneArg l (unpack t))
     STwoArg -> do
-      (_, t1, t2) <- longDoubleArg lo
+      (_, t1, t2) <- longTwoArg lo
       return (TwoArg l (unpack t1) (unpack t2))
     SVariableArgs -> do
       (_, ts) <- longVariableArg lo

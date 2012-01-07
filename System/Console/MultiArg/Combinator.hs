@@ -1,8 +1,7 @@
 -- | Combinators that are useful for building command-line
 -- parsers. These build off the functions in
 -- "System.Console.MultiArg.Prim". Unlike those functions, these
--- functions have no access to the internals of the parser. TODO
--- rename these from Single, Double, etc to OneArg, TwoArg, etc.
+-- functions have no access to the internals of the parser.
 module System.Console.MultiArg.Combinator (
   -- * Parser combinators
   option,
@@ -12,8 +11,8 @@ module System.Console.MultiArg.Combinator (
   -- * Short options
   shortNoArg,
   shortOptionalArg,
-  shortSingleArg,
-  shortDoubleArg,
+  shortOneArg,
+  shortTwoArg,
   shortVariableArg,
 
   -- * Long options
@@ -22,8 +21,8 @@ module System.Console.MultiArg.Combinator (
   matchNonGNUApproxLongOpt,
   longNoArg,
   longOptionalArg,
-  longSingleArg,
-  longDoubleArg,
+  longOneArg,
+  longTwoArg,
   longVariableArg,
   
   -- * Other words
@@ -152,10 +151,10 @@ shortOptionalArg s = do
 -- | Parses short options that take a required argument.  The argument
 -- can be combined in the same word with the short option (@-c42@) or
 -- can be in the ext word (@-c 42@).
-shortSingleArg :: (Error e) =>
+shortOneArg :: (Error e) =>
                ShortOpt
                -> ParserSE s e (ShortOpt, Text)
-shortSingleArg s = do
+shortOneArg s = do
   so <- shortNoArg s
   a <- pendingShortOptArg <|> nextArg
   return (so, a)
@@ -164,11 +163,11 @@ shortSingleArg s = do
 -- argument can be combined in the same word with the short option
 -- (@-c42@) or can be in the ext word (@-c 42@). The next argument
 -- will have to be in a separate word.
-shortDoubleArg :: (Error e)
+shortTwoArg :: (Error e)
                => ShortOpt
                -> ParserSE s e (ShortOpt, Text, Text)
-shortDoubleArg s = do
-  (so, a1) <- shortSingleArg s
+shortTwoArg s = do
+  (so, a1) <- shortOneArg s
   a2 <- nextArg
   return (so, a1, a2)
 
@@ -207,10 +206,10 @@ longOptionalArg = exactLongOpt
 -- | Parses long options that take a single, required argument. The
 -- single argument can be given GNU-style (@--lines=20@) or non-GNU
 -- style in separate words (@lines 20@).
-longSingleArg :: (Error e)
+longOneArg :: (Error e)
                  => LongOpt
                  -> ParserSE s e (LongOpt, Text)
-longSingleArg l = do
+longOneArg l = do
   (lo, mt) <- longOptionalArg l
   case mt of
     (Just t) -> return (lo, t)
@@ -222,10 +221,10 @@ longSingleArg l = do
 -- first argument can be given GNU-style (@--lines=20@) or non-GNU
 -- style in separate words (@lines 20@). The second argument will have
 -- to be in a separate word.
-longDoubleArg :: (Error e)
+longTwoArg :: (Error e)
                  => LongOpt
                  -> ParserSE s e (LongOpt, Text, Text)
-longDoubleArg l = do
+longTwoArg l = do
   (lo, mt) <- longOptionalArg l
   case mt of
     (Just t) -> do
