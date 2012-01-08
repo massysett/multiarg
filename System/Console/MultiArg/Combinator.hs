@@ -58,15 +58,15 @@ option x p = p <|> return x
 optionMaybe :: ParserSE s e a -> ParserSE s e (Maybe a)
 optionMaybe p = option Nothing (liftM Just p)
 
--- | @choice e ps@ runs parsers from ps in order. choice returns the
+-- | @choice ps@ runs parsers from ps in order. choice returns the
 -- first parser that either succeeds or fails while consuming
 -- input. For each parser, if it fails without consuming any input,
 -- the next parser is tried. If all the parsers fail without consuming
--- any input, the last parser will be returned. If ps is empty,
--- returns e. (TODO just have this take some sort of non-empty list;
--- that would make more sense.)
-choice :: e -> [ParserSE s e a] -> ParserSE s e a
-choice e ls = foldl (<|>) (zero e) ls
+-- any input, the last parser will be returned.
+--
+-- This function is partial. It is bottom if applied to an empty list.
+choice :: [ParserSE s e a] -> ParserSE s e a
+choice = foldl1 (<|>)
 
 -- | Parses only a non-GNU style long option (that is, one that does
 -- not take option arguments by attaching them with an equal sign,

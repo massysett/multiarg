@@ -59,8 +59,7 @@ parse i os ss = toEither $ runParser (map pack ss) (f os) where
 
 parseNoIntersperse :: Show o => [OptSpec o] -> Parser [Result o]
 parseNoIntersperse os = do
-  let e = E.unexpected E.ExpOptionOrPosArg E.SawNoOptionOrPosArg
-      opts = choice e (map optSpec os)
+  let opts = choice . map optSpec $ os
   rs <- manyTill (opts <?> expOptionOrPosArg) afterArgs
   firstArg <- afterArgs
   case firstArg of
@@ -101,8 +100,7 @@ expOptionOrPosArg (E.SimpleError _ s) =
 
 parseIntersperse :: (Show o) => [OptSpec o] -> Parser [Result o]
 parseIntersperse os = do
-  let e = E.unexpected E.ExpOptionOrPosArg E.SawNoOptionOrPosArg
-      optsAndStopper = choice e (optSpecs ++ rest)
+  let optsAndStopper = choice $ optSpecs ++ rest
       rest = [stopperParser, posArgParser]
       optSpecs = map optSpec os
   rs <- manyTill (optsAndStopper <?> expOptionOrPosArg) end
@@ -118,8 +116,7 @@ posArgParser = do
   return $ PosArg (unpack a)
 
 optSpec :: (Show o) => OptSpec o -> Parser (Result o)
-optSpec o = choice e ls where
-  e = E.unexpected (E.ExpOption (pack . show $ o)) E.SawNoOption
+optSpec o = choice ls where
   ls = shorts ++ longs
   shorts = map (shortOpt (label o) (argSpec o)) (shortOpts o)
   longs = map (longOpt (label o) (argSpec o)) (longOpts o)
