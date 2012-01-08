@@ -63,10 +63,8 @@ optionMaybe p = option Nothing (liftM Just p)
 -- input. For each parser, if it fails without consuming any input,
 -- the next parser is tried. If all the parsers fail without consuming
 -- any input, the last parser will be returned.
---
--- This function is partial. It is bottom if applied to an empty list.
-choice :: [ParserSE s e a] -> ParserSE s e a
-choice = foldl1 (<|>)
+choice :: ParserSE s e a -> [ParserSE s e a] -> ParserSE s e a
+choice = foldl (<|>)
 
 -- | Parses only a non-GNU style long option (that is, one that does
 -- not take option arguments by attaching them with an equal sign,
@@ -251,3 +249,12 @@ longVariableArg l = do
   (lo, mt) <- longOptionalArg l
   rest <- many nonOptionPosArg
   return (lo, maybe rest (:rest) mt)
+
+-- | Parses at least one long option and a variable number of short
+-- and long options that take no arguments.
+mixedNoArg :: (Error e)
+              => LongOpt
+              -> [LongOpt]
+              -> [ShortOpt]
+              -> ParserSE s e (Either ShortOpt LongOpt)
+mixedNoArg l ls ss = undefined
