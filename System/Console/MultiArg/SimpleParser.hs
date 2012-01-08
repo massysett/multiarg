@@ -10,7 +10,6 @@ module System.Console.MultiArg.SimpleParser (
 import System.Console.MultiArg.Prim
 import System.Console.MultiArg.Combinator
 import System.Console.MultiArg.Option
-import Data.List (foldl1)
 import Control.Monad.Exception.Synchronous ( toEither )
 import System.Console.MultiArg.Error ( SimpleError )
 import qualified System.Console.MultiArg.Error as E

@@ -25,6 +25,13 @@ module System.Console.MultiArg.Combinator (
   longTwoArg,
   longVariableArg,
   
+  -- * Mixed options
+  mixedNoArg,
+  mixedOptionalArg,
+  mixedOneArg,
+  mixedTwoArg,
+  mixedVariableArg,
+  
   -- * Other words
   matchApproxWord ) where
   
@@ -257,4 +264,90 @@ mixedNoArg :: (Error e)
               -> [LongOpt]
               -> [ShortOpt]
               -> ParserSE s e (Either ShortOpt LongOpt)
-mixedNoArg l ls ss = undefined
+mixedNoArg l ls ss = choice f (longs ++ shorts) where
+  toLong lo = do
+    r <- longNoArg lo
+    return $ Right r
+  toShort so = do
+    s <- shortNoArg so
+    return $ Left s
+  f = toLong l
+  longs = map toLong ls
+  shorts = map toShort ss
+
+-- | Parses at least one long option and a variable number of short
+-- and long options that take an optional argument.
+mixedOptionalArg ::
+  (Error e)
+  => LongOpt
+  -> [LongOpt]
+  -> [ShortOpt]
+  -> ParserSE s e ((Either ShortOpt LongOpt), Maybe Text)
+mixedOptionalArg l ls ss = choice f (longs ++ shorts) where
+  toLong lo = do
+    (o, a) <- longOptionalArg lo
+    return $ (Right o, a)
+  toShort so = do
+    (o, a) <- shortOptionalArg so
+    return $ (Left o, a)
+  f = toLong l
+  longs = map toLong ls
+  shorts = map toShort ss
+
+-- | Parses at least one long option and additional long and short
+-- options that take one argument.
+mixedOneArg ::
+  (Error e)
+  => LongOpt
+  -> [LongOpt]
+  -> [ShortOpt]
+  -> ParserSE s e ((Either ShortOpt LongOpt), Text)
+mixedOneArg l ls ss = choice f (longs ++ shorts) where
+  toLong lo = do
+    (o, a) <- longOneArg lo
+    return (Right o, a)
+  toShort lo = do
+    (o, a) <- shortOneArg lo
+    return (Left o, a)
+  f = toLong l
+  longs = map toLong ls
+  shorts = map toShort ss
+
+-- | Parses at least one long option and additonal long and short
+-- options that take two arguments.
+mixedTwoArg ::
+  (Error e)
+  => LongOpt
+  -> [LongOpt]
+  -> [ShortOpt]
+  -> ParserSE s e ((Either ShortOpt LongOpt), Text, Text)
+mixedTwoArg l ls ss = choice f (longs ++ shorts) where
+  toLong lo = do
+    (o, a1, a2) <- longTwoArg lo
+    return (Right o, a1, a2)
+  toShort lo = do
+    (o, a1, a2) <- shortTwoArg lo
+    return (Left o, a1, a2)
+  f = toLong l
+  longs = map toLong ls
+  shorts = map toShort ss
+
+-- | Parses at least one long option and additional long and short
+-- options that take a variable number of arguments.
+mixedVariableArg ::
+  (Error e)
+  => LongOpt
+  -> [LongOpt]
+  -> [ShortOpt]
+  -> ParserSE s e ((Either ShortOpt LongOpt), [Text])
+mixedVariableArg l ls ss = choice f (longs ++ shorts) where
+  toLong lo = do
+    (o, a) <- longVariableArg lo
+    return (Right o, a)
+  toShort lo = do
+    (o, a) <- shortVariableArg lo
+    return (Left o, a)
+  f = toLong l
+  longs = map toLong ls
+  shorts = map toShort ss
+
