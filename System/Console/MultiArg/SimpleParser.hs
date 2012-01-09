@@ -3,6 +3,7 @@ module System.Console.MultiArg.SimpleParser (
   OptSpec(..),
   Intersperse(..),
   Result(..),
+  Args(..),
   SimpleError,
   getArgs,
   parse ) where
@@ -12,7 +13,6 @@ import System.Console.MultiArg.Combinator
 import System.Console.MultiArg.Option
 import Control.Monad.Exception.Synchronous ( toEither )
 import System.Console.MultiArg.Error ( SimpleError )
-import qualified System.Console.MultiArg.Error as E
 import Data.Text ( pack, unpack )
 import System.Environment ( getArgs )
 
@@ -52,7 +52,7 @@ parse i os ss = toEither $ runParser (map pack ss) (f os) where
 parseNoIntersperse :: [OptSpec] -> Parser [Result]
 parseNoIntersperse os = do
   let opts = foldl1 (<|>) . map optSpec $ os
-  rs <- manyTill (opts <?> expOptionOrPosArg) afterArgs
+  rs <- manyTill opts afterArgs
   firstArg <- afterArgs
   case firstArg of
     EndOfInput -> return rs
@@ -86,16 +86,12 @@ afterArgs = parseFirst <|> parseEnd <|> parseStopper where
     _ <- stopperParser
     return AAStopper
 
-expOptionOrPosArg :: E.SimpleError -> E.SimpleError
-expOptionOrPosArg (E.SimpleError _ s) =
-  E.SimpleError E.ExpOptionOrPosArg s
-
 parseIntersperse :: [OptSpec] -> Parser [Result]
 parseIntersperse os = do
   let optsAndStopper = foldl1 (<|>) $ optSpecs ++ rest
       rest = [stopperParser, posArgParser]
       optSpecs = map optSpec os
-  rs <- manyTill (optsAndStopper <?> expOptionOrPosArg) end
+  rs <- manyTill optsAndStopper end
   end <?> error "the end parser should always succeed"
   return rs
 

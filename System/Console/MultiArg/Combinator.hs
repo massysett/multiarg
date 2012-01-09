@@ -219,7 +219,7 @@ longOneArg l = do
   case mt of
     (Just t) -> return (lo, t)
     Nothing -> do
-      a <- nextArg <?> const (E.unexpected E.ExpLongOptArg E.SawNoArgsLeft)
+      a <- nextArg <?> E.unexpected E.ExpLongOptArg E.SawNoArgsLeft
       return (l, a)
 
 -- | Parses long options that take a double, required argument. The

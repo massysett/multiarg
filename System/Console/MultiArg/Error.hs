@@ -14,12 +14,10 @@ import Control.Monad ( liftM, liftM2 )
 
 class Error e where
   unexpected :: Expecting -> Saw -> e
-  changeExpecting :: Expecting -> e -> e
 
 data SimpleError = SimpleError Expecting Saw deriving (Show, Eq)
 instance Error SimpleError where
   unexpected = SimpleError
-  changeExpecting exp' (SimpleError _ s) = SimpleError exp' s
 
 instance Arbitrary SimpleError where
   arbitrary = liftM2 SimpleError arbitrary arbitrary
@@ -63,7 +61,7 @@ instance Arbitrary Expecting where
             (liftM (Set.fromList . map pack) arbitrary)
       14 -> liftM ExpOption randText
       15 -> return ExpOptionOrPosArg
-
+      _  -> error "should never happen"
 
 data Saw = SawNoPendingShorts
          | SawWrongPendingShort Char
@@ -125,3 +123,4 @@ instance Arbitrary Saw where
             randText
       24 -> return SawNoOption
       25 -> return SawNoOptionOrPosArg
+      _  -> error "should never happen"

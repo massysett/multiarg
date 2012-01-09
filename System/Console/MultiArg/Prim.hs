@@ -154,6 +154,7 @@ instance Arbitrary WExceptional where
     r <- case i of
       0 -> liftM Exception arbitrary
       1 -> liftM Success arbitrary
+      _ -> error "should never happen"
     return . WExceptional $ r
 
 -- | A parser without user state (more precisely, its user state is
@@ -233,14 +234,14 @@ prop_noConsumed p = ex == act where
 -- the parser. If it fails and consumes input, returns the result of
 -- the parser. If it fails without consuming any input, then changes
 -- the error using the function given.
-(<?>) :: ParserSE s e a -> (e -> e) -> ParserSE s e a
-(<?>) (ParserSE l) f = ParserSE $ do
+(<?>) :: ParserSE s e a -> e -> ParserSE s e a
+(<?>) (ParserSE l) e = ParserSE $ do
   s <- lift get
   let (a1, s') = flip runState s . runExceptionalT $ l
   case a1 of
     (Success _) -> l
     (Exception e') ->
-      if noConsumed s s' then throwT (f e') else l
+      if noConsumed s s' then throwT e else l
 
 infix 0 <?>
 
