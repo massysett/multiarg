@@ -22,8 +22,8 @@ specs = [ OptSpec "bytes"               "c" []          SOneArg
         , OptSpec "version"             ""  []          SNoArg
         ]
 
-main :: IO ()
-main = do
+sampleMain :: IO ()
+sampleMain = do
   as <- getArgs
   let r = parse Intersperse specs as
   print r
