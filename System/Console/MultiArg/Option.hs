@@ -23,7 +23,7 @@ import System.Console.MultiArg.QuickCheckHelpers ( randText )
 -- the command line and consist of a single letter. That single letter
 -- cannot be a dash. Any other Unicode character is good (including
 -- pathological ones like newlines).
-newtype ShortOpt = ShortOpt { unShortOpt :: Char } deriving (Show, Eq)
+newtype ShortOpt = ShortOpt { unShortOpt :: Char } deriving (Show, Eq, Ord)
 instance Arbitrary ShortOpt where
   arbitrary = do
     c <- suchThat arbitrary (/= '-')
