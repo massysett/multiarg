@@ -19,45 +19,37 @@ import System.Environment ( getArgs )
 data ArgSpec = SNoArg | SOptionalArg | SOneArg | STwoArg | SVariableArgs
              deriving Show
 
-data OptSpec o = OptSpec { label :: o
-                         , shortOpts :: [Char]
-                         , longOpts :: [String]
-                         , argSpec :: ArgSpec }
+data OptSpec = OptSpec { longOpt :: String
+                       , shortOpts :: [Char]
+                       , longOpts :: [String]
+                       , argSpec :: ArgSpec }
                deriving Show
 
-data Result o =
-  NoArg { fLabel :: o }
+data Result = PosArg   { posArg :: String }
+              | Stopper
+              | Option { label :: String
+                       , args :: Args }
+              deriving Show
 
-  | OptionalArg { oLabel :: o
-                , oArg :: Maybe String }
-
-  | OneArg   { sLabel :: o
-             , sArg1 :: String }
-
-  | TwoArg   { dLabel :: o
-             , dArg1 :: String
-             , dArg2 :: String }
-
-  | VariableArgs { vLabel :: o
-                 , vArgs :: [String] }
-
-  | PosArg { posArg :: String }
-    
-  | Stopper
+data Args = NoArg
+          | OptionalArg  { oArg :: Maybe String }
+          | OneArg       { sArg1 :: String }
+          | TwoArg       { tArg1 :: String
+                         , tArg2 :: String }
+          | VariableArgs { vArgs :: [String] }
   deriving Show
 
 data Intersperse = Intersperse | StopOptions
 
-parse :: (Show o)
-         => Intersperse
-         -> [OptSpec o]
+parse :: Intersperse
+         -> [OptSpec]
          -> [String]
-         -> Either SimpleError [Result o]
+         -> Either SimpleError [Result]
 parse i os ss = toEither $ runParser (map pack ss) (f os) where
   f = case i of Intersperse -> parseIntersperse
                 StopOptions -> parseNoIntersperse
 
-parseNoIntersperse :: Show o => [OptSpec o] -> Parser [Result o]
+parseNoIntersperse :: [OptSpec] -> Parser [Result]
 parseNoIntersperse os = do
   let opts = foldl1 (<|>) . map optSpec $ os
   rs <- manyTill (opts <?> expOptionOrPosArg) afterArgs
@@ -73,7 +65,7 @@ parseNoIntersperse os = do
       let first = Stopper
       return $ rs ++ ( first : as )
 
-noIntersperseArgs :: Parser [Result o]
+noIntersperseArgs :: Parser [Result]
 noIntersperseArgs = do
   as <- many nextArg
   let r = map PosArg . map unpack $ as
@@ -98,7 +90,7 @@ expOptionOrPosArg :: E.SimpleError -> E.SimpleError
 expOptionOrPosArg (E.SimpleError _ s) =
   E.SimpleError E.ExpOptionOrPosArg s
 
-parseIntersperse :: (Show o) => [OptSpec o] -> Parser [Result o]
+parseIntersperse :: [OptSpec] -> Parser [Result]
 parseIntersperse os = do
   let optsAndStopper = foldl1 (<|>) $ optSpecs ++ rest
       rest = [stopperParser, posArgParser]
@@ -107,55 +99,34 @@ parseIntersperse os = do
   end <?> error "the end parser should always succeed"
   return rs
 
-stopperParser :: Parser (Result o)
+stopperParser :: Parser Result
 stopperParser = stopper >> return Stopper
 
-posArgParser :: Parser (Result o)
+posArgParser :: Parser Result
 posArgParser = do
   a <- nonOptionPosArg
   return $ PosArg (unpack a)
 
-optSpec :: (Show o) => OptSpec o -> Parser (Result o)
-optSpec o = foldl1 (<|>) ls where
-  ls = shorts ++ longs
-  shorts = map (shortOpt (label o) (argSpec o)) (shortOpts o)
-  longs = map (longOpt (label o) (argSpec o)) (longOpts o)
+optSpec :: OptSpec -> Parser Result
+optSpec o = let
+  lo = makeLongOpt . pack . longOpt $ o
+  ss = map makeShortOpt . shortOpts $ o
+  ls = map makeLongOpt . map pack . longOpts $ o
+  opt = return . Option (longOpt o)
+  in case argSpec o of
+    SNoArg -> do
+      _ <- mixedNoArg lo ls ss
+      opt NoArg
+    SOptionalArg -> do
+      (_, a) <- mixedOptionalArg lo ls ss
+      opt (OptionalArg . fmap unpack $ a)
+    SOneArg -> do
+      (_, a) <- mixedOneArg lo ls ss
+      opt (OneArg . unpack $ a)
+    STwoArg -> do
+      (_, a1, a2) <- mixedTwoArg lo ls ss
+      opt (TwoArg (unpack a1) (unpack a2))
+    SVariableArgs -> do
+      (_, as) <- mixedVariableArg lo ls ss
+      opt (VariableArgs . map unpack $ as)
 
-shortOpt :: o -> ArgSpec -> Char -> Parser (Result o)
-shortOpt l s c = let
-  so = makeShortOpt c in case s of
-    SNoArg -> do
-      _ <- shortNoArg so
-      return (NoArg l)
-    SOptionalArg -> do
-      (_, mt) <- shortOptionalArg so
-      return (OptionalArg l (fmap unpack mt))
-    SOneArg -> do
-      (_, t) <- shortOneArg so
-      return (OneArg l (unpack t))
-    STwoArg -> do
-      (_, t1, t2) <- shortTwoArg so
-      return (TwoArg l (unpack t1) (unpack t2))
-    SVariableArgs -> do
-      (_, ts) <- shortVariableArg so
-      return (VariableArgs l (map unpack ts))
-    
-longOpt :: o -> ArgSpec -> String -> Parser (Result o)
-longOpt l s c = let
-  lo = makeLongOpt (pack c) in case s of
-    SNoArg -> do
-      _ <- longNoArg lo
-      return (NoArg l)
-    SOptionalArg -> do
-      (_, mt) <- longOptionalArg lo
-      return (OptionalArg l (fmap unpack mt))
-    SOneArg -> do
-      (_, t) <- longOneArg lo
-      return (OneArg l (unpack t))
-    STwoArg -> do
-      (_, t1, t2) <- longTwoArg lo
-      return (TwoArg l (unpack t1) (unpack t2))
-    SVariableArgs -> do
-      (_, ts) <- longVariableArg lo
-      return (VariableArgs l (map unpack ts))
-    
