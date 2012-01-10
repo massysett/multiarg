@@ -22,29 +22,31 @@ instance Error SimpleError where
 instance Arbitrary SimpleError where
   arbitrary = liftM2 SimpleError arbitrary arbitrary
 
-data Expecting = ExpCharOpt ShortOpt
-                 | ExpExactLong LongOpt
-                 | ExpApproxLong (Set LongOpt)
-                 | ExpLongOptArg
-                 | ExpPendingShortArg
-                 | ExpStopper
-                 | ExpNextArg
-                 | ExpNonOptionPosArg
-                 | ExpEnd
-                 | ExpNonGNUExactLong LongOpt
-                 | ExpNonGNUApproxLong (Set LongOpt)
-                 | ExpMatchingApproxLong LongOpt (Set LongOpt)
-                 | ExpNonGNUMatchingApproxLong LongOpt (Set LongOpt)
-                 | ExpApproxWord (Set Text)
-                 | ExpOption Text
-                 | ExpOptionOrPosArg
-                 deriving (Show, Eq)
+data Expecting = ExpPendingShortOpt ShortOpt
+               | ExpNonPendingShortOpt ShortOpt
+               | ExpExactLong LongOpt
+               | ExpApproxLong (Set LongOpt)
+               | ExpLongOptArg
+               | ExpPendingShortArg
+               | ExpStopper
+               | ExpNextArg
+               | ExpNonOptionPosArg
+               | ExpEnd
+               | ExpNonGNUExactLong LongOpt
+               | ExpNonGNUApproxLong (Set LongOpt)
+               | ExpMatchingApproxLong LongOpt (Set LongOpt)
+               | ExpNonGNUMatchingApproxLong LongOpt (Set LongOpt)
+               | ExpApproxWord (Set Text)
+               | ExpOption Text
+               | ExpOptionOrPosArg
+               deriving (Show, Eq)
 
 instance Arbitrary Expecting where
   arbitrary = do
-    i <- choose (0, (15 :: Int))
+    i <- choose (0, (16 :: Int))
     case i of
-      0 -> liftM ExpCharOpt arbitrary
+      0 -> liftM ExpPendingShortOpt arbitrary
+      16 -> liftM ExpNonPendingShortOpt arbitrary
       1 -> liftM ExpExactLong arbitrary
       2 -> liftM ExpApproxLong randSet
       3 -> return ExpLongOptArg

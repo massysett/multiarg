@@ -260,7 +260,7 @@ increment s = lift (put s) >>
 pendingShortOpt :: (E.Error e) => ShortOpt -> ParserSE s e ShortOpt
 pendingShortOpt so = ParserSE $ do
   s <- lift get
-  let err saw = throwT (unexpected (E.ExpCharOpt so) saw)
+  let err saw = throwT (unexpected (E.ExpPendingShortOpt so) saw)
   when (sawStopper s) (err E.SawAlreadyStopper)
   (TextNonEmpty first rest) <-
     maybe (err E.SawNoPendingShorts) return (pendingShort s)
@@ -294,7 +294,7 @@ pendingShortOpt so = ParserSE $ do
 -- parsed.
 nonPendingShortOpt :: (E.Error e) => ShortOpt -> ParserSE s e ShortOpt
 nonPendingShortOpt so = ParserSE $ do
-  let err saw = throwT (unexpected (E.ExpCharOpt so) saw)
+  let err saw = throwT (unexpected (E.ExpNonPendingShortOpt so) saw)
   s <- lift get
   maybe (return ()) (err . E.SawStillPendingShorts) (pendingShort s)
   when (sawStopper s) (err E.SawAlreadyStopper)
