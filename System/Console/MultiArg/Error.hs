@@ -2,8 +2,10 @@ module System.Console.MultiArg.Error where
 
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt, unLongOpt, unShortOpt )
-import System.Console.MultiArg.TextNonEmpty ( TextNonEmpty )
-import Data.Text ( Text, pack, append, singleton, intercalate)
+import System.Console.MultiArg.TextNonEmpty
+  ( TextNonEmpty ( TextNonEmpty ) )
+import Data.Text ( Text, pack, append, singleton, intercalate,
+                   snoc )
 import Data.Set ( Set )
 import qualified Data.Set as Set
 import Test.QuickCheck ( Arbitrary ( arbitrary ), 
@@ -17,7 +19,12 @@ class Error e where
 
 data SimpleError = SimpleError Expecting Saw deriving (Show, Eq)
 printError :: SimpleError -> Text
-printError = undefined
+printError (SimpleError e s) =
+  pack "Error parsing command line input.\n"
+  `append` pack "expected to see: "
+  `append` printExpecting e `snoc` '\n'
+  `append` pack "actually saw: "
+  `append` printSaw s `snoc` '\n'
 
 instance Error SimpleError where
   unexpected = SimpleError
@@ -84,7 +91,6 @@ printExpecting e = case e of
     (pack "short option: ") `append` (singleton . unShortOpt $ s)
 
 
-
 instance Arbitrary Expecting where
   arbitrary = do
     i <- choose (0, (15 :: Int))
@@ -120,8 +126,6 @@ data Saw = SawNoPendingShorts
          | SawWrongLongArg Text
          | SawNoMatches Text
          | SawMultipleMatches (Set LongOpt) Text
-         | SawPendingLong Text
-         | SawNoPendingLongArg
          | SawNoPendingShortArg
          | SawAlreadyStopper
          | SawNewStopper
@@ -138,11 +142,68 @@ data Saw = SawNoPendingShorts
          deriving (Show, Eq)
 
 printSaw :: Saw -> Text
-printSaw = undefined
+printSaw s = case s of
+  SawNoPendingShorts -> pack "no pending short options"
+  (SawWrongPendingShort c) ->
+    pack "unexpected short option: " `snoc` c
+  SawNoArgsLeft -> pack "no command line words remaining"
+  SawEmptyArg -> pack "command line word that is the empty string"
+  SawSingleDashArg ->
+    pack "command line word that is a single hyphen (\"-\")"
+  (SawStillPendingShorts (TextNonEmpty first rest)) ->
+    pack "pending short options: " `snoc` first
+    `append` rest
+  (SawNotShortArg t) ->
+    pack "word that is not a short option: " `append` t
+  (SawWrongShortArg c) ->
+    pack "wrong short option: " `snoc` c
+  (SawNotLongArg t) ->
+    pack "word that is not a long option: " `append` t
+  (SawWrongLongArg t) ->
+    pack "wrong long option: " `append` t
+  (SawNoMatches t) ->
+    pack "word that does not match the available choices: "
+    `append` t
+  (SawMultipleMatches ss t) ->
+    pack "word matches more than one of the available choices. "
+    `append` pack "word given: " `append` t
+    `append` pack " matches these words: "
+    `append` (intercalate (pack ", ") (map unLongOpt . Set.toList $ ss))
+  SawNoPendingShortArg -> pack "no short argument"
+  SawAlreadyStopper ->
+    pack "already seen a stopper (\"--\")"
+  SawNewStopper ->
+    pack "new stopper (\"--\")"
+  SawNotStopper ->
+    pack "word that is not a stopper (\"--\")"
+  (SawLeadingDashArg t) ->
+    pack "word with a leading hyphen: " `append` t
+  SawMoreInput ->
+    pack "additional words remaining on command line"
+  (SawGNULongOptArg t) ->
+    pack "attached argument for option that does not take one: "
+    `append` t
+  (SawNotMatchingApproxLong t lo) ->
+    pack "long argument that does not match expected one. "
+    `append` pack "argument given: " `append` t
+    `append` pack "argument expected: " `append` unLongOpt lo
+  (SawMatchingApproxLongWithArg t) ->
+    pack "long argument that matches expected long argument, but it "
+    `append` pack "has an attached argument. Text of argument: "
+    `append` t
+  (SawMultipleApproxMatches ms m) ->
+    pack "multiple words match the one given. Word given: " `append` m
+    `append` pack "possible matches: "
+    `append` (intercalate (pack ", ") (Set.toList ms))
+  SawNoOption ->
+    pack "word that is not an option"
+  SawNoOptionOrPosArg ->
+    pack "not an option or positional argument"
+  (SawTextError t) -> t
 
 instance Arbitrary Saw where
   arbitrary = do
-    i <- choose (0, (25 :: Int))
+    i <- choose (0, (23 :: Int))
     case i of
       0 -> return SawNoPendingShorts
       1 -> liftM SawWrongPendingShort arbitrary
@@ -156,20 +217,18 @@ instance Arbitrary Saw where
       9 -> liftM SawWrongLongArg randText
       10 -> liftM SawNoMatches randText
       11 -> liftM2 SawMultipleMatches randSet randText
-      12 -> liftM SawPendingLong randText
-      13 -> return SawNoPendingLongArg
-      14 -> return SawNoPendingShortArg
-      15 -> return SawAlreadyStopper
-      16 -> return SawNewStopper
-      17 -> return SawNotStopper
-      18 -> liftM SawLeadingDashArg randText
-      19 -> return SawMoreInput
-      20 -> liftM SawGNULongOptArg randText
-      21 -> liftM2 SawNotMatchingApproxLong randText arbitrary
-      22 -> liftM SawMatchingApproxLongWithArg randText
-      23 -> liftM2 SawMultipleApproxMatches
+      12 -> return SawNoPendingShortArg
+      13 -> return SawAlreadyStopper
+      14 -> return SawNewStopper
+      15 -> return SawNotStopper
+      16 -> liftM SawLeadingDashArg randText
+      17 -> return SawMoreInput
+      18 -> liftM SawGNULongOptArg randText
+      19 -> liftM2 SawNotMatchingApproxLong randText arbitrary
+      20 -> liftM SawMatchingApproxLongWithArg randText
+      21 -> liftM2 SawMultipleApproxMatches
             (liftM (Set.fromList . map pack) arbitrary)
             randText
-      24 -> return SawNoOption
-      25 -> return SawNoOptionOrPosArg
+      22 -> return SawNoOption
+      23 -> return SawNoOptionOrPosArg
       _  -> error "should never happen"
