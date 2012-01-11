@@ -1,9 +1,9 @@
 module System.Console.MultiArg.Error where
 
 import System.Console.MultiArg.Option
-  ( LongOpt, ShortOpt )
+  ( LongOpt, ShortOpt, unLongOpt, unShortOpt )
 import System.Console.MultiArg.TextNonEmpty ( TextNonEmpty )
-import Data.Text ( Text, pack )
+import Data.Text ( Text, pack, append, singleton, intercalate)
 import Data.Set ( Set )
 import qualified Data.Set as Set
 import Test.QuickCheck ( Arbitrary ( arbitrary ), 
@@ -26,7 +26,6 @@ instance Arbitrary SimpleError where
   arbitrary = liftM2 SimpleError arbitrary arbitrary
 
 data Expecting = ExpPendingShortOpt ShortOpt
-               | ExpNonPendingShortOpt ShortOpt
                | ExpExactLong LongOpt
                | ExpApproxLong (Set LongOpt)
                | ExpLongOptArg
@@ -40,20 +39,57 @@ data Expecting = ExpPendingShortOpt ShortOpt
                | ExpMatchingApproxLong LongOpt (Set LongOpt)
                | ExpNonGNUMatchingApproxLong LongOpt (Set LongOpt)
                | ExpApproxWord (Set Text)
-               | ExpOption Text
                | ExpOptionOrPosArg
                | ExpTextError Text
+               | ExpNonPendingShortOpt ShortOpt
                deriving (Show, Eq)
 
 printExpecting :: Expecting -> Text
-printExpecting = undefined
+printExpecting e = case e of
+  (ExpPendingShortOpt s) ->
+    (pack "short option: ") `append` (singleton . unShortOpt $ s)
+  (ExpExactLong l) ->
+    (pack "long option: ") `append` (unLongOpt $ l)
+  (ExpApproxLong ls) ->
+    (pack "approximate long option matching one of: ") `append`
+    intercalate (pack ", ") (map unLongOpt . Set.toList $ ls)
+  ExpLongOptArg -> pack "argument to long option"
+  ExpPendingShortArg -> pack "argument to short option"
+  ExpStopper -> pack "stopper (\"--\")"
+  ExpNextArg -> pack "next word on command line"
+  ExpNonOptionPosArg ->
+    pack "word on command line not starting with a hyphen"
+  ExpEnd -> pack "end of command line input"
+  (ExpNonGNUExactLong lo) ->
+    pack "long option without an included argument: "
+    `append` (unLongOpt lo)
+  (ExpMatchingApproxLong l ls) ->
+    pack "abbreviated long option named: " `append` (unLongOpt l)
+    `append` pack "from possible abbreviated long options named: "
+    `append` (intercalate (pack ", ")
+              (map unLongOpt . Set.toList $ ls))
+  (ExpNonGNUMatchingApproxLong l ls) ->
+    pack "abbreviated long without an included argument named: "
+    `append` (unLongOpt l)
+    `append` pack "from possible abbreviated long options named: "
+    `append` (intercalate (pack ", ")
+              (map unLongOpt . Set.toList $ ls))
+  (ExpApproxWord ws) ->
+    pack "one of these abbreviated words: "
+    `append` (intercalate (pack ", ") (Set.toList $ ws))
+  ExpOptionOrPosArg ->
+    pack "option or positional argument"
+  (ExpTextError t) -> t
+  (ExpNonPendingShortOpt s) ->
+    (pack "short option: ") `append` (singleton . unShortOpt $ s)
+
+
 
 instance Arbitrary Expecting where
   arbitrary = do
-    i <- choose (0, (16 :: Int))
+    i <- choose (0, (15 :: Int))
     case i of
       0 -> liftM ExpPendingShortOpt arbitrary
-      16 -> liftM ExpNonPendingShortOpt arbitrary
       1 -> liftM ExpExactLong arbitrary
       2 -> liftM ExpApproxLong randSet
       3 -> return ExpLongOptArg
@@ -68,8 +104,8 @@ instance Arbitrary Expecting where
       12 -> liftM2 ExpNonGNUMatchingApproxLong arbitrary randSet
       13 -> liftM ExpApproxWord
             (liftM (Set.fromList . map pack) arbitrary)
-      14 -> liftM ExpOption randText
-      15 -> return ExpOptionOrPosArg
+      14 -> return ExpOptionOrPosArg
+      15 -> liftM ExpNonPendingShortOpt arbitrary
       _  -> error "should never happen"
 
 data Saw = SawNoPendingShorts
