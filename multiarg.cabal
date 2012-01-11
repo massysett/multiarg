@@ -12,6 +12,9 @@ bug-reports: omari@smileystation.com
 synopsis: Command line parser of multiple arguments
 description: Command line parser of multiple arguments
 
+Flag newbase
+    Description: Builds package with base >= 4.4.0.0.
+
 Library
     Build-depends:
         base ==4.*,
@@ -21,11 +24,21 @@ Library
         QuickCheck ==2.4.*,
         transformers == 0.2.*
         
+    -- See documentation in Pantry.Radio.Client for details
+    if flag(newbase)
+        Build-depends:
+            base >= 4.4 && < 5
+    else
+        Build-depends:
+            base < 4.4,
+            utf8-string == 0.3.7
+
 
     Exposed-modules:
         System.Console.MultiArg,
         System.Console.MultiArg.Combinator,
         System.Console.MultiArg.Error,
+        System.Console.MultiArg.GetArgs,
         System.Console.MultiArg.Option,
         System.Console.MultiArg.Prim,
         System.Console.MultiArg.QuickCheckHelpers,
