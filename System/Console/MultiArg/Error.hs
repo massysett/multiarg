@@ -16,6 +16,9 @@ class Error e where
   unexpected :: Expecting -> Saw -> e
 
 data SimpleError = SimpleError Expecting Saw deriving (Show, Eq)
+printError :: SimpleError -> Text
+printError = undefined
+
 instance Error SimpleError where
   unexpected = SimpleError
 
@@ -39,7 +42,11 @@ data Expecting = ExpPendingShortOpt ShortOpt
                | ExpApproxWord (Set Text)
                | ExpOption Text
                | ExpOptionOrPosArg
+               | ExpTextError Text
                deriving (Show, Eq)
+
+printExpecting :: Expecting -> Text
+printExpecting = undefined
 
 instance Arbitrary Expecting where
   arbitrary = do
@@ -91,7 +98,11 @@ data Saw = SawNoPendingShorts
          | SawMultipleApproxMatches (Set Text) Text
          | SawNoOption
          | SawNoOptionOrPosArg
+         | SawTextError Text
          deriving (Show, Eq)
+
+printSaw :: Saw -> Text
+printSaw = undefined
 
 instance Arbitrary Saw where
   arbitrary = do
