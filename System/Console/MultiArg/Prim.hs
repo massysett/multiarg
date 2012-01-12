@@ -545,15 +545,6 @@ prop_nonOptionPosArg (ParseStNonOptionPosArg st) = ex == act where
       res = uxp (E.SawLeadingDashArg (head . remaining $ st))
       
 
-parseRepeat :: ParseSt s
-          -> (ParseSt s -> (Exceptional e a, ParseSt s))
-          -> ([a], ParseSt s, e, ParseSt s)
-parseRepeat st1 f = case f st1 of
-  (Success a, st') -> let
-    (ls, finalGoodSt, failure, finalBadSt) = parseRepeat st' f
-    in (a : ls, finalGoodSt, failure, finalBadSt)
-  (Exception e, st') -> ([], st1, e, st')
-
 -- | manyTill p e runs parser p repeatedly until parser e succeeds.
 --
 -- More precisely, first it runs parser e. If parser e succeeds, then
@@ -566,6 +557,10 @@ parseRepeat st1 f = case f st1 of
 -- fails. The state of the parser is updated to reflect its state
 -- after the failed run of p, and the parser is left in a failed
 -- state.
+--
+-- Be particularly careful to get the order of the arguments
+-- correct. Applying this function to reversed arguments will yield
+-- bugs that are very difficult to diagnose.
 manyTill :: ParserSE s e a
             -> ParserSE s e end
             -> ParserSE s e [a]
@@ -596,7 +591,9 @@ parseTill s fr ff = case ff s of
     (Exception re, st'') -> Till [] st'' (Just re)
     (Success a, st'') -> let
       t = parseTill st'' fr ff
-      in Till (a : goods t) (lastSt t) (lastFailure t)
+      in if counter st'' == counter s
+         then error "parseTill applied to parser that takes empty list"
+         else Till (a : goods t) (lastSt t) (lastFailure t)
 
 -- | many p runs parser p zero or more times and returns all the
 -- results. This proceeds like this: parser p is run and, if it
@@ -623,6 +620,17 @@ many (ParserSE l) = ParserSE $ do
   if noConsumed finalGoodSt finalBadSt
     then (lift . put $ finalGoodSt) >> return result
     else (lift . put $ finalBadSt) >> throwT failure
+
+parseRepeat :: ParseSt s
+          -> (ParseSt s -> (Exceptional e a, ParseSt s))
+          -> ([a], ParseSt s, e, ParseSt s)
+parseRepeat st1 f = case f st1 of
+  (Success a, st') -> let
+    (ls, finalGoodSt, failure, finalBadSt) = parseRepeat st' f
+    in if noConsumed st1 st'
+       then error "parseRepeat applied to parser that takes empty list"
+       else (a : ls, finalGoodSt, failure, finalBadSt)
+  (Exception e, st') -> ([], st1, e, st')
 
 -- | Succeeds if there is no more input left.
 end :: (E.Error e) => ParserSE s e ()
