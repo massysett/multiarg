@@ -20,6 +20,7 @@ specs = [ OptSpec "bytes"               "c" []          SOneArg
         , OptSpec "verbose"             "v" []          SNoArg
         , OptSpec "help"                ""  []          SNoArg
         , OptSpec "version"             ""  []          SNoArg
+        , OptSpec "multi-file"          "M" []          SVariableArgs
         ]
 
 sampleMain :: IO ()
