@@ -15,7 +15,7 @@ import System.Console.MultiArg.QuickCheckHelpers
 import Control.Monad ( liftM, liftM2 )
 
 class Error e where
-  unexpected :: Expecting -> Saw -> e
+  parseErr :: Expecting -> Saw -> e
 
 data SimpleError = SimpleError Expecting Saw deriving (Show, Eq)
 printError :: SimpleError -> Text
@@ -27,7 +27,7 @@ printError (SimpleError e s) =
   `append` printSaw s `snoc` '\n'
 
 instance Error SimpleError where
-  unexpected = SimpleError
+  parseErr = SimpleError
 
 instance Arbitrary SimpleError where
   arbitrary = liftM2 SimpleError arbitrary arbitrary
