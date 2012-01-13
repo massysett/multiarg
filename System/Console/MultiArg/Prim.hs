@@ -201,10 +201,36 @@ zero e = ParserSE $ throwT e
   s <- lift get
   let (a1, s') = flip runState s . runExceptionalT $ l
   case a1 of
+    (Success g) -> do
+      lift $ put s'
+      return g
+    (Exception e) ->
+      if noConsumed s s'
+      then do
+        let (a2, s'') = flip runState s . runExceptionalT $ r
+        lift $ put s''
+        case a2 of
+          (Success g) -> return g
+          (Exception e') -> throwT e'
+      else do
+        lift $ put s'
+        throwT e
+
+-- The old code for <|> looked like the following commented out
+-- code. This code is broken. It runs the left parser more than once
+-- if it succeeds - it runs it once to see if it succeeds, then
+-- returns a parser that runs the parser again. This function
+-- typechecks OK but it can lead to infinite recursion bugs. It looks
+-- simpler but it is broken; do not use.
+{-
+(<|>) (ParserE l) (ParserE r) = ParserE $ do
+  s <- lift get
+  let (a1, s') = flip runState s . runExceptionalT $ l
+  case a1 of
     (Success _) -> l
     (Exception _) ->
       if noConsumed s s' then r else l
-
+-}
 infixr 1 <|>
 
 prop_choose :: (TestParserSE, TestParserSE, ParseStNoUser) -> Bool
