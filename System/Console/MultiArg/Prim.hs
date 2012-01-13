@@ -13,10 +13,10 @@ module System.Console.MultiArg.Prim (
   
   -- * Higher-level parser combinators
   zero,
-  (<|>),
+  choice,
   (<?>),
   try,
-  many,
+  --many,
   manyTill,
   
   -- * Parsers
@@ -53,7 +53,9 @@ import System.Console.MultiArg.Option
     unLongOpt )
 import System.Console.MultiArg.TextNonEmpty
   ( TextNonEmpty ( TextNonEmpty ) )
-import Control.Applicative ( Applicative )
+import Control.Applicative ( Applicative,
+                             Alternative ( empty, (<|>)) )
+import qualified Control.Applicative
 import Control.Monad.Exception.Synchronous
   ( ExceptionalT (ExceptionalT), runExceptionalT, throwT,
     Exceptional(Success, Exception) )
@@ -65,7 +67,8 @@ import Data.Text ( Text, pack, isPrefixOf, cons )
 import qualified Data.Text as X
 import qualified Data.Set as Set
 import Data.Set ( Set )
-import Control.Monad ( when, liftM )
+import Control.Monad ( when, liftM,
+                       MonadPlus(mzero, mplus) )
 import Control.Monad.Trans.Class ( lift )
 import Test.QuickCheck ( Arbitrary ( arbitrary ),
                          suchThat,
@@ -76,6 +79,7 @@ import Test.QuickCheck.Gen ( oneof )
 import Text.Printf ( printf )
 import Data.Maybe ( isNothing, isJust, fromJust, fromMaybe )
 import Data.List ( find )
+import Data.Monoid ( Monoid ( mempty, mappend ) )
 
 textHead :: Text -> Maybe (Char, Text)
 textHead t = case X.null t of
@@ -128,6 +132,19 @@ defaultState user ts = ParseSt { pendingShort = Nothing
 newtype ParserSE s e a =
   ParserSE { unParserSE :: ExceptionalT e (State (ParseSt s)) a }
   deriving (Monad, Functor, Applicative)
+
+instance (E.Error e) => MonadPlus (ParserSE s e) where
+  mzero = zero (unexpected E.ExpOtherFailure E.SawOtherFailure)
+  mplus = choice
+
+instance (E.Error e) => Alternative (ParserSE s e) where
+  empty = zero (unexpected E.ExpOtherFailure E.SawOtherFailure)
+  (<|>) = choice
+  many = many
+
+instance (E.Error e) => Monoid (ParserSE s e a) where
+  mempty = zero (unexpected E.ExpOtherFailure E.SawOtherFailure)
+  mappend = (<|>)
 
 newtype TestParserSE =
   TestParserSE { unTestParserSE :: ParserSE () E.SimpleError Int }
@@ -196,8 +213,8 @@ zero e = ParserSE $ throwT e
 -- then runs the second parser. If the first parser succeeds, then
 -- returns the result of the first parser. If the first parser fails
 -- and consumes input, then returns the result of the first parser.
-(<|>) :: ParserSE s e a -> ParserSE s e a -> ParserSE s e a
-(<|>) (ParserSE l) (ParserSE r) = ParserSE $ do
+choice :: ParserSE s e a -> ParserSE s e a -> ParserSE s e a
+choice (ParserSE l) (ParserSE r) = ParserSE $ do
   s <- lift get
   let (a1, s') = flip runState s . runExceptionalT $ l
   case a1 of
@@ -231,8 +248,8 @@ zero e = ParserSE $ throwT e
     (Exception _) ->
       if noConsumed s s' then r else l
 -}
-infixr 1 <|>
 
+{-
 prop_choose :: (TestParserSE, TestParserSE, ParseStNoUser) -> Bool
 prop_choose (tp1, tp2, stWrapped) = ex == act where
   p1 = unTestParserSE $ tp1
@@ -244,7 +261,7 @@ prop_choose (tp1, tp2, stWrapped) = ex == act where
     (Exception _) -> if noConsumed st st' then p2 else p1
   (result, st') = (runState . runExceptionalT $ (unParserSE p1)) st
   ex = (runState. runExceptionalT $ (unParserSE fn)) st
-
+-}
 -- | noConsumed old new sees if any input was consumed between when
 -- old was the state and when new was the state.
 noConsumed :: ParseSt st -> ParseSt st -> Bool

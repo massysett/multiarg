@@ -15,6 +15,8 @@ import Control.Monad.Exception.Synchronous ( toEither )
 import System.Console.MultiArg.Error ( SimpleError )
 import Data.Text ( pack, unpack )
 import System.Environment ( getArgs )
+import Data.Monoid ( mconcat )
+import Control.Applicative ( many, (<|>) )
 
 data ArgSpec = SNoArg | SOptionalArg | SOneArg | STwoArg | SVariableArgs
              deriving Show
@@ -51,7 +53,7 @@ parse i os ss = toEither $ runParser (map pack ss) (f os) where
 
 parseNoIntersperse :: [OptSpec] -> Parser [Result]
 parseNoIntersperse os = do
-  let opts = foldl1 (<|>) . map optSpec $ os
+  let opts = mconcat . map optSpec $ os
   rs <- manyTill opts afterArgs
   firstArg <- afterArgs
   case firstArg of

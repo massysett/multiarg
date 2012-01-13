@@ -6,7 +6,7 @@ module System.Console.MultiArg.Combinator (
   -- * Parser combinators
   option,
   optionMaybe,
-  choice,
+  --choice,
   
   -- * Short options
   shortNoArg,
@@ -43,36 +43,39 @@ import qualified Data.Set as Set
 import Control.Monad ( liftM )
 
 import System.Console.MultiArg.Prim
-  ( (<|>), ParserSE, zero, try, approxLongOpt,
+  ( ParserSE, zero, try, approxLongOpt,
     nextArg, pendingShortOptArg, nonOptionPosArg,
-    pendingShortOpt, nonPendingShortOpt, many,
+    pendingShortOpt, nonPendingShortOpt,
     exactLongOpt, nextArg, (<?>))
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt )
 import qualified System.Console.MultiArg.Error as E
 import System.Console.MultiArg.Error
   ( Error, unexpected )
+import Control.Applicative ((<|>), many)
+import Data.Monoid ( mconcat )
 
 -- | @option x p@ runs parser p. If p fails without consuming any
 -- input, returns x. Otherwise, returns p.
-option :: a -> ParserSE s e a -> ParserSE s e a
+option :: (Error e) => a -> ParserSE s e a -> ParserSE s e a
 option x p = p <|> return x
 
 -- | @optionMaybe p@ runs parser p. If p fails without returning any
 -- input, returns Nothing. If p succeeds, returns the result of p
 -- wrapped in a Just. If p fails but consumes input, optionMaybe
 -- fails.
-optionMaybe :: ParserSE s e a -> ParserSE s e (Maybe a)
+optionMaybe :: (Error e) => ParserSE s e a -> ParserSE s e (Maybe a)
 optionMaybe p = option Nothing (liftM Just p)
 
+{-
 -- | @choice ps@ runs parsers from ps in order. choice returns the
 -- first parser that either succeeds or fails while consuming
 -- input. For each parser, if it fails without consuming any input,
 -- the next parser is tried. If all the parsers fail without consuming
 -- any input, the last parser will be returned.
 choice :: ParserSE s e a -> [ParserSE s e a] -> ParserSE s e a
-choice = foldl (<|>)
-
+choice = foldl choice
+-}
 -- | Parses only a non-GNU style long option (that is, one that does
 -- not take option arguments by attaching them with an equal sign,
 -- such as @--lines=20@).
@@ -264,7 +267,7 @@ mixedNoArg :: (Error e)
               -> [LongOpt]
               -> [ShortOpt]
               -> ParserSE s e (Either ShortOpt LongOpt)
-mixedNoArg l ls ss = choice f (longs ++ shorts) where
+mixedNoArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     r <- longNoArg lo
     return $ Right r
@@ -283,7 +286,7 @@ mixedOptionalArg ::
   -> [LongOpt]
   -> [ShortOpt]
   -> ParserSE s e ((Either ShortOpt LongOpt), Maybe Text)
-mixedOptionalArg l ls ss = choice f (longs ++ shorts) where
+mixedOptionalArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     (o, a) <- longOptionalArg lo
     return $ (Right o, a)
@@ -302,7 +305,7 @@ mixedOneArg ::
   -> [LongOpt]
   -> [ShortOpt]
   -> ParserSE s e ((Either ShortOpt LongOpt), Text)
-mixedOneArg l ls ss = choice f (longs ++ shorts) where
+mixedOneArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     (o, a) <- longOneArg lo
     return (Right o, a)
@@ -321,7 +324,7 @@ mixedTwoArg ::
   -> [LongOpt]
   -> [ShortOpt]
   -> ParserSE s e ((Either ShortOpt LongOpt), Text, Text)
-mixedTwoArg l ls ss = choice f (longs ++ shorts) where
+mixedTwoArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     (o, a1, a2) <- longTwoArg lo
     return (Right o, a1, a2)
@@ -340,7 +343,7 @@ mixedVariableArg ::
   -> [LongOpt]
   -> [ShortOpt]
   -> ParserSE s e ((Either ShortOpt LongOpt), [Text])
-mixedVariableArg l ls ss = choice f (longs ++ shorts) where
+mixedVariableArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     (o, a) <- longVariableArg lo
     return (Right o, a)

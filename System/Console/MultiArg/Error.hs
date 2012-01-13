@@ -49,6 +49,7 @@ data Expecting = ExpPendingShortOpt ShortOpt
                | ExpOptionOrPosArg
                | ExpTextError Text
                | ExpNonPendingShortOpt ShortOpt
+               | ExpOtherFailure
                deriving (Show, Eq)
 
 printExpecting :: Expecting -> Text
@@ -89,6 +90,7 @@ printExpecting e = case e of
   (ExpTextError t) -> t
   (ExpNonPendingShortOpt s) ->
     (pack "short option: ") `append` (singleton . unShortOpt $ s)
+  (ExpOtherFailure) -> pack "general failure"
 
 
 instance Arbitrary Expecting where
@@ -139,6 +141,7 @@ data Saw = SawNoPendingShorts
          | SawNoOption
          | SawNoOptionOrPosArg
          | SawTextError Text
+         | SawOtherFailure
          deriving (Show, Eq)
 
 printSaw :: Saw -> Text
@@ -200,6 +203,7 @@ printSaw s = case s of
   SawNoOptionOrPosArg ->
     pack "not an option or positional argument"
   (SawTextError t) -> t
+  (SawOtherFailure) -> pack "general failure"
 
 instance Arbitrary Saw where
   arbitrary = do
