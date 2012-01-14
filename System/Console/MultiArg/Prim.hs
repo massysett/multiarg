@@ -15,12 +15,26 @@ module System.Console.MultiArg.Prim (
   parseT,
   
   -- * Higher-level parser combinators
-  throw,
+  parserMap,
+  good,
+  apply,
   choice,
-  (<?>),
-  try,
+  combine,
+  
+  -- ** Running parsers multiple times
   several,
   manyTill,
+
+  -- ** Monad lifting
+  parserLift,
+  parserIO,
+
+  -- ** Failure and errors
+  throw,
+  throwString,
+  genericThrow,
+  (<?>),
+  try,
   
   -- * Parsers
   -- ** Short options and arguments
@@ -75,16 +89,23 @@ import Data.Functor.Identity ( Identity )
 import Control.Monad.Trans.Class ( MonadTrans )
 import Control.Monad.IO.Class ( MonadIO ( liftIO ) )
 
+-- | Takes the head of a Text. Returns Nothing if the Text is empty.
 textHead :: Text -> Maybe (Char, Text)
 textHead t = case X.null t of
   True -> Nothing
   False -> Just (X.head t, X.tail t)
 
+-- | Converts a Text to a TextNonEmpty. Returns Nothing if the Text is
+-- empty.
 toTextNonEmpty :: Text -> Maybe TextNonEmpty
 toTextNonEmpty t = case textHead t of
   Nothing -> Nothing
   (Just (c, r)) -> Just $ TextNonEmpty c r
 
+-- | Carries the internal state of the parser. The counter is a simple
+-- way to determine whether the remaining list one ParseSt has been
+-- modified from another. When parsers modify remaining, they
+-- increment the counter.
 data ParseSt s = ParseSt { pendingShort :: Maybe TextNonEmpty
                          , remaining :: [Text]
                          , sawStopper :: Bool
@@ -92,6 +113,8 @@ data ParseSt s = ParseSt { pendingShort :: Maybe TextNonEmpty
                          , counter :: Int
                          } deriving (Show, Eq)
 
+-- | Load up the ParseSt with an initial user state and a list of
+-- commmand line arguments.
 defaultState :: s -> [Text] -> ParseSt s
 defaultState s ts = ParseSt { pendingShort = Nothing
                             , remaining = ts
@@ -99,8 +122,30 @@ defaultState s ts = ParseSt { pendingShort = Nothing
                             , userState = s
                             , counter = 0 }
 
+-- | Carries the result of each parse.
 data Result e a = Bad e | Good a
 
+-- | @ParserT s e m a@ is a parser with user state s, error type e,
+-- underlying monad m, and result type a. Internally the parser is a
+-- state monad which keeps track of what is remaining to be
+-- parsed. Since the parser has an internal state anyway, the user can
+-- add to this state (this is called the user state.) The parser
+-- ignores this user state so you can use it however you wish. If you
+-- do not need a user state, just make it the unit type ().
+--
+-- The parser also includes the notion of failure. Any parser can
+-- fail; a failed parser affects the behavior of combinators such as
+-- combine. The failure type should be a instance of
+-- System.Console.MultiArg.Error.Error. This allows you to define your
+-- own type and use it for the failure type, which can be useful when
+-- combining MultiArg with your own program.
+--
+-- The underlying monad is m. This makes ParserT into a monad
+-- transformer; you can layer it on top of other monads. For instance
+-- you might layer it on top of the IO monad so that your parser can
+-- perform IO (for example, by examining the disk to see if arguments
+-- that specify files are valid.) If you don't need a monad
+-- transformer, just layer ParserT on top of Identity.
 data ParserT s e m a =
   ParserT { runParserT :: ParseSt s -> m (Result e a, ParseSt s) }
 
@@ -108,8 +153,8 @@ instance (Monad m) => Functor (ParserT s e m) where
   fmap = parserMap
 
 instance (Monad m) => Applicative (ParserT s e m) where
-  pure = parserReturn
-  (<*>) = parserApply
+  pure = good
+  (<*>) = apply
 
 instance (Monad m, E.Error e) => Monoid (ParserT s e m a) where
   mempty = genericThrow
@@ -121,9 +166,9 @@ instance (Monad m, E.Error e) => Alternative (ParserT s e m) where
   many = several
 
 instance (E.Error e, Monad m) => Monad (ParserT s e m) where
-  (>>=) = parserBind
-  return = parserReturn
-  fail = parserFail
+  (>>=) = combine
+  return = good
+  fail = throwString
 
 instance (Monad m, E.Error e) => MonadPlus (ParserT s e m) where
   mzero = genericThrow
@@ -135,10 +180,20 @@ instance MonadTrans (ParserT s e) where
 instance (MonadIO m, E.Error e) => MonadIO (ParserT s e m) where
   liftIO = parserIO
 
+-- | @ParserSE s e a@ is a parser with user state s, error type e,
+-- underlying monad Identity, and result type a.
 type ParserSE s e a = ParserT s e Identity a
-type ParserE e a = ParserT () e Identity a
-type Parser = ParserT () E.SimpleError Identity
 
+-- | @ParserE e a@ is a parser with user state (), error type e,
+-- underlying monad Identity, and result type a.
+type ParserE e a = ParserT () e Identity a
+
+-- | @Parser a@ is a parser with user state (), error type
+-- SimpleError, underlying monad Identity, and result type a.
+type Parser a = ParserT () E.SimpleError Identity a
+
+-- | Runs a parser that has a user state and an underlying monad
+-- Identity.
 parseSE ::
   s
   -> [Text]
@@ -151,6 +206,8 @@ parseSE s ts p =
     (Good g) -> (Success g, userState st')
     (Bad e) -> (Exception e, userState st')
 
+-- | Runs a parser that has no user state and an underlying monad of
+-- Identity and is parameterized on the error type.
 parseE ::
   [Text]
   -> ParserE e a
@@ -162,11 +219,16 @@ parseE ts p =
     (Good g) -> Success g
     (Bad e) -> Exception e
 
+-- | The simplest parser runner; has no user state, an underlying
+-- monad Identity, and error type SimpleError.
 parse :: [Text]
          -> Parser a
          -> Exceptional E.SimpleError a
 parse = parseE
 
+-- | The most complex parser runner. Runs a parser with a user-defined
+-- state, error type, and underlying monad. Returns the final parse
+-- result and the final user state, inside of the underlying monad.
 parseT ::
   (Monad m)
   => s
@@ -179,6 +241,9 @@ parseT s ts p = runParserT p (defaultState s ts) >>= \r ->
     (Good g) -> return (Success g, userState st')
     (Bad e) -> return (Exception e, userState st')
 
+-- | Lifts a computation of the underlying monad into the ParserT
+-- monad. This provides the implementation for
+-- 'Control.Monad.Trans.Class.lift'.
 parserLift ::
   Monad m
   => m a
@@ -186,18 +251,34 @@ parserLift ::
 parserLift c = ParserT $ \s ->
   c >>= \a -> return (Good a, s)
 
+-- | Lifts a computation from the IO monad into the ParserT
+-- monad. This provides the implementation for
+-- 'Control.Monad.IO.Class.liftIO'.
 parserIO ::
   (MonadIO m, E.Error e)
   => IO a
   -> ParserT s e m a
 parserIO c = parserLift . liftIO $ c
 
-parserBind ::
+-- | Combines two parsers into a single parser. The second parser can
+-- optionally depend upon the result from the first parser.
+--
+-- This applies the first parser. If the first parser succeeds,
+-- combine then takes the result from the first parser, applies the
+-- function given to the result from the first parser, and then
+-- applies the resulting parser.
+--
+-- If the first parser fails, combine will not apply the second
+-- function but instead will bypass the second parser.
+--
+-- This provides the implementation for '>>=' in
+-- 'Control.Monad.Monad'.
+combine ::
   (Monad m)
   => ParserT s e m a
   -> (a -> ParserT s e m b)
   -> ParserT s e m b
-parserBind (ParserT l) f = ParserT $ \s ->
+combine (ParserT l) f = ParserT $ \s ->
   l s >>= \(r, s') ->
   case r of
     (Bad e) -> return (Bad e, s')
@@ -205,21 +286,33 @@ parserBind (ParserT l) f = ParserT $ \s ->
       let (ParserT fr) = f g
       in fr s'
 
-parserReturn ::
+-- | @good a@ always succeeds without consuming any input and has
+-- result a. This provides the implementation for
+-- 'Control.Monad.Monad.return' and
+-- 'Control.Applicative.Applicative.pure'.
+good ::
   (Monad m)
   => a
   -> ParserT s e m a
-parserReturn a = ParserT $ \s ->
+good a = ParserT $ \s ->
   return (Good a, s)
 
-parserFail ::
+-- | @throwString s@ always fails without consuming any input. The
+-- failure contains a record of the string passed in by s. This
+-- provides the implementation for 'Control.Monad.Monad.fail'.
+throwString ::
   (E.Error e, Monad m)
   => String
   -> ParserT s e m a
-parserFail e = ParserT $ \s ->
+throwString e = ParserT $ \s ->
   return (Bad (E.parseErr E.ExpOtherFailure
                (E.SawTextError (pack e))), s)
 
+-- | @parserMap f p@ applies function f to the result of parser
+-- p. First parser p is run. If it succeeds, function f is applied to
+-- the result and another parser is returned with the result. If it
+-- fails, f is not applied and a failed parser is returned. This
+-- provides the implementation for 'Prelude.Functor.fmap'.
 parserMap ::
   (Monad m)
   => (a -> b)
@@ -232,12 +325,20 @@ parserMap f (ParserT l) = ParserT $ \s ->
     (Good g) -> return (Good (f g), st')
     (Bad e) -> return (Bad e, st')
 
-parserApply ::
+-- | apply l r applies the function found in parser l to the result of
+-- parser r. First the l parser is run. If it succeeds, it has a
+-- resulting function. Then the r parser is run. If it succeeds, the
+-- function from the l parser is applied to the result of the r
+-- parser, and a new parser is returned with the result. If either
+-- parser l or parser r fails, then a failed parser is returned. This
+-- provides the implementation for '<*>' in
+-- 'Control.Applicative.Applicative'.
+apply ::
   (Monad m)
   => ParserT s e m (a -> b)
   -> ParserT s e m a
   -> ParserT s e m b
-parserApply (ParserT x) (ParserT y) = ParserT $ \s ->
+apply (ParserT x) (ParserT y) = ParserT $ \s ->
   x s >>= \r ->
   let (result, st') = r
   in case result of
@@ -248,12 +349,15 @@ parserApply (ParserT x) (ParserT y) = ParserT $ \s ->
         (Bad e) -> return (Bad e, st'')
     (Bad e) -> return (Bad e, st')
 
--- | Fail with an unhelpful error message.
+-- | Fail with an unhelpful error message. Usually throw is more
+-- useful, but this is handy to implement some typeclass instances.
 genericThrow ::
   (Monad m, E.Error e)
   => ParserT s e m a
 genericThrow = throw (E.parseErr E.ExpOtherFailure E.SawOtherFailure)
 
+-- | throw e always fails without consuming any input and returns a
+-- failed parser with error state e.
 throw :: (Monad m) => e -> ParserT s e m a
 throw e = ParserT $ \s ->
   return (Bad e, s)
@@ -261,6 +365,12 @@ throw e = ParserT $ \s ->
 noConsumed :: ParseSt s -> ParseSt s -> Bool
 noConsumed old new = counter old >= counter new
 
+-- | Runs the first parser. If it fails without consuming any input,
+-- then runs the second parser. If the first parser succeeds, then
+-- returns the result of the first parser. If the first parser fails
+-- and consumes input, then returns the result of the first
+-- parser. This provides the implementation for
+-- '<|>' in 'Control.Applicative.Alternative'.
 choice ::
   (Monad m)
   => ParserT s e m a
@@ -275,6 +385,10 @@ choice (ParserT l) (ParserT r) = ParserT $ \sOld ->
       then r sOld
       else return (Bad e, s')
 
+-- | Runs the parser given. If it succeeds, then returns the result of
+-- the parser. If it fails and consumes input, returns the result of
+-- the parser. If it fails without consuming any input, then changes
+-- the error using the function given.
 (<?>) ::
   (Monad m)
   => ParserT s e m a
