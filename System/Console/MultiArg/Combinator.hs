@@ -43,7 +43,7 @@ import qualified Data.Set as Set
 import Control.Monad ( liftM )
 
 import System.Console.MultiArg.Prim
-  ( ParserSE, zero, try, approxLongOpt,
+  ( ParserT, throw, try, approxLongOpt,
     nextArg, pendingShortOptArg, nonOptionPosArg,
     pendingShortOpt, nonPendingShortOpt,
     exactLongOpt, nextArg, (<?>))
@@ -51,20 +51,25 @@ import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt )
 import qualified System.Console.MultiArg.Error as E
 import System.Console.MultiArg.Error
-  ( Error, unexpected )
+  ( Error, parseErr )
 import Control.Applicative ((<|>), many)
 import Data.Monoid ( mconcat )
 
 -- | @option x p@ runs parser p. If p fails without consuming any
 -- input, returns x. Otherwise, returns p.
-option :: (Error e) => a -> ParserSE s e a -> ParserSE s e a
+option :: (Error e, Monad m) =>
+          a
+          -> ParserT s e m a
+          -> ParserT s e m a
 option x p = p <|> return x
 
 -- | @optionMaybe p@ runs parser p. If p fails without returning any
 -- input, returns Nothing. If p succeeds, returns the result of p
 -- wrapped in a Just. If p fails but consumes input, optionMaybe
 -- fails.
-optionMaybe :: (Error e) => ParserSE s e a -> ParserSE s e (Maybe a)
+optionMaybe :: (Error e, Monad m)
+               => ParserT s e m a
+               -> ParserT s e m (Maybe a)
 optionMaybe p = option Nothing (liftM Just p)
 
 {-
@@ -79,15 +84,15 @@ choice = foldl choice
 -- | Parses only a non-GNU style long option (that is, one that does
 -- not take option arguments by attaching them with an equal sign,
 -- such as @--lines=20@).
-nonGNUexactLongOpt :: (Error e)
+nonGNUexactLongOpt :: (Error e, Monad m)
                       => LongOpt
-                      -> ParserSE s e LongOpt
+                      -> ParserT s e m LongOpt
 nonGNUexactLongOpt l = try $ do
   (lo, maybeArg) <- exactLongOpt l
   case maybeArg of
     Nothing -> return lo
     (Just t) ->
-      zero (unexpected (E.ExpNonGNUExactLong l)
+      throw (parseErr (E.ExpNonGNUExactLong l)
             (E.SawGNULongOptArg t))
 
 -- | Takes a long option and a set of long options. If the next word
@@ -97,26 +102,26 @@ nonGNUexactLongOpt l = try $ do
 -- argument. Make sure that the long option you are looking for is
 -- both the first argument and that it is included in the set;
 -- otherwise this parser will always fail.
-matchApproxLongOpt :: (Error e)
+matchApproxLongOpt :: (Error e, Monad m)
                       => LongOpt
                       -> Set LongOpt
-                      -> ParserSE s e (Text, LongOpt, Maybe Text)
+                      -> ParserT s e m (Text, LongOpt, Maybe Text)
 matchApproxLongOpt l s = try $ do
   a@(t, lo, _) <- approxLongOpt s
   if lo == l
     then return a
-    else zero (unexpected (E.ExpMatchingApproxLong l s)
+    else throw (parseErr (E.ExpMatchingApproxLong l s)
                (E.SawNotMatchingApproxLong t lo))
 
 -- | Like matchApproxLongOpt but only parses non-GNU-style long
 -- options.
-matchNonGNUApproxLongOpt :: (Error e)
+matchNonGNUApproxLongOpt :: (Error e, Monad m)
                             => LongOpt
                             -> Set LongOpt
-                            -> ParserSE s e (Text, LongOpt)
+                            -> ParserT s e m (Text, LongOpt)
 matchNonGNUApproxLongOpt l s = try $ do
   (t, lo, arg) <- matchApproxLongOpt l s
-  let err b = zero (unexpected (E.ExpNonGNUMatchingApproxLong l s)
+  let err b = throw (parseErr (E.ExpNonGNUMatchingApproxLong l s)
                     (E.SawMatchingApproxLongWithArg b))
   maybe (return (t, lo)) err arg
 
@@ -124,14 +129,14 @@ matchNonGNUApproxLongOpt l s = try $ do
 -- then get the next word and see if it matches one of the words in
 -- Set. If so, returns the word actually parsed and the matching word
 -- from Set. If there is no match, fails without consuming any input.
-matchApproxWord :: (Error e)
+matchApproxWord :: (Error e, Monad m)
                    => Set Text
-                   -> ParserSE s e (Text, Text)
+                   -> ParserT s e m (Text, Text)
 matchApproxWord s = try $ do
   a <- nextArg
   let p t = a `isPrefixOf` t
       matches = Set.filter p s
-      err saw = zero (unexpected (E.ExpApproxWord s) saw)
+      err saw = throw (parseErr (E.ExpApproxWord s) saw)
   case Set.toList matches of
     [] -> err (E.SawNoMatches a)
     (x:[]) -> return (a, x)
@@ -140,17 +145,17 @@ matchApproxWord s = try $ do
 -- | Parses short options that do not take any argument. (It is
 -- however okay for the short option to be combined with other short
 -- options in the same word.)
-shortNoArg :: (Error e)
+shortNoArg :: (Error e, Monad m)
             => ShortOpt
-            -> ParserSE s e ShortOpt
+            -> ParserT s e m ShortOpt
 shortNoArg s = pendingShortOpt s <|> nonPendingShortOpt s
 
 -- | Parses short options that take an optional argument. The argument
 -- can be combined in the same word with the short option (@-c42@) or
 -- can be in the ext word (@-c 42@).
-shortOptionalArg :: (Error e)
+shortOptionalArg :: (Error e, Monad m)
                  => ShortOpt
-                 -> ParserSE s e (ShortOpt, Maybe Text)
+                 -> ParserT s e m (ShortOpt, Maybe Text)
 shortOptionalArg s = do
   so <- shortNoArg s
   a <- optionMaybe (pendingShortOptArg <|> nonOptionPosArg)
@@ -159,9 +164,9 @@ shortOptionalArg s = do
 -- | Parses short options that take a required argument.  The argument
 -- can be combined in the same word with the short option (@-c42@) or
 -- can be in the ext word (@-c 42@).
-shortOneArg :: (Error e) =>
+shortOneArg :: (Error e, Monad m) =>
                ShortOpt
-               -> ParserSE s e (ShortOpt, Text)
+               -> ParserT s e m (ShortOpt, Text)
 shortOneArg s = do
   so <- shortNoArg s
   a <- pendingShortOptArg <|> nextArg
@@ -171,9 +176,9 @@ shortOneArg s = do
 -- argument can be combined in the same word with the short option
 -- (@-c42@) or can be in the ext word (@-c 42@). The next argument
 -- will have to be in a separate word.
-shortTwoArg :: (Error e)
+shortTwoArg :: (Error e, Monad m)
                => ShortOpt
-               -> ParserSE s e (ShortOpt, Text, Text)
+               -> ParserT s e m (ShortOpt, Text, Text)
 shortTwoArg s = do
   (so, a1) <- shortOneArg s
   a2 <- nextArg
@@ -187,9 +192,9 @@ shortTwoArg s = do
 -- with a stopper. The first argument can be combined in the same word
 -- with the short option (@-c42@) or can be in the ext word (@-c
 -- 42@). Subsequent arguments will have to be in separate words.
-shortVariableArg :: (Error e)
+shortVariableArg :: (Error e, Monad m)
                  => ShortOpt
-                 -> ParserSE s e (ShortOpt, [Text])
+                 -> ParserT s e m (ShortOpt, [Text])
 shortVariableArg s = do
   so <- shortNoArg s
   firstArg <- optionMaybe pendingShortOptArg
@@ -198,40 +203,40 @@ shortVariableArg s = do
   return (so, result)
 
 -- | Parses long options that do not take any argument.
-longNoArg :: (Error e)
+longNoArg :: (Error e, Monad m)
            => LongOpt
-           -> ParserSE s e LongOpt
+           -> ParserT s e m LongOpt
 longNoArg = nonGNUexactLongOpt
 
 -- | Parses long options that take a single, optional argument. The
 -- single argument can be given GNU-style (@--lines=20@) or non-GNU
 -- style in separate words (@lines 20@).
-longOptionalArg :: (Error e)
+longOptionalArg :: (Error e, Monad m)
                    => LongOpt
-                   -> ParserSE s e (LongOpt, Maybe Text)
+                   -> ParserT s e m (LongOpt, Maybe Text)
 longOptionalArg = exactLongOpt
 
 -- | Parses long options that take a single, required argument. The
 -- single argument can be given GNU-style (@--lines=20@) or non-GNU
 -- style in separate words (@lines 20@).
-longOneArg :: (Error e)
+longOneArg :: (Error e, Monad m)
                  => LongOpt
-                 -> ParserSE s e (LongOpt, Text)
+                 -> ParserT s e m (LongOpt, Text)
 longOneArg l = do
   (lo, mt) <- longOptionalArg l
   case mt of
     (Just t) -> return (lo, t)
     Nothing -> do
-      a <- nextArg <?> E.unexpected E.ExpLongOptArg E.SawNoArgsLeft
+      a <- nextArg <?> E.parseErr E.ExpLongOptArg E.SawNoArgsLeft
       return (l, a)
 
 -- | Parses long options that take a double, required argument. The
 -- first argument can be given GNU-style (@--lines=20@) or non-GNU
 -- style in separate words (@lines 20@). The second argument will have
 -- to be in a separate word.
-longTwoArg :: (Error e)
+longTwoArg :: (Error e, Monad m)
                  => LongOpt
-                 -> ParserSE s e (LongOpt, Text, Text)
+                 -> ParserT s e m (LongOpt, Text, Text)
 longTwoArg l = do
   (lo, mt) <- longOptionalArg l
   case mt of
@@ -252,9 +257,9 @@ longTwoArg l = do
 -- with the short option (@--lines=20@) or can be in the ext word
 -- (@--lines 42@). Subsequent arguments will have to be in separate
 -- words.
-longVariableArg :: (Error e)
+longVariableArg :: (Error e, Monad m)
                    => LongOpt
-                   -> ParserSE s e (LongOpt, [Text])
+                   -> ParserT s e m (LongOpt, [Text])
 longVariableArg l = do
   (lo, mt) <- longOptionalArg l
   rest <- many nonOptionPosArg
@@ -262,11 +267,11 @@ longVariableArg l = do
 
 -- | Parses at least one long option and a variable number of short
 -- and long options that take no arguments.
-mixedNoArg :: (Error e)
+mixedNoArg :: (Error e, Monad m)
               => LongOpt
               -> [LongOpt]
               -> [ShortOpt]
-              -> ParserSE s e (Either ShortOpt LongOpt)
+              -> ParserT s e m (Either ShortOpt LongOpt)
 mixedNoArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     r <- longNoArg lo
@@ -281,11 +286,11 @@ mixedNoArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
 -- | Parses at least one long option and a variable number of short
 -- and long options that take an optional argument.
 mixedOptionalArg ::
-  (Error e)
+  (Error e, Monad m)
   => LongOpt
   -> [LongOpt]
   -> [ShortOpt]
-  -> ParserSE s e ((Either ShortOpt LongOpt), Maybe Text)
+  -> ParserT s e m ((Either ShortOpt LongOpt), Maybe Text)
 mixedOptionalArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     (o, a) <- longOptionalArg lo
@@ -300,11 +305,11 @@ mixedOptionalArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
 -- | Parses at least one long option and additional long and short
 -- options that take one argument.
 mixedOneArg ::
-  (Error e)
+  (Error e, Monad m)
   => LongOpt
   -> [LongOpt]
   -> [ShortOpt]
-  -> ParserSE s e ((Either ShortOpt LongOpt), Text)
+  -> ParserT s e m ((Either ShortOpt LongOpt), Text)
 mixedOneArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     (o, a) <- longOneArg lo
@@ -319,11 +324,11 @@ mixedOneArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
 -- | Parses at least one long option and additonal long and short
 -- options that take two arguments.
 mixedTwoArg ::
-  (Error e)
+  (Error e, Monad m)
   => LongOpt
   -> [LongOpt]
   -> [ShortOpt]
-  -> ParserSE s e ((Either ShortOpt LongOpt), Text, Text)
+  -> ParserT s e m ((Either ShortOpt LongOpt), Text, Text)
 mixedTwoArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     (o, a1, a2) <- longTwoArg lo
@@ -338,11 +343,11 @@ mixedTwoArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
 -- | Parses at least one long option and additional long and short
 -- options that take a variable number of arguments.
 mixedVariableArg ::
-  (Error e)
+  (Error e, Monad m)
   => LongOpt
   -> [LongOpt]
   -> [ShortOpt]
-  -> ParserSE s e ((Either ShortOpt LongOpt), [Text])
+  -> ParserT s e m ((Either ShortOpt LongOpt), [Text])
 mixedVariableArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     (o, a) <- longVariableArg lo
