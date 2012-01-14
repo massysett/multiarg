@@ -24,7 +24,7 @@ Library
         QuickCheck ==2.4.*,
         transformers == 0.2.*
         
-    -- See documentation in Pantry.Radio.Client for details
+    -- See documentation in System.Console.MultiArg.GetArgs for details
     if flag(newbase)
         Build-depends:
             base >= 4.4 && < 5

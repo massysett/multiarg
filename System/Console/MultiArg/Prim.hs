@@ -104,6 +104,37 @@ data Result e a = Bad e | Good a
 data ParserT s e m a =
   ParserT { runParserT :: ParseSt s -> m (Result e a, ParseSt s) }
 
+instance (Monad m) => Functor (ParserT s e m) where
+  fmap = parserMap
+
+instance (Monad m) => Applicative (ParserT s e m) where
+  pure = parserReturn
+  (<*>) = parserApply
+
+instance (Monad m, E.Error e) => Monoid (ParserT s e m a) where
+  mempty = genericThrow
+  mappend = choice
+
+instance (Monad m, E.Error e) => Alternative (ParserT s e m) where
+  empty = genericThrow
+  (<|>) = choice
+  many = several
+
+instance (E.Error e, Monad m) => Monad (ParserT s e m) where
+  (>>=) = parserBind
+  return = parserReturn
+  fail = parserFail
+
+instance (Monad m, E.Error e) => MonadPlus (ParserT s e m) where
+  mzero = genericThrow
+  mplus = choice
+
+instance MonadTrans (ParserT s e) where
+  lift = parserLift
+
+instance (MonadIO m, E.Error e) => MonadIO (ParserT s e m) where
+  liftIO = parserIO
+
 type ParserSE s e a = ParserT s e Identity a
 type ParserE e a = ParserT () e Identity a
 type Parser = ParserT () E.SimpleError Identity
@@ -155,17 +186,11 @@ parserLift ::
 parserLift c = ParserT $ \s ->
   c >>= \a -> return (Good a, s)
 
-instance MonadTrans (ParserT s e) where
-  lift = parserLift
-
 parserIO ::
   (MonadIO m, E.Error e)
   => IO a
   -> ParserT s e m a
 parserIO c = parserLift . liftIO $ c
-
-instance (MonadIO m, E.Error e) => MonadIO (ParserT s e m) where
-  liftIO = parserIO
 
 parserBind ::
   (Monad m)
@@ -195,11 +220,6 @@ parserFail e = ParserT $ \s ->
   return (Bad (E.parseErr E.ExpOtherFailure
                (E.SawTextError (pack e))), s)
 
-instance (E.Error e, Monad m) => Monad (ParserT s e m) where
-  (>>=) = parserBind
-  return = parserReturn
-  fail = parserFail
-
 parserMap ::
   (Monad m)
   => (a -> b)
@@ -211,9 +231,6 @@ parserMap f (ParserT l) = ParserT $ \s ->
   in case result of
     (Good g) -> return (Good (f g), st')
     (Bad e) -> return (Bad e, st')
-
-instance (Monad m) => Functor (ParserT s e m) where
-  fmap = parserMap
 
 parserApply ::
   (Monad m)
@@ -231,19 +248,11 @@ parserApply (ParserT x) (ParserT y) = ParserT $ \s ->
         (Bad e) -> return (Bad e, st'')
     (Bad e) -> return (Bad e, st')
 
-instance (Monad m) => Applicative (ParserT s e m) where
-  pure = parserReturn
-  (<*>) = parserApply
-
 -- | Fail with an unhelpful error message.
 genericThrow ::
   (Monad m, E.Error e)
   => ParserT s e m a
 genericThrow = throw (E.parseErr E.ExpOtherFailure E.SawOtherFailure)
-
-instance (Monad m, E.Error e) => MonadPlus (ParserT s e m) where
-  mzero = genericThrow
-  mplus = choice
 
 throw :: (Monad m) => e -> ParserT s e m a
 throw e = ParserT $ \s ->
@@ -265,15 +274,6 @@ choice (ParserT l) (ParserT r) = ParserT $ \sOld ->
       if noConsumed sOld s'
       then r sOld
       else return (Bad e, s')
-
-instance (Monad m, E.Error e) => Monoid (ParserT s e m a) where
-  mempty = genericThrow
-  mappend = choice
-
-instance (Monad m, E.Error e) => Alternative (ParserT s e m) where
-  empty = genericThrow
-  (<|>) = choice
-  many = several
 
 (<?>) ::
   (Monad m)
