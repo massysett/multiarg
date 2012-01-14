@@ -6,9 +6,10 @@ module System.Console.MultiArg.SimpleParser (
   Args(..),
   SimpleError,
   getArgs,
-  parse ) where
+  System.Console.MultiArg.SimpleParser.parse ) where
 
 import System.Console.MultiArg.Prim
+import qualified System.Console.MultiArg.Prim as Prim
 import System.Console.MultiArg.Combinator
 import System.Console.MultiArg.Option
 import Control.Monad.Exception.Synchronous ( toEither )
@@ -47,7 +48,7 @@ parse :: Intersperse
          -> [OptSpec]
          -> [String]
          -> Either SimpleError [Result]
-parse i os ss = toEither $ runParser (map pack ss) (f os) where
+parse i os ss = toEither $ Prim.parse (map pack ss) (f os) where
   f = case i of Intersperse -> parseIntersperse
                 StopOptions -> parseNoIntersperse
 

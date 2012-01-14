@@ -1,7 +1,47 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Parser primitives. These are the only functions that have access
 -- to the internals of the parser.
-module System.Console.MultiArg.Prim where
+module System.Console.MultiArg.Prim (
+    -- * Parser types
+  Parser,
+  ParserE,
+  ParserSE,
+  ParserT,
+  
+  -- * Running a parser
+  parse,
+  parseE,
+  parseSE,
+  parseT,
+  
+  -- * Higher-level parser combinators
+  throw,
+  choice,
+  (<?>),
+  try,
+  several,
+  manyTill,
+  
+  -- * Parsers
+  -- ** Short options and arguments
+  pendingShortOpt,
+  nonPendingShortOpt,
+  pendingShortOptArg,  
+  
+  -- ** Long options and arguments
+  exactLongOpt,
+  approxLongOpt,
+
+  -- ** Stoppers
+  stopper,
+  
+  -- ** Positional (non-option) arguments
+  nextArg,
+  nonOptionPosArg,
+  
+  -- ** Miscellaneous
+  end ) where
+
 
 import qualified System.Console.MultiArg.Error as E
 import System.Console.MultiArg.Option
@@ -240,7 +280,7 @@ instance (Monad m, E.Error e) => Monoid (ParserT s e m a) where
 instance (Monad m, E.Error e) => Alternative (ParserT s e m) where
   empty = genericThrow
   (<|>) = choice
-  many = many
+  many = several
 
 (<?>) ::
   (Monad m)
@@ -569,25 +609,25 @@ parseTill s fr ff = ff s >>= \r ->
              then error "parseTill applied to parser that takes empty list"
              else return $ Till (g:gs) lS lF
 
--- | many p runs parser p zero or more times and returns all the
+-- | several p runs parser p zero or more times and returns all the
 -- results. This proceeds like this: parser p is run and, if it
 -- succeeds, the result is saved and parser p is run
 -- again. Repeat. Eventually this will have to fail. If the last run
--- of parser p fails without consuming any input, then many p runs
+-- of parser p fails without consuming any input, then several p runs
 -- successfully. The state of the parser is updated to reflect the
 -- successful runs of p. If the last run of parser p fails but it
--- consumed input, then many p fails. The state of the parser is
+-- consumed input, then several p fails. The state of the parser is
 -- updated to reflect the state up to and including the run that
 -- partially consumed input. The parser is left in a failed state.
 --
 -- This semantic can come in handy. For example you might run a parser
 -- multiple times that parses an option and arguments to the
--- option. If the arguments fail to parse, then many will fail.
-many ::
+-- option. If the arguments fail to parse, then several will fail.
+several ::
   (Monad m)
   => ParserT s e m a
   -> ParserT s e m [a]
-many (ParserT l) = ParserT $ \s ->
+several (ParserT l) = ParserT $ \s ->
   parseRepeat s l >>= \r ->
   let (result, finalGoodSt, failure, finalBadSt) = r
   in if noConsumed finalGoodSt finalBadSt
