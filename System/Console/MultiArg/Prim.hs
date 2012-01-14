@@ -109,8 +109,7 @@ type ParserE e a = ParserT () e Identity a
 type Parser = ParserT () E.SimpleError Identity
 
 parseSE ::
-  (E.Error e)
-  => s
+  s
   -> [Text]
   -> ParserSE s e a
   -> (Exceptional e a, s)
@@ -122,8 +121,7 @@ parseSE s ts p =
     (Bad e) -> (Exception e, userState st')
 
 parseE ::
-  (E.Error e)
-  => [Text]
+  [Text]
   -> ParserE e a
   -> Exceptional e a
 parseE ts p =
@@ -139,7 +137,7 @@ parse :: [Text]
 parse = parseE
 
 parseT ::
-  (E.Error e, Monad m)
+  (Monad m)
   => s
   -> [Text]
   -> ParserT s e m a
