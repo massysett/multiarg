@@ -2,9 +2,9 @@ module System.Console.MultiArg.TextNonEmpty where
 
 import Test.QuickCheck
   ( Arbitrary ( arbitrary ), CoArbitrary ( coarbitrary ),
-    (><), variant )
+    (><) )
 import System.Console.MultiArg.QuickCheckHelpers 
-  ( randText, WText(WText), unWText )
+  ( randText, WText(WText) )
                                                    
 import Data.Text ( Text )
 

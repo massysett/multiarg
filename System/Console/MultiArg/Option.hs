@@ -13,9 +13,9 @@ module System.Console.MultiArg.Option (
   where
 
 import Test.QuickCheck ( Arbitrary ( arbitrary ),
-                         suchThat, Gen )
+                         suchThat )
 import qualified Data.Text as X
-import Data.Text ( Text, pack, unpack, cons, index )
+import Data.Text ( Text, unpack, index )
 import Control.Monad ( when )
 import System.Console.MultiArg.QuickCheckHelpers ( randText )
 

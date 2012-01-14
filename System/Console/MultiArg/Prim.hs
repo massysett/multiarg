@@ -40,7 +40,13 @@ module System.Console.MultiArg.Prim (
   nonOptionPosArg,
   
   -- ** Miscellaneous
-  end ) where
+  end,
+  
+  -- * User state
+  get,
+  put,
+  modify
+  ) where
 
 
 import qualified System.Console.MultiArg.Error as E
@@ -51,37 +57,22 @@ import System.Console.MultiArg.Option
     unLongOpt )
 import System.Console.MultiArg.TextNonEmpty
   ( TextNonEmpty ( TextNonEmpty ) )
-import Control.Applicative ( Applicative,
-                             Alternative ( empty, (<|>)),
-                             (<*>))
+import Control.Applicative ( Applicative, Alternative )
 import qualified Control.Applicative
 import Control.Monad.Exception.Synchronous
-  ( ExceptionalT (ExceptionalT), runExceptionalT, throwT,
-    Exceptional(Success, Exception), switch )
+  (Exceptional(Success, Exception), switch )
 import qualified Control.Monad.Exception.Synchronous as S
-import Control.Monad.Trans.State.Lazy
-  ( State, state, get, runState, put,
-    modify, runStateT )
 import Data.Functor.Identity ( runIdentity )
 import Data.Text ( Text, pack, isPrefixOf, cons )
 import qualified Data.Text as X
 import qualified Data.Set as Set
 import Data.Set ( Set )
-import Control.Monad ( when, liftM,
-                       MonadPlus(mzero, mplus) )
+import Control.Monad ( when, MonadPlus(mzero, mplus) )
 import Control.Monad.Trans.Class ( lift )
-import Test.QuickCheck ( Arbitrary ( arbitrary ),
-                         suchThat,
-                         CoArbitrary ( coarbitrary ),
-                         (><), choose )
-import System.Console.MultiArg.QuickCheckHelpers ( WText(WText) )
-import Test.QuickCheck.Gen ( oneof )
-import Text.Printf ( printf )
-import Data.Maybe ( isNothing, isJust, fromJust, fromMaybe )
-import Data.List ( find )
+import Data.Maybe ( isNothing )
 import Data.Monoid ( Monoid ( mempty, mappend ) )
-import Data.Functor.Identity ( Identity, runIdentity )
-import Control.Monad.Trans.Class ( MonadTrans ( lift ) )
+import Data.Functor.Identity ( Identity )
+import Control.Monad.Trans.Class ( MonadTrans )
 import Control.Monad.IO.Class ( MonadIO ( liftIO ) )
 
 textHead :: Text -> Maybe (Char, Text)
@@ -251,6 +242,10 @@ genericThrow ::
   (Monad m, E.Error e)
   => ParserT s e m a
 genericThrow = throw (E.parseErr E.ExpOtherFailure E.SawOtherFailure)
+
+instance (Monad m, E.Error e) => MonadPlus (ParserT s e m) where
+  mzero = genericThrow
+  mplus = choice
 
 throw :: (Monad m) => e -> ParserT s e m a
 throw e = ParserT $ \s ->

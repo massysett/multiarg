@@ -11,7 +11,7 @@ import qualified Data.Set as Set
 import Test.QuickCheck ( Arbitrary ( arbitrary ), 
                          choose )
 import System.Console.MultiArg.QuickCheckHelpers
-  ( WText (WText), unWText, randSet, randText )
+  ( randSet, randText )
 import Control.Monad ( liftM, liftM2 )
 
 class Error e where
@@ -42,7 +42,6 @@ data Expecting = ExpPendingShortOpt ShortOpt
                | ExpNonOptionPosArg
                | ExpEnd
                | ExpNonGNUExactLong LongOpt
-               | ExpNonGNUApproxLong (Set LongOpt)
                | ExpMatchingApproxLong LongOpt (Set LongOpt)
                | ExpNonGNUMatchingApproxLong LongOpt (Set LongOpt)
                | ExpApproxWord (Set Text)
@@ -95,7 +94,7 @@ printExpecting e = case e of
 
 instance Arbitrary Expecting where
   arbitrary = do
-    i <- choose (0, (15 :: Int))
+    i <- choose (0, (14 :: Int))
     case i of
       0 -> liftM ExpPendingShortOpt arbitrary
       1 -> liftM ExpExactLong arbitrary
@@ -107,13 +106,12 @@ instance Arbitrary Expecting where
       7 -> return ExpNonOptionPosArg
       8 -> return ExpEnd
       9 -> liftM ExpNonGNUExactLong arbitrary
-      10 -> liftM ExpNonGNUApproxLong randSet
-      11 -> liftM2 ExpMatchingApproxLong arbitrary randSet
-      12 -> liftM2 ExpNonGNUMatchingApproxLong arbitrary randSet
-      13 -> liftM ExpApproxWord
+      10 -> liftM2 ExpMatchingApproxLong arbitrary randSet
+      11 -> liftM2 ExpNonGNUMatchingApproxLong arbitrary randSet
+      12 -> liftM ExpApproxWord
             (liftM (Set.fromList . map pack) arbitrary)
-      14 -> return ExpOptionOrPosArg
-      15 -> liftM ExpNonPendingShortOpt arbitrary
+      13 -> return ExpOptionOrPosArg
+      14 -> liftM ExpNonPendingShortOpt arbitrary
       _  -> error "should never happen"
 
 data Saw = SawNoPendingShorts
