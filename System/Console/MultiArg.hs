@@ -40,6 +40,17 @@
 -- performance hit will not be significant unless you are parsing an
 -- obscene amount of data--and if you're doing that, you might want to
 -- use Data.Text anyway :)
+--
+-- multiarg embraces \"The Tao of Option Parsing\" that Python's Optik
+-- (<http://optik.sourceforge.net/>) follows. Read \"The Tao of Option
+-- Parsing\" here:
+--
+-- <http://optik.sourceforge.net/doc/1.5/tao.html>
+--
+-- multiarg uses the same terminology and the same philosophy, which
+-- means you won't be able to use multiarg to (easily) build a clone
+-- to the UNIX @find(1)@ command. (You could do it, but multiarg won't
+-- help you very much.)
 module System.Console.MultiArg (
   module System.Console.MultiArg.SimpleParser ) where
 

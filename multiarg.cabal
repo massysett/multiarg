@@ -9,8 +9,24 @@ maintainer: omari@smileystation.com
 stability: Experimental
 homepage: http://www.smileystation.com/pantry
 bug-reports: omari@smileystation.com
-synopsis: Command line parser of multiple arguments
-description: Command line parser of multiple arguments
+synopsis: Combinators to build command line parsers
+
+description: multiarg is a parser combinator library to build command
+ line parsers. With it you can easily creates parsers with options
+ that take more than one option argument--for example, I created
+ multiarg due to the apparent lack of such ability amongst other
+ parsers. Its basic design is loosely inspired by Parsec.
+ .
+ Provides ParserT, a monad you use to build parsers. ParserT is a monad
+ transformer, so you can layer it on top of other monads. For instance
+ you could layer it on the IO monad so that your parser can perform IO.
+ .
+ It also has a simple, pre-built parser built with the underlying
+ combinators, which works for many situtations and shields you from the
+ underlying complexity if you don't need it.
+ .
+ See the documentation in the System.Console.MultiArg module for
+ details.
 
 Flag newbase
     Description: Builds package with base >= 4.4.0.0.

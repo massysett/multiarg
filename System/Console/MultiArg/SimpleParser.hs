@@ -1,3 +1,7 @@
+-- | A simple command line parser that can parse options that take an
+-- optional argument, one or two arguments, or a variable number of
+-- arguments. For sample code that uses this parser, see
+-- 'System.Console.MultiArg.SampleParser'.
 module System.Console.MultiArg.SimpleParser (
   ArgSpec(..),
   OptSpec(..),
@@ -19,14 +23,34 @@ import System.Environment ( getArgs )
 import Data.Monoid ( mconcat )
 import Control.Applicative ( many, (<|>) )
 
-data ArgSpec = SNoArg | SOptionalArg | SOneArg | STwoArg | SVariableArgs
+-- | Specifies each option that your program accepts.
+data OptSpec = OptSpec {
+  longOpt :: String
+  -- ^ Each option must have at least one long option, which you
+  -- specify here. Your program's users specify long options by
+  -- preceding them with two dashes, such as @--verbose@. When writing
+  -- your code you omit the dashes, so you would specify @verbose@
+  -- here; including the dashes in your code results in a runtime
+  -- error.
+
+  , shortOpts :: [Char]
+    -- ^ Additional, synonymous short options may be specified
+    -- here. For instance if you want your users to be able to specify
+    -- @-v@ in addition to @--verbose@, include @v@ in this list.
+    
+  , longOpts :: [String]
+    -- ^ Additional synonymous long options may be specified here. For
+    -- instance, if you specified @quiet@ for @longOpt@, you might
+    -- want to include @silent@ in this list.
+
+  , argSpec :: ArgSpec
+    -- ^ Specifies what arguments, if any, this option takes.
+  }
              deriving Show
 
-data OptSpec = OptSpec { longOpt :: String
-                       , shortOpts :: [Char]
-                       , longOpts :: [String]
-                       , argSpec :: ArgSpec }
-               deriving Show
+-- | Specifies 
+data ArgSpec = SNoArg | SOptionalArg | SOneArg | STwoArg | SVariableArgs
+             deriving Show
 
 data Result = PosArg   { posArg :: String }
               | Stopper
