@@ -9,18 +9,18 @@ import System.Console.MultiArg
 
 specs :: [OptSpec]
 
-specs = [ OptSpec "bytes"               "c" []          SOneArg
-        , OptSpec "follow"              "f" []          SOptionalArg
-        , OptSpec "follow-retry"        "F" []          SNoArg
-        , OptSpec "lines"               "n" []          SOneArg
-        , OptSpec "max-unchanged-stats" ""  []          SOneArg
-        , OptSpec "pid"                 ""  []          SOneArg
-        , OptSpec "quiet"               "q" ["silent"]  SNoArg
-        , OptSpec "sleep-interval"      "s" []          SOneArg
-        , OptSpec "verbose"             "v" []          SNoArg
-        , OptSpec "help"                ""  []          SNoArg
-        , OptSpec "version"             ""  []          SNoArg
-        , OptSpec "multi-file"          "M" []          SVariableArgs
+specs = [ OptSpec "bytes"               "c" []          oneArg
+        , OptSpec "follow"              "f" []          optionalArg
+        , OptSpec "follow-retry"        "F" []          noArg
+        , OptSpec "lines"               "n" []          oneArg
+        , OptSpec "max-unchanged-stats" ""  []          oneArg
+        , OptSpec "pid"                 ""  []          oneArg
+        , OptSpec "quiet"               "q" ["silent"]  noArg
+        , OptSpec "sleep-interval"      "s" []          oneArg
+        , OptSpec "verbose"             "v" []          noArg
+        , OptSpec "help"                ""  []          noArg
+        , OptSpec "version"             ""  []          noArg
+        , OptSpec "multi-file"          "M" []          variableArg
         ]
 
 sampleMain :: IO ()

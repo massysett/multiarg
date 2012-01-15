@@ -3,11 +3,15 @@
 -- arguments. For sample code that uses this parser, see
 -- 'System.Console.MultiArg.SampleParser'.
 module System.Console.MultiArg.SimpleParser (
-  ArgSpec(..),
   OptSpec(..),
   Intersperse(..),
   Result(..),
   Args(..),
+  noArg,
+  optionalArg,
+  oneArg,
+  twoArg,
+  variableArg,
   SimpleError,
   getArgs,
   System.Console.MultiArg.SimpleParser.parse ) where
@@ -43,35 +47,126 @@ data OptSpec = OptSpec {
     -- instance, if you specified @quiet@ for @longOpt@, you might
     -- want to include @silent@ in this list.
 
-  , argSpec :: ArgSpec
+  , argSpec :: Args
     -- ^ Specifies what arguments, if any, this option takes.
   }
              deriving Show
 
--- | Specifies 
-data ArgSpec = SNoArg | SOptionalArg | SOneArg | STwoArg | SVariableArgs
-             deriving Show
+-- | This datatype does dual duty. When part of an 'OptSpec', you use
+-- it to specify how many arguments, if any, an option takes. When you
+-- use it for this purpose, it only matters which data constructor you
+-- use; the fields can be any value, even 'undefined'.
+--
+-- When part of a Result, 'Args' indicates what arguments the user
+-- supplied to the option.
+data Args =
+  NoArg
+  -- ^ This option takes no arguments
+          
+  | OptionalArg  { oArg :: Maybe String }
 
-data Result = PosArg   { posArg :: String }
-              | Stopper
-              | Option { label :: String
-                       , args :: Args }
-              deriving Show
+    -- ^ This option takes an optional argument. As noted in \"The Tao
+    -- of Option Parsing\", optional arguments can result in some
+    -- ambiguity. (Read it here:
+    -- <http://optik.sourceforge.net/doc/1.5/tao.html>) If option @a@
+    -- takes an optional argument, and @b@ is also an option, what
+    -- does @-ab@ mean? SimpleParser resolves this ambiguity by
+    -- assuming that @b@ is an argument to @a@. If the user does not
+    -- like this, she can specify @-a -b@ (in such an instance @-b@ is
+    -- not parsed as an option to @-a@, because @-b@ begins with a
+    -- hyphen and therefore \"looks like\" an option.) Certainly
+    -- though, optional arguments lead to ambiguity, so if you don't
+    -- like it, don't use them :)
 
-data Args = NoArg
-          | OptionalArg  { oArg :: Maybe String }
-          | OneArg       { sArg1 :: String }
-          | TwoArg       { tArg1 :: String
-                         , tArg2 :: String }
-          | VariableArgs { vArgs :: [String] }
+  | OneArg       { sArg1 :: String }
+    -- ^ This option takes one argument. Here, if option @a@ takes one
+    -- argument, @-a -b@ will be parsed with @-b@ being an argument to
+    -- option @a@, even though @-b@ starts with a hyphen and therefore
+    -- \"looks like\" an option.
+    
+  | TwoArg       { tArg1 :: String
+                 , tArg2 :: String }
+    -- ^ This option takes two arguments. Parsed similarly to 'OneArg'.
+    
+  | VariableArg { vArgs :: [String] }
+    -- ^ This option takes a variable number of arguments--zero or
+    -- more. Option arguments continue until the command line contains
+    -- a word that begins with a hyphen. For example, if option @a@
+    -- takes a variable number of arguments, then @-a one two three
+    -- -b@ will be parsed as @a@ taking three arguments, and @-a -b@
+    -- will be parsed as @a@ taking no arguments. If the user enters
+    -- @-a@ as the last option on the command line, then the only way
+    -- to indicate the end of arguments for @a@ and the beginning of
+    -- positional argments is with a stopper.
+    
   deriving Show
 
-data Intersperse = Intersperse | StopOptions
+-- | Specify that this option takes no arguments.
+noArg :: Args
+noArg = NoArg
 
-parse :: Intersperse
-         -> [OptSpec]
-         -> [String]
-         -> Either SimpleError [Result]
+-- | Specify that this option takes an optional argument.
+optionalArg :: Args
+optionalArg = OptionalArg Nothing
+
+-- | Specify that this option takes one argument.
+oneArg :: Args
+oneArg = OneArg ""
+
+-- | Specify that this option takes two arguments.
+twoArg :: Args
+twoArg = TwoArg "" ""
+
+-- | Specify that this option takes a variable number of arguments.
+variableArg :: Args
+variableArg = VariableArg []
+
+-- | Holds the result of command line parsing. Each option (along with
+-- its option arguments) or positional argument is assigned to its own
+-- Result.
+data Result =
+  PosArg   { posArg :: String }
+  | Stopper
+  | Option {
+    label :: String
+    -- ^ Each option must have at least one long option. So that you
+    -- can distinguish one option from another, the name of that long
+    -- option is returned here.
+    , args :: Args }
+              deriving Show
+
+-- | What to do after encountering the first non-option,
+-- non-option-argument word on the command line? In either case, no
+-- more options are parsed after a stopper.
+data Intersperse =
+  Intersperse
+  -- ^ Additional options are allowed on the command line after
+  -- encountering the first positional argument. For example, if @a@
+  -- and @b@ are options, in the command line @-a posarg -b@, @b@ will
+  -- be parsed as an option. If @b@ is /not/ an option and the same
+  -- command line is entered, then @-b@ will result in an error
+  -- because @-b@ starts with a hyphen and therefore \"looks like\" an
+  -- option.
+  
+  | StopOptions
+    -- ^ No additional options will be parsed after encountering the
+    -- first positional argument. For example, if @a@ and @b@ are
+    -- options, in the command line @-a posarg -b@, @b@ will be parsed
+    -- as a positional argument rather than as an option.
+
+-- | Parse a command line. 
+parse ::
+  Intersperse
+  -> [OptSpec]
+  -> [String]
+  -- ^ The command line to parse. This function correctly handles
+  -- Unicode strings; however, because 'System.Environment.getArgs'
+  -- does not always correctly handle Unicode strings, consult the
+  -- documentation in 'System.Console.MultiArg.GetArgs' and consider
+  -- using the functions in there if there is any chance that you will
+  -- be parsing command lines that have non-ASCII strings.
+
+  -> Either SimpleError [Result]
 parse i os ss = toEither $ Prim.parse (map pack ss) (f os) where
   f = case i of Intersperse -> parseIntersperse
                 StopOptions -> parseNoIntersperse
@@ -137,19 +232,19 @@ optSpec o = let
   ls = map makeLongOpt . map pack . longOpts $ o
   opt = return . Option (longOpt o)
   in case argSpec o of
-    SNoArg -> do
+    NoArg -> do
       _ <- mixedNoArg lo ls ss
       opt NoArg
-    SOptionalArg -> do
+    (OptionalArg {}) -> do
       (_, a) <- mixedOptionalArg lo ls ss
       opt (OptionalArg . fmap unpack $ a)
-    SOneArg -> do
+    (OneArg {}) -> do
       (_, a) <- mixedOneArg lo ls ss
       opt (OneArg . unpack $ a)
-    STwoArg -> do
+    (TwoArg {}) -> do
       (_, a1, a2) <- mixedTwoArg lo ls ss
       opt (TwoArg (unpack a1) (unpack a2))
-    SVariableArgs -> do
+    (VariableArg {}) -> do
       (_, as) <- mixedVariableArg lo ls ss
-      opt (VariableArgs . map unpack $ as)
+      opt (VariableArg . map unpack $ as)
 
