@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Parser primitives. These are the only functions that have access
 -- to the internals of the parser.
 module System.Console.MultiArg.Prim (
@@ -9,6 +8,12 @@ module System.Console.MultiArg.Prim (
   ParserT,
   
   -- * Running a parser
+  
+  -- | Each parser runner is applied to a list of Text, which are the
+  -- command line arguments to parse. If there is any chance that you
+  -- will be parsing Unicode strings, see the documentation in
+  -- 'System.Console.MultiArg.GetArgs' before you use
+  -- 'System.Environment.getArgs'.
   parse,
   parseE,
   parseSE,
@@ -196,9 +201,17 @@ type Parser a = ParserT () E.SimpleError Identity a
 -- Identity.
 parseSE ::
   s
+  -- ^ The initial user state
+  
   -> [Text]
+  -- ^ Command line arguments
+
   -> ParserSE s e a
+  -- ^ Parser to run
+  
   -> (Exceptional e a, s)
+  -- ^ Success or failure, and the final user state
+  
 parseSE s ts p =
   let r = runIdentity (runParserT p (defaultState s ts))
       (result, st') = r
@@ -210,8 +223,14 @@ parseSE s ts p =
 -- Identity and is parameterized on the error type.
 parseE ::
   [Text]
+  -- ^ Command line arguments to parse
+  
   -> ParserE e a
+  -- ^ Parser to run
+  
   -> Exceptional e a
+  -- ^ Success or failure
+
 parseE ts p =
   let r = runIdentity (runParserT p (defaultState () ts))
       (result, _) = r
@@ -222,8 +241,13 @@ parseE ts p =
 -- | The simplest parser runner; has no user state, an underlying
 -- monad Identity, and error type SimpleError.
 parse :: [Text]
+         -- ^ Command line arguments to parse
+         
          -> Parser a
+         -- ^ Parser to run
+
          -> Exceptional E.SimpleError a
+         -- ^ Successful result or an error
 parse = parseE
 
 -- | The most complex parser runner. Runs a parser with a user-defined
@@ -232,9 +256,18 @@ parse = parseE
 parseT ::
   (Monad m)
   => s
+  -- ^ Initial user state
+
   -> [Text]
+  -- ^ Command line arguments to parse
+
   -> ParserT s e m a
+  -- ^ Parser to run
+  
   -> m (Exceptional e a, s)
+  -- ^ Success or failure and the final user state, inside of the
+  -- underlying monad
+
 parseT s ts p = runParserT p (defaultState s ts) >>= \r ->
   let (result, st') = r
   in case result of

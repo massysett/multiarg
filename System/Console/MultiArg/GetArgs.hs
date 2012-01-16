@@ -47,8 +47,22 @@ import qualified System.Environment as E ( getArgs, getProgName )
 import qualified System.Environment.UTF8 as E ( getArgs, getProgName )
 #endif
 
+-- | Gets the command-line arguments supplied by the program's
+-- user. If the @base@ package is older than version 4.4, then this
+-- function assumes the command line is encoded in UTF-8, which is
+-- true for many newer Unix systems; however, many older systems may
+-- use single-byte encodings like ISO-8859. In such cases, this
+-- function will give erroneous results.
+--
+-- If the @base@ package is version 4.4.0 or newer, this function
+-- simply uses the getArgs that comes with @base@. That getArgs
+-- detects the system's default encoding and uses that, so it should
+-- give accurate results on most systems.
 getArgs :: IO [String]
 getArgs = E.getArgs
 
+-- | Gets the name of the program that the user invoked. See
+-- documentation for 'getArgs' for important caveats that also apply
+-- to this function.
 getProgName :: IO String
 getProgName = E.getProgName

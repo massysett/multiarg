@@ -1,3 +1,9 @@
+-- | Errors. Parsing a command line when a user has entered it
+-- correctly is easy; doing something sensible when an incorrect line
+-- has been entered is a bit more difficult. This module exports an
+-- 'Error' typeclass, which you can declare instances of in order to
+-- have your own type to represent errors. Or you can use
+-- 'SimpleError', which is already an instance of 'Error'.
 module System.Console.MultiArg.Error where
 
 import System.Console.MultiArg.Option
@@ -14,10 +20,20 @@ import System.Console.MultiArg.QuickCheckHelpers
   ( randSet, randText )
 import Control.Monad ( liftM, liftM2 )
 
+-- | Instances of this typeclass represent multiarg errors. You can
+-- declare instances of this typeclass so that you can use your own
+-- type for errors. This makes multiarg easy to integrate into your
+-- own programs. Then you can also easily add other errors, which you
+-- can report from the parsers you build by calling
+-- 'System.Console.MultiArg.Prim.throw'.
 class Error e where
+  -- | Store an error in your Error instance.
   parseErr :: Expecting -> Saw -> e
 
+-- | A simple type that is already an instance of 'Error'.
 data SimpleError = SimpleError Expecting Saw deriving (Show, Eq)
+
+-- | Generates error messages.
 printError :: SimpleError -> Text
 printError (SimpleError e s) =
   pack "Error parsing command line input.\n"
@@ -32,6 +48,11 @@ instance Error SimpleError where
 instance Arbitrary SimpleError where
   arbitrary = liftM2 SimpleError arbitrary arbitrary
 
+-- | Each error consists of two parts: what the parser was expecting
+-- to see, and what it actually saw. This type holds what the parser
+-- expected to see. If you just want to give some text to be used in
+-- an error message, use 'ExpTextError'. To generate a generic error,
+-- use 'ExpOtherFailure'.
 data Expecting = ExpPendingShortOpt ShortOpt
                | ExpExactLong LongOpt
                | ExpApproxLong (Set LongOpt)
@@ -51,6 +72,7 @@ data Expecting = ExpPendingShortOpt ShortOpt
                | ExpOtherFailure
                deriving (Show, Eq)
 
+-- | Generates an error message from an Expecting.
 printExpecting :: Expecting -> Text
 printExpecting e = case e of
   (ExpPendingShortOpt s) ->
@@ -114,6 +136,9 @@ instance Arbitrary Expecting where
       14 -> liftM ExpNonPendingShortOpt arbitrary
       _  -> error "should never happen"
 
+-- | What the parser actually saw. To give some text to be used in the
+-- error message, use 'SawTextError'. To generate a generic error, use
+-- 'SawOtherFailure'.
 data Saw = SawNoPendingShorts
          | SawWrongPendingShort Char
          | SawNoArgsLeft
@@ -142,6 +167,7 @@ data Saw = SawNoPendingShorts
          | SawOtherFailure
          deriving (Show, Eq)
 
+-- | Generates error messages from a 'Saw'.
 printSaw :: Saw -> Text
 printSaw s = case s of
   SawNoPendingShorts -> pack "no pending short options"
