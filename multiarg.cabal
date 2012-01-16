@@ -33,6 +33,10 @@ description: multiarg is a parser combinator library to build command
 Flag newbase
     Description: Builds package with base >= 4.4.0.0.
 
+source-repository head
+    type: git
+    location: git://github.com/massysett/multiarg.git
+
 Library
     Build-depends:
         base ==4.*,
