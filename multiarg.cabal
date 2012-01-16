@@ -9,6 +9,8 @@ maintainer: omari@smileystation.com
 stability: Experimental
 homepage: http://www.smileystation.com/pantry
 bug-reports: omari@smileystation.com
+Category: Console, Parsing
+License-File: LICENSE
 synopsis: Combinators to build command line parsers
 
 description: multiarg is a parser combinator library to build command
