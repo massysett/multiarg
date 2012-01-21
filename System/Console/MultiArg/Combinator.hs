@@ -35,8 +35,6 @@ module System.Console.MultiArg.Combinator (
   -- * Other words
   matchApproxWord ) where
   
-  
-
 import Data.Text ( Text, isPrefixOf )
 import Data.Set ( Set )
 import qualified Data.Set as Set
