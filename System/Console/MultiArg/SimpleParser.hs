@@ -174,7 +174,7 @@ parse i os ss = toEither $ Prim.parse (map pack ss) (f os) where
 parseNoIntersperse :: [OptSpec] -> Parser [Result]
 parseNoIntersperse os = do
   let opts = mconcat . map optSpec $ os
-  rs <- manyTill opts afterArgs
+  rs <- manyTill opts (lookAhead afterArgs)
   firstArg <- afterArgs
   case firstArg of
     EndOfInput -> return rs
