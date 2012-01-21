@@ -25,6 +25,7 @@ module System.Console.MultiArg.Prim (
   apply,
   choice,
   combine,
+  lookAhead,
   
   -- ** Running parsers multiple times
   several,
@@ -318,6 +319,15 @@ combine (ParserT l) f = ParserT $ \s ->
     (Good g) ->
       let (ParserT fr) = f g
       in fr s'
+
+-- | @lookAhead p@ runs parser p without consuming any input.
+lookAhead ::
+  (Monad m)
+  => ParserT s e m a
+  -> ParserT s e m a
+lookAhead (ParserT p) = ParserT $ \s ->
+  p s >>= \(r, _) ->
+  return (r, s)
 
 -- | @good a@ always succeeds without consuming any input and has
 -- result a. This provides the implementation for
