@@ -16,10 +16,15 @@ module System.Console.MultiArg.SimpleParser (
   getArgs,
   System.Console.MultiArg.SimpleParser.parse ) where
 
-import System.Console.MultiArg.Prim
+import System.Console.MultiArg.Prim (
+  Parser, manyTill, lookAhead, nextArg, nonOptionPosArg,
+  end, (<?>), stopper, nonOptionPosArg )
 import qualified System.Console.MultiArg.Prim as Prim
-import System.Console.MultiArg.Combinator
-import System.Console.MultiArg.Option
+import System.Console.MultiArg.Combinator (
+  mixedNoArg, mixedOptionalArg, mixedOneArg, mixedTwoArg,
+  mixedVariableArg )
+import System.Console.MultiArg.Option (
+  makeLongOpt, makeShortOpt )
 import Control.Monad.Exception.Synchronous ( toEither )
 import System.Console.MultiArg.Error ( SimpleError )
 import Data.Text ( pack, unpack )
