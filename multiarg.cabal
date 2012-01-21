@@ -3,7 +3,7 @@ Version: 0.1.0.0
 Cabal-version: >=1.8
 Build-Type: Simple
 License: MIT
-Copyright: 2011 Omari Norman.
+Copyright: 2011-2012 Omari Norman.
 author: Omari Norman
 maintainer: omari@smileystation.com
 stability: Experimental
