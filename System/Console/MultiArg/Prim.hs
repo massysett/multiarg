@@ -720,6 +720,12 @@ nonOptionPosArg = ParserT $ \s ->
 -- after the failed run of p, and the parser is left in a failed
 -- state.
 --
+-- Should parser e succeed (as it will on a successful application of
+-- manyTill), then the parser state will reflect that parser e
+-- succeeded--that is, if parser e consumes input, that input will be
+-- consumed in the parser that is returned. Wrap e inside of
+-- @lookAhead@ if that is undesirable.
+--
 -- Be particularly careful to get the order of the arguments
 -- correct. Applying this function to reversed arguments will yield
 -- bugs that are very difficult to diagnose.
@@ -747,7 +753,7 @@ parseTill ::
   -> m (Till s e a)
 parseTill s fr ff = ff s >>= \r ->
   case r of
-    (Good _, _) -> return $ Till [] s Nothing
+    (Good _, s') -> return $ Till [] s' Nothing
     (Bad _, _) ->
       fr s >>= \r' ->
       case r' of
