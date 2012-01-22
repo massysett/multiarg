@@ -12,6 +12,8 @@ bug-reports: omari@smileystation.com
 Category: Console, Parsing
 License-File: LICENSE
 synopsis: Combinators to build command line parsers
+extra-source-files:
+        binaries/sample.hs
 
 description: multiarg is a parser combinator library to build command
  line parsers. With it you can easily creates parsers with options
@@ -54,7 +56,6 @@ Library
         Build-depends:
             base < 4.4,
             utf8-string == 0.3.7
-
 
     Exposed-modules:
         System.Console.MultiArg,
