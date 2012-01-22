@@ -16,7 +16,7 @@ extra-source-files:
         binaries/sample.hs
 
 description: multiarg is a parser combinator library to build command
- line parsers. With it you can easily creates parsers with options
+ line parsers. With it you can easily create parsers with options
  that take more than one option argument--for example, I created
  multiarg due to the apparent lack of such ability amongst other
  parsers. Its basic design is loosely inspired by Parsec.
