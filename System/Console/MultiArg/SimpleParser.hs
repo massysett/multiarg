@@ -18,7 +18,7 @@ module System.Console.MultiArg.SimpleParser (
 
 import System.Console.MultiArg.Prim (
   Parser, manyTill, lookAhead, nextArg, nonOptionPosArg,
-  end, (<?>), stopper, nonOptionPosArg )
+  end, (<?>), stopper, nonOptionPosArg, try )
 import qualified System.Console.MultiArg.Prim as Prim
 import System.Console.MultiArg.Combinator (
   mixedNoArg, mixedOptionalArg, mixedOneArg, mixedTwoArg,
@@ -179,7 +179,7 @@ parse i os ss = toEither $ Prim.parse (map pack ss) (f os) where
 parseNoIntersperse :: [OptSpec] -> Parser [Result]
 parseNoIntersperse os = do
   let opts = mconcat . map optSpec $ os
-  rs <- manyTill opts (lookAhead afterArgs)
+  rs <- manyTill opts (try $ lookAhead afterArgs)
   firstArg <- afterArgs
   case firstArg of
     EndOfInput -> return rs

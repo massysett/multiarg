@@ -6,7 +6,7 @@ module System.Console.MultiArg.Combinator (
   -- * Parser combinators
   option,
   optionMaybe,
-  --choice,
+  notFollowedBy,
   
   -- * Short options
   shortNoArg,
@@ -51,6 +51,7 @@ import qualified System.Console.MultiArg.Error as E
 import System.Console.MultiArg.Error
   ( Error, parseErr )
 import Control.Applicative ((<|>), many)
+import Control.Monad ( void )
 import Data.Monoid ( mconcat )
 
 -- | @option x p@ runs parser p. If p fails without consuming any
@@ -70,15 +71,19 @@ optionMaybe :: (Error e, Monad m)
                -> ParserT s e m (Maybe a)
 optionMaybe p = option Nothing (liftM Just p)
 
-{-
--- | @choice ps@ runs parsers from ps in order. choice returns the
--- first parser that either succeeds or fails while consuming
--- input. For each parser, if it fails without consuming any input,
--- the next parser is tried. If all the parsers fail without consuming
--- any input, the last parser will be returned.
-choice :: ParserSE s e a -> [ParserSE s e a] -> ParserSE s e a
-choice = foldl choice
--}
+-- | @notFollowedBy p@ succeeds only if parser p fails. If p fails,
+-- notFollowedBy succeeds without consuming any input. If p succeeds
+-- and consumes input, notFollowedBy fails and consumes input. If p
+-- succeeds and does not consume any input, notFollowedBy fails and
+-- does not consume any input.
+notFollowedBy :: (Error e, Monad m)
+                 => ParserT s e m a
+                 -> ParserT s e m ()
+notFollowedBy p =
+  void $ ((try p >> throw (E.parseErr E.ExpNotFollowedBy E.SawFollowedBy))
+          <|> return ())
+
+
 -- | Parses only a non-GNU style long option (that is, one that does
 -- not take option arguments by attaching them with an equal sign,
 -- such as @--lines=20@).

@@ -320,14 +320,20 @@ combine (ParserT l) f = ParserT $ \s ->
       let (ParserT fr) = f g
       in fr s'
 
--- | @lookAhead p@ runs parser p without consuming any input.
+-- | @lookAhead p@ runs parser p. If p succeeds, lookAhead p succeeds
+-- without consuming any input. If p fails without consuming any
+-- input, so does lookAhead. If p fails and consumes input, lookAhead
+-- also fails and consumes input. If this is undesirable, combine with
+-- "try".
 lookAhead ::
   (Monad m)
   => ParserT s e m a
   -> ParserT s e m a
 lookAhead (ParserT p) = ParserT $ \s ->
-  p s >>= \(r, _) ->
-  return (r, s)
+  p s >>= \(r, s') ->
+  return $ case r of
+    (Good g) -> (Good g, s)
+    (Bad e) -> (Bad e, s')
 
 -- | @good a@ always succeeds without consuming any input and has
 -- result a. This provides the implementation for

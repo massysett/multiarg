@@ -69,6 +69,7 @@ data Expecting = ExpPendingShortOpt ShortOpt
                | ExpOptionOrPosArg
                | ExpTextError Text
                | ExpNonPendingShortOpt ShortOpt
+               | ExpNotFollowedBy
                | ExpOtherFailure
                deriving (Show, Eq)
 
@@ -111,12 +112,15 @@ printExpecting e = case e of
   (ExpTextError t) -> t
   (ExpNonPendingShortOpt s) ->
     (pack "short option: ") `append` (singleton . unShortOpt $ s)
+  ExpNotFollowedBy ->
+    pack "not followed by"
   (ExpOtherFailure) -> pack "general failure"
+
 
 
 instance Arbitrary Expecting where
   arbitrary = do
-    i <- choose (0, (14 :: Int))
+    i <- choose (0, (17 :: Int))
     case i of
       0 -> liftM ExpPendingShortOpt arbitrary
       1 -> liftM ExpExactLong arbitrary
@@ -133,7 +137,10 @@ instance Arbitrary Expecting where
       12 -> liftM ExpApproxWord
             (liftM (Set.fromList . map pack) arbitrary)
       13 -> return ExpOptionOrPosArg
-      14 -> liftM ExpNonPendingShortOpt arbitrary
+      14 -> liftM ExpTextError randText
+      15 -> liftM ExpNonPendingShortOpt arbitrary
+      16 -> return ExpNotFollowedBy
+      17 -> return ExpOtherFailure
       _  -> error "should never happen"
 
 -- | What the parser actually saw. To give some text to be used in the
@@ -164,6 +171,7 @@ data Saw = SawNoPendingShorts
          | SawNoOption
          | SawNoOptionOrPosArg
          | SawTextError Text
+         | SawFollowedBy
          | SawOtherFailure
          deriving (Show, Eq)
 
@@ -227,11 +235,12 @@ printSaw s = case s of
   SawNoOptionOrPosArg ->
     pack "not an option or positional argument"
   (SawTextError t) -> t
+  SawFollowedBy -> pack "followed by"
   (SawOtherFailure) -> pack "general failure"
 
 instance Arbitrary Saw where
   arbitrary = do
-    i <- choose (0, (23 :: Int))
+    i <- choose (0, (26 :: Int))
     case i of
       0 -> return SawNoPendingShorts
       1 -> liftM SawWrongPendingShort arbitrary
@@ -259,4 +268,7 @@ instance Arbitrary Saw where
             randText
       22 -> return SawNoOption
       23 -> return SawNoOptionOrPosArg
+      24 -> liftM SawTextError randText
+      25 -> return SawFollowedBy
+      26 -> return SawOtherFailure
       _  -> error "should never happen"

@@ -7,7 +7,7 @@ Copyright: 2011-2012 Omari Norman.
 author: Omari Norman
 maintainer: omari@smileystation.com
 stability: Experimental
-homepage: http://www.smileystation.com/pantry
+homepage: https://github.com/massysett/multiarg
 bug-reports: omari@smileystation.com
 Category: Console, Parsing
 License-File: LICENSE
