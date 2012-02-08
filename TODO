@@ -1,0 +1,5 @@
+* remove the option that is returned in the tuple from combinators
+   like longOneArg. Not sure why they were here. Needed for "mixed"
+   functions but not for these.
+
+* Remove QuickCheck from default build dependencies
