@@ -30,6 +30,7 @@ module System.Console.MultiArg.Prim (
   -- ** Running parsers multiple times
   several,
   manyTill,
+  feed,
 
   -- ** Monad lifting
   parserLift,
@@ -810,6 +811,29 @@ parseRepeat st1 f = f st1 >>= \r ->
       let (ls, finalGoodSt, failure, finalBadSt) = r'
       in return (a : ls, finalGoodSt, failure, finalBadSt)
     (Bad e, st') -> return ([], st1, e, st')
+
+-- | feed f s applies function f to initial state s and runs the
+-- resulting parser. If the parser succeeds, its output is fed again
+-- to function f. This continues until f fails. Whether feed f s fails
+-- with our without consuming input depends upon whether the final run
+-- of function f failed with or without consuming any input.
+--
+-- This function will call @error@ if the parser resulting from applying
+-- f to s succeeds without consuming any input; otherwise an infinite
+-- loop could result.
+feed ::
+  Monad m
+  => (a -> ParserT s e m a)
+  -> a
+  -> ParserT s e m a
+feed f a = ParserT $ \s ->
+  runParserT (f a) s >>= \(r, s') ->
+  case r of
+    Bad b -> return (Bad b, s')
+    Good g ->
+      if noConsumed s s'
+      then error "feed applied to parser that consumes no input"
+      else runParserT (feed f g) s'
 
 -- | Succeeds if there is no more input left.
 end ::
