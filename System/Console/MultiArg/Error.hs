@@ -30,6 +30,14 @@ class Error e where
   -- | Store an error in your Error instance.
   parseErr :: Expecting -> Saw -> e
 
+instance Error Text where
+  parseErr e s =
+    pack "command line parser error.\n"
+    `append` pack "expecting: " `append` printExpecting e
+    `snoc` '\n'
+    `append` pack "saw: " `append` printSaw s
+    `snoc` '\n'
+
 -- | A simple type that is already an instance of 'Error'.
 data SimpleError = SimpleError Expecting Saw deriving (Show, Eq)
 
