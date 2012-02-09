@@ -1,5 +1,9 @@
 * remove the option that is returned in the tuple from combinators
    like longOneArg. Not sure why they were here. Needed for "mixed"
-   functions but not for these.
+   functions but not for these. (Update - these need to be here, for
+   instance when using <|>. Add note in comments.)
 
 * Remove QuickCheck from default build dependencies
+
+* Add comment to Combinators - parsers do not consume any input if
+   option is not matched.
