@@ -772,6 +772,20 @@ parseTill s fr ff = ff s >>= \r ->
              then error "parseTill applied to parser that takes empty list"
              else return $ Till (g:gs) lS lF
 
+-- Do not implement several in terms of feed. For example:
+--
+-- several p = feed (const p) (lookAhead p) ()
+--
+-- The problem with this implementation is that ParserT is a monad
+-- transformer; this code has no idea what the underlying monad is
+-- doing. So this implementation would run @lookAhead p@ multiple
+-- times, which might be undesirable. Maybe it deletes files, or does
+-- lots of IO--this code can't know.
+--
+-- This code would work fine though if ParserT weren't a monad
+-- transformer (maybe it would be a little slower, but in practice who
+-- cares.)
+
 -- | several p runs parser p zero or more times and returns all the
 -- results. This proceeds like this: parser p is run and, if it
 -- succeeds, the result is saved and parser p is run
@@ -786,6 +800,12 @@ parseTill s fr ff = ff s >>= \r ->
 -- This semantic can come in handy. For example you might run a parser
 -- multiple times that parses an option and arguments to the
 -- option. If the arguments fail to parse, then several will fail.
+--
+-- This function provides the implementation for 'many' in
+-- "Control.Applicative.Alternative".
+--
+-- This function is /not/ implemented by using 'feed'; comments in the
+-- source code explain why.
 several ::
   (Monad m)
   => ParserT s e m a
@@ -806,34 +826,115 @@ parseRepeat st1 f = f st1 >>= \r ->
   case r of
     (Good a, st') ->
       if noConsumed st1 st'
-      then error "parseRepeat applied to parser that takes empty list"
-      else parseRepeat st' f >>= \r' ->
-      let (ls, finalGoodSt, failure, finalBadSt) = r'
-      in return (a : ls, finalGoodSt, failure, finalBadSt)
+      then error $ "several applied to parser that succeeds without"
+           ++ " consuming any input"
+      else
+        parseRepeat st' f >>= \r' ->
+        let (ls, finalGoodSt, failure, finalBadSt) = r'
+        in return (a : ls, finalGoodSt, failure, finalBadSt)
     (Bad e, st') -> return ([], st1, e, st')
 
--- | feed f s applies function f to initial state s and runs the
--- resulting parser. If the parser succeeds, its output is fed again
--- to function f. This continues until f fails. Whether feed f s fails
--- with our without consuming input depends upon whether the final run
--- of function f failed with or without consuming any input.
+-- | feed runs in a recursive loop. Each loop starts with three
+-- variables: a function @f@ that takes an input @i@ and returns a parser
+-- @p@, a parser @e@ that must succeed for the recursion to end, and
+-- an initial input @i@. This proceeds as follows:
 --
--- This function will call @error@ if the parser resulting from applying
--- f to s succeeds without consuming any input; otherwise an infinite
--- loop could result.
+-- 1. Run end parser @e@. If this parser succeeds, feed succeeds and
+-- returns a list of all successful runs of @p@. The result of @e@ is
+-- not returned, but otherwise the parser returned reflects the
+-- updated internal parser state from the running of @e@. (If that is
+-- a problem, wrap @e@ in 'lookAhead'.) If @e@ fails and consumes
+-- input, feed fails and returns a failed parser whose internal state
+-- reflects the state after @e@ fails. If @e@ fails without consuming
+-- any input, proceed with the following steps.
+--
+-- 2. Apply function @f@ to input @i@, yielding a parser @p@. Run
+-- parser @p@. If @p@ fails, feed also fails. If @p@ succeeds, it
+-- yields a new input, @i'@.
+--
+-- 3. If @p@ succeeded without consuming any input, an infinite loop
+-- will result, so apply @error@.
+--
+-- 4. Repeat from step 1, but with the new input retured from @p@,
+-- @i'@.
+--
+-- For the initial application of feed, you supply the function @f@,
+-- the end parser @e@, and the initial state @i@.
+--
+-- This function is useful for running multiple times a parser that
+-- depends on the result of previous runs of the parser. You could
+-- implement something similar using the user state feature, but for
+-- various reasons sometimes it is more useful to use 'feed' instead.
+
 feed ::
   Monad m
   => (a -> ParserT s e m a)
+  -> ParserT s e m end
   -> a
-  -> ParserT s e m a
-feed f a = ParserT $ \s ->
-  runParserT (f a) s >>= \(r, s') ->
-  case r of
-    Bad b -> return (Bad b, s')
-    Good g ->
-      if noConsumed s s'
-      then error "feed applied to parser that consumes no input"
-      else runParserT (feed f g) s'
+  -> ParserT s e m [a]
+feed f e i = ParserT $ \s ->
+  feedRecurse s f e i >>= \(s', lf) ->
+  let res = case lf of
+        EndFailure err -> Bad err
+        RepeatFailure err -> Bad err
+        RepeatSuccess ls -> Good ls
+  in return (res, s')
+
+data LastFeed e a =
+  EndFailure e
+  -- ^ The last run of the end parser failed and consumed input.
+  
+  | RepeatFailure e
+    -- ^ The last run of the repetitive parser failed (whether or not
+    -- it consumed any input).
+
+  | RepeatSuccess [a]
+    -- ^ The last run of the repetitive parser succeeded; here are all
+    -- the results.
+
+-- | Takes an initial state, a function @f@ that returns a parser @p@
+-- to run repetitively, a parser @e@ that must succeed to stop the
+-- recursion, and an input for @f@. Returns: @m (s, ei)@, where: 
+--
+-- * @m@ is the inner monad
+--
+-- * @s@ is the state after the last application of either @e@ or @p@.
+--
+-- * @lf@ is a 'LastFeed' (see above).
+feedRecurse ::
+  Monad m
+  => ParseSt s
+  -> (a -> ParserT s e m a)
+  -> ParserT s e m end
+  -> a
+  -> m (ParseSt s, LastFeed e a)
+feedRecurse st f e i =
+  runParserT e st >>= \(eResult, eSt) ->
+  case eResult of
+    Good g -> return (eSt, RepeatSuccess [])
+    Bad b ->
+      if noConsumed st eSt
+      then
+        runParserT (f i) st >>= \(pResult, pSt) ->
+        case pResult of
+          Good g ->
+            if noConsumed st pSt
+            then feedRecurseError
+            else
+              feedRecurse pSt f e g >>= \(recSt, lf) ->
+              let res = case lf of
+                    RepeatSuccess ls -> RepeatSuccess (g:ls)
+                    failed -> failed
+              in return (recSt, res)
+          Bad b -> return (pSt, RepeatFailure b)
+      else
+        return (eSt, EndFailure b)
+
+feedRecurseError :: a
+feedRecurseError =
+  error $ "feedRecurse applied to parser that succeeds without"
+  ++ "consuming any input"
+
 
 -- | Succeeds if there is no more input left.
 end ::
