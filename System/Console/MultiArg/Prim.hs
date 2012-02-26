@@ -823,18 +823,20 @@ parseRepeat st1 f = f st1 >>= \r ->
     (Bad e, st') -> return ([], st1, e, st')
 
 -- | feed runs in a recursive loop. Each loop starts with three
--- variables: a function @f@ that takes an input @i@ and returns a parser
--- @p@, a parser @e@ that must succeed for the recursion to end, and
--- an initial input @i@. This proceeds as follows:
+-- variables: a function @f@ that takes an input @i@ and returns a
+-- parser @p@, a function @g@ that takes an input @i@ and returns a
+-- parser @e@ that must succeed for the recursion to end, and an
+-- initial input @i@. This proceeds as follows:
 --
--- 1. Run end parser @e@. If this parser succeeds, feed succeeds and
--- returns a list of all successful runs of @p@. The result of @e@ is
--- not returned, but otherwise the parser returned reflects the
--- updated internal parser state from the running of @e@. (If that is
--- a problem, wrap @e@ in 'lookAhead'.) If @e@ fails and consumes
--- input, feed fails and returns a failed parser whose internal state
--- reflects the state after @e@ fails. If @e@ fails without consuming
--- any input, proceed with the following steps.
+-- 1. Apply @g@ to @i@ and run resulting parser @e@. If this parser
+-- succeeds, feed succeeds and returns a list of all successful runs
+-- of @p@. The result of @e@ is not returned, but otherwise the parser
+-- returned reflects the updated internal parser state from the
+-- running of @e@. (If that is a problem, wrap @e@ in 'lookAhead'.) If
+-- @e@ fails and consumes input, feed fails and returns a failed
+-- parser whose internal state reflects the state after @e@ fails. If
+-- @e@ fails without consuming any input, proceed with the following
+-- steps.
 --
 -- 2. Apply function @f@ to input @i@, yielding a parser @p@. Run
 -- parser @p@. If @p@ fails, feed also fails. If @p@ succeeds, it
@@ -857,7 +859,7 @@ parseRepeat st1 f = f st1 >>= \r ->
 feed ::
   Monad m
   => (a -> ParserT s e m a)
-  -> ParserT s e m end
+  -> (a -> ParserT s e m end)
   -> a
   -> ParserT s e m [a]
 feed f e i = ParserT $ \s ->
@@ -893,11 +895,11 @@ feedRecurse ::
   Monad m
   => ParseSt s
   -> (a -> ParserT s e m a)
-  -> ParserT s e m end
+  -> (a -> ParserT s e m end)
   -> a
   -> m (ParseSt s, LastFeed e a)
-feedRecurse st f e i =
-  runParserT e st >>= \(eResult, eSt) ->
+feedRecurse st f fe i =
+  runParserT (fe i) st >>= \(eResult, eSt) ->
   case eResult of
     Good _ -> return (eSt, RepeatSuccess [])
     Bad b ->
@@ -909,7 +911,7 @@ feedRecurse st f e i =
             if noConsumed st pSt
             then feedRecurseError
             else
-              feedRecurse pSt f e g >>= \(recSt, lf) ->
+              feedRecurse pSt f fe g >>= \(recSt, lf) ->
               let res = case lf of
                     RepeatSuccess ls -> RepeatSuccess (g:ls)
                     failed -> failed
