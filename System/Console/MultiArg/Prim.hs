@@ -899,7 +899,7 @@ feedRecurse ::
 feedRecurse st f e i =
   runParserT e st >>= \(eResult, eSt) ->
   case eResult of
-    Good g -> return (eSt, RepeatSuccess [])
+    Good _ -> return (eSt, RepeatSuccess [])
     Bad b ->
       if noConsumed st eSt
       then
@@ -914,7 +914,7 @@ feedRecurse st f e i =
                     RepeatSuccess ls -> RepeatSuccess (g:ls)
                     failed -> failed
               in return (recSt, res)
-          Bad b -> return (pSt, RepeatFailure b)
+          Bad badRepeat -> return (pSt, RepeatFailure badRepeat)
       else
         return (eSt, EndFailure b)
 
