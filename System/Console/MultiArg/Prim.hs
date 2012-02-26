@@ -714,6 +714,7 @@ nonOptionPosArg = ParserT $ \s ->
     let newSt = increment s { remaining = xs }
     return (result, newSt)
 
+
 -- | manyTill p e runs parser p repeatedly until parser e succeeds.
 --
 -- More precisely, first it runs parser e. If parser e succeeds, then
@@ -772,19 +773,9 @@ parseTill s fr ff = ff s >>= \r ->
              then error "parseTill applied to parser that takes empty list"
              else return $ Till (g:gs) lS lF
 
--- Do not implement several in terms of feed. For example:
---
--- several p = feed (const p) (lookAhead p) ()
---
--- The problem with this implementation is that ParserT is a monad
--- transformer; this code has no idea what the underlying monad is
--- doing. So this implementation would run @lookAhead p@ multiple
--- times, which might be undesirable. Maybe it deletes files, or does
--- lots of IO--this code can't know.
---
--- This code would work fine though if ParserT weren't a monad
--- transformer (maybe it would be a little slower, but in practice who
--- cares.)
+-- It is impossible to implement several and manyTill in terms of
+-- feed, as there is no easy way to specify what the starting value of
+-- the state for feed would be.
 
 -- | several p runs parser p zero or more times and returns all the
 -- results. This proceeds like this: parser p is run and, if it
@@ -801,11 +792,8 @@ parseTill s fr ff = ff s >>= \r ->
 -- multiple times that parses an option and arguments to the
 -- option. If the arguments fail to parse, then several will fail.
 --
--- This function provides the implementation for 'many' in
--- "Control.Applicative.Alternative".
---
--- This function is /not/ implemented by using 'feed'; comments in the
--- source code explain why.
+-- This function provides the implementation for
+-- 'Control.Applicative.Alternative.many'.
 several ::
   (Monad m)
   => ParserT s e m a
