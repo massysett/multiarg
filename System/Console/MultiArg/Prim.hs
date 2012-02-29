@@ -923,7 +923,7 @@ feedRecurse st f fe i =
 feedRecurseError :: a
 feedRecurseError =
   error $ "feedRecurse applied to parser that succeeds without"
-  ++ "consuming any input"
+  ++ " consuming any input"
 
 
 -- | Succeeds if there is no more input left.
