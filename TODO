@@ -7,3 +7,5 @@
 
 * Add comment to Combinators - parsers do not consume any input if
    option is not matched.
+
+* Examine how errors are handled?

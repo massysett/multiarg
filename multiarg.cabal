@@ -13,7 +13,7 @@ Category: Console, Parsing
 License-File: LICENSE
 synopsis: Combinators to build command line parsers
 extra-source-files:
-        binaries/sample.hs
+        doc/sample.hs
 
 description: multiarg is a parser combinator library to build command
  line parsers. With it you can easily create parsers with options
@@ -40,6 +40,8 @@ source-repository head
     location: git://github.com/massysett/multiarg.git
 
 Library
+    hs-source-dirs: lib
+
     Build-depends:
         base ==4.*,
         text ==0.11.*,
