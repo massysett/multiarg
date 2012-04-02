@@ -1,0 +1,14 @@
+Release 0.2.0.0, April 2, 2012
+Changes since release 0.1.0.0:
+
+* Henceforth all public releases will have only even numbers in their
+  release numbers (e.g. 0.2.0.0, 0.2.0.2, etc.) If a release has any
+  odd numbers in its version, it is a development release.
+
+* QuickCheck tests are removed. Eventually I will reimplement these in
+  a separate library package.
+
+* Added Feed function to System.Console.MultiArg.Prim; this allows you
+  to carry out stateful parses without using a user state. Sometimes
+  this aids in composability--for instance, I use it when combining
+  parsers from different parts of the same program.
