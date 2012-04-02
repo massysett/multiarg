@@ -1,5 +1,5 @@
 Name: multiarg
-Version: 0.3.0.0
+Version: 0.2.0.0
 Cabal-version: >=1.8
 Build-Type: Simple
 License: MIT
@@ -13,7 +13,7 @@ Category: Console, Parsing
 License-File: LICENSE
 synopsis: Combinators to build command line parsers
 extra-source-files:
-        doc/sample.hs
+        doc/sample.hs, NEWS
 
 description: multiarg is a parser combinator library to build command
  line parsers. With it you can easily create parsers with options
