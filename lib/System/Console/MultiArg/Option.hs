@@ -12,22 +12,15 @@ module System.Console.MultiArg.Option (
   makeLongOpt )
   where
 
-import Test.QuickCheck ( Arbitrary ( arbitrary ),
-                         suchThat )
 import qualified Data.Text as X
 import Data.Text ( Text, unpack, index )
 import Control.Monad ( when )
-import System.Console.MultiArg.QuickCheckHelpers ( randText )
 
 -- | Short options. Options that are preceded with a single dash on
 -- the command line and consist of a single letter. That single letter
 -- cannot be a dash. Any other Unicode character is good (including
 -- pathological ones like newlines).
 newtype ShortOpt = ShortOpt { unShortOpt :: Char } deriving (Show, Eq, Ord)
-instance Arbitrary ShortOpt where
-  arbitrary = do
-    c <- suchThat arbitrary (/= '-')
-    return $ ShortOpt c
 
 -- | This function is partial. It calls error if its argument is a
 -- single dash. This is the only way to make a short option so it
@@ -46,10 +39,6 @@ makeShortOpt c = case c of
 -- name. Otherwise any Unicode character is good (including
 -- pathological ones like newlines).
 data LongOpt = LongOpt { unLongOpt :: Text } deriving (Show, Eq, Ord)
-instance Arbitrary LongOpt where
-  arbitrary = do
-    t <- suchThat randText isValidLongOptText
-    return $ LongOpt t
 
 -- | This function is partial. It calls error if its argument contains
 -- text that is not a valid long option. This is the only way to make

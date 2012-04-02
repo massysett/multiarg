@@ -3,7 +3,8 @@
    functions but not for these. (Update - these need to be here, for
    instance when using <|>. Add note in comments.)
 
-* Remove QuickCheck from default build dependencies
+* Redo QuickCheck tests. Test parsers and combinators, and test a
+   complete parser.
 
 * Add comment to Combinators - parsers do not consume any input if
    option is not matched.

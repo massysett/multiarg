@@ -14,11 +14,6 @@ import Data.Text ( Text, pack, append, singleton, intercalate,
                    snoc )
 import Data.Set ( Set )
 import qualified Data.Set as Set
-import Test.QuickCheck ( Arbitrary ( arbitrary ), 
-                         choose )
-import System.Console.MultiArg.QuickCheckHelpers
-  ( randSet, randText )
-import Control.Monad ( liftM, liftM2 )
 
 -- | Instances of this typeclass represent multiarg errors. You can
 -- declare instances of this typeclass so that you can use your own
@@ -52,9 +47,6 @@ printError (SimpleError e s) =
 
 instance Error SimpleError where
   parseErr = SimpleError
-
-instance Arbitrary SimpleError where
-  arbitrary = liftM2 SimpleError arbitrary arbitrary
 
 -- | Each error consists of two parts: what the parser was expecting
 -- to see, and what it actually saw. This type holds what the parser
@@ -125,31 +117,6 @@ printExpecting e = case e of
   (ExpOtherFailure) -> pack "general failure"
 
 
-
-instance Arbitrary Expecting where
-  arbitrary = do
-    i <- choose (0, (17 :: Int))
-    case i of
-      0 -> liftM ExpPendingShortOpt arbitrary
-      1 -> liftM ExpExactLong arbitrary
-      2 -> liftM ExpApproxLong randSet
-      3 -> return ExpLongOptArg
-      4 -> return ExpPendingShortArg
-      5 -> return ExpStopper
-      6 -> return ExpNextArg
-      7 -> return ExpNonOptionPosArg
-      8 -> return ExpEnd
-      9 -> liftM ExpNonGNUExactLong arbitrary
-      10 -> liftM2 ExpMatchingApproxLong arbitrary randSet
-      11 -> liftM2 ExpNonGNUMatchingApproxLong arbitrary randSet
-      12 -> liftM ExpApproxWord
-            (liftM (Set.fromList . map pack) arbitrary)
-      13 -> return ExpOptionOrPosArg
-      14 -> liftM ExpTextError randText
-      15 -> liftM ExpNonPendingShortOpt arbitrary
-      16 -> return ExpNotFollowedBy
-      17 -> return ExpOtherFailure
-      _  -> error "should never happen"
 
 -- | What the parser actually saw. To give some text to be used in the
 -- error message, use 'SawTextError'. To generate a generic error, use
@@ -246,37 +213,3 @@ printSaw s = case s of
   SawFollowedBy -> pack "followed by"
   (SawOtherFailure) -> pack "general failure"
 
-instance Arbitrary Saw where
-  arbitrary = do
-    i <- choose (0, (26 :: Int))
-    case i of
-      0 -> return SawNoPendingShorts
-      1 -> liftM SawWrongPendingShort arbitrary
-      2 -> return SawNoArgsLeft
-      3 -> return SawEmptyArg
-      4 -> return SawSingleDashArg
-      5 -> liftM SawStillPendingShorts arbitrary
-      6 -> liftM SawNotShortArg randText
-      7 -> liftM SawWrongShortArg arbitrary
-      8 -> liftM SawNotLongArg randText
-      9 -> liftM SawWrongLongArg randText
-      10 -> liftM SawNoMatches randText
-      11 -> liftM2 SawMultipleMatches randSet randText
-      12 -> return SawNoPendingShortArg
-      13 -> return SawAlreadyStopper
-      14 -> return SawNewStopper
-      15 -> return SawNotStopper
-      16 -> liftM SawLeadingDashArg randText
-      17 -> return SawMoreInput
-      18 -> liftM SawGNULongOptArg randText
-      19 -> liftM2 SawNotMatchingApproxLong randText arbitrary
-      20 -> liftM SawMatchingApproxLongWithArg randText
-      21 -> liftM2 SawMultipleApproxMatches
-            (liftM (Set.fromList . map pack) arbitrary)
-            randText
-      22 -> return SawNoOption
-      23 -> return SawNoOptionOrPosArg
-      24 -> liftM SawTextError randText
-      25 -> return SawFollowedBy
-      26 -> return SawOtherFailure
-      _  -> error "should never happen"
