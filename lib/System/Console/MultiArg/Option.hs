@@ -12,9 +12,7 @@ module System.Console.MultiArg.Option (
   makeLongOpt )
   where
 
-import qualified Data.Text as X
-import Data.Text ( Text, unpack, index )
-import Control.Monad ( when )
+import Data.List (find)
 
 -- | Short options. Options that are preceded with a single dash on
 -- the command line and consist of a single letter. That single letter
@@ -38,24 +36,25 @@ makeShortOpt c = case c of
 -- character long. It cannot have an equal sign anywhere in its
 -- name. Otherwise any Unicode character is good (including
 -- pathological ones like newlines).
-data LongOpt = LongOpt { unLongOpt :: Text } deriving (Show, Eq, Ord)
+data LongOpt = LongOpt { unLongOpt :: String } deriving (Show, Eq, Ord)
 
 -- | This function is partial. It calls error if its argument contains
 -- text that is not a valid long option. This is the only way to make
 -- a long option so it prevents you from making invalid ones.
-makeLongOpt :: Text -> LongOpt
+makeLongOpt :: String -> LongOpt
 makeLongOpt t = case isValidLongOptText t of
   True -> LongOpt t
-  False -> error $ "invalid long option: " ++ unpack t
+  False -> error $ "invalid long option: " ++ t
 
-isValidLongOptText :: Text -> Bool
-isValidLongOptText t = maybe False (const True) $ do
-  when (X.null t) Nothing
-  when ((t `index` 0) == '-') Nothing
-  when ((X.length t > 1) && ((t `index` 1) == '-')) Nothing
-  case X.find (== '=') t of
-    (Just _) -> Nothing
-    Nothing -> return ()
-  return ()
-
-
+isValidLongOptText :: String -> Bool
+isValidLongOptText s = case s of
+  [] -> False
+  x:xs ->
+    if x == '-' || x == '='
+    then False
+    else case xs of
+      [] -> True
+      y:_ ->
+        if y == '-' || y == '='
+        then False
+        else maybe True (const False) (find (== '=') xs)
