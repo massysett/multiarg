@@ -85,7 +85,6 @@ import Control.Monad.Exception.Synchronous
 import qualified Control.Monad.Exception.Synchronous as S
 import Data.Functor.Identity ( runIdentity )
 import Data.Text ( Text, pack, isPrefixOf, cons )
-import qualified Data.Text as X
 import qualified Data.Set as Set
 import Data.Set ( Set )
 import Control.Monad ( when, MonadPlus(mzero, mplus) )
@@ -95,16 +94,21 @@ import Data.Monoid ( Monoid ( mempty, mappend ) )
 import Data.Functor.Identity ( Identity )
 import Control.Monad.Trans.Class ( MonadTrans )
 import Control.Monad.IO.Class ( MonadIO ( liftIO ) )
+import qualified Data.List as L
 
-data Error = Expected String
+type Expecting = String
+type Saw = String
+
+data Error = Expected Expecting Saw
              | FromFail String
+             | Replaced String
              | UnknownError
 
 -- | Carries the internal state of the parser. The counter is a simple
 -- way to determine whether the remaining list one ParseSt has been
 -- modified from another. When parsers modify remaining, they
 -- increment the counter.
-data ParseSt s = ParseSt { pendingShort :: Maybe (Char, String)
+data ParseSt s = ParseSt { pendingShort :: String
                          , remaining :: [String]
                          , sawStopper :: Bool
                          , userState :: s
@@ -115,7 +119,7 @@ data ParseSt s = ParseSt { pendingShort :: Maybe (Char, String)
 -- | Load up the ParseSt with an initial user state and a list of
 -- commmand line arguments.
 defaultState :: s -> [String] -> ParseSt s
-defaultState s ts = ParseSt { pendingShort = Nothing
+defaultState s ts = ParseSt { pendingShort = ""
                             , remaining = ts
                             , sawStopper = False
                             , userState = s
@@ -379,20 +383,16 @@ apply (ParserT x) (ParserT y) = ParserT $ \s ->
         Bad -> return (Bad, st'')
     Bad -> return (Bad, st')
 
--- START HERE
-
 -- | Fail with an unhelpful error message. Usually throw is more
 -- useful, but this is handy to implement some typeclass instances.
-genericThrow ::
-  (Monad m, E.Error e)
-  => ParserT s e m a
-genericThrow = throw (E.parseErr E.ExpOtherFailure E.SawOtherFailure)
+genericThrow :: Monad m => ParserT s m a
+genericThrow = throw UnknownError
 
 -- | throw e always fails without consuming any input and returns a
 -- failed parser with error state e.
-throw :: (Monad m) => e -> ParserT s e m a
+throw :: (Monad m) => Error -> ParserT s e m a
 throw e = ParserT $ \s ->
-  return (Bad e, s)
+  return (Bad, s { errors = e : errors s })
 
 noConsumed :: ParseSt s -> ParseSt s -> Bool
 noConsumed old new = counter old >= counter new
@@ -405,34 +405,42 @@ noConsumed old new = counter old >= counter new
 -- '<|>' in 'Control.Applicative.Alternative'.
 choice ::
   (Monad m)
-  => ParserT s e m a
-  -> ParserT s e m a
-  -> ParserT s e m a
+  => ParserT s m a
+  -> ParserT s m a
+  -> ParserT s m a
 choice (ParserT l) (ParserT r) = ParserT $ \sOld ->
   l sOld >>= \(a, s') ->
   case a of
-    (Good g) -> return (Good g, s')
-    (Bad e) ->
+    Good g ->
+      let s'' = s' { errors = [] }
+      in return (Good g, s'')
+    Bad ->
       if noConsumed sOld s'
-      then r sOld
-      else return (Bad e, s')
+      then let s'' = sOld { errors = errors s' }
+           in r s''
+      else return (Bad, s')
 
 -- | Runs the parser given. If it succeeds, then returns the result of
 -- the parser. If it fails and consumes input, returns the result of
 -- the parser. If it fails without consuming any input, then changes
 -- the error using the function given.
+--
+-- If the parser fails without consuming any input but the user state
+-- has changed, the parser returned will reflect the changed user
+-- state.
 (<?>) ::
   (Monad m)
-  => ParserT s e m a
-  -> e
-  -> ParserT s e m a
+  => ParserT s m a
+  -> String
+  -> ParserT s m a
 (<?>) (ParserT l) e = ParserT $ \s ->
   l s >>= \(r, s') ->
   case r of
-    (Good g) -> return (Good g, s')
+    Good g -> return (Good g, s')
     (Bad err) ->
       if noConsumed s s'
-      then return (Bad e, s)
+      then let s'' = s' { error = [Replaced e] }
+           in return (Bad, s'')
       else return (Bad err, s')
 
 infix 0 <?>
@@ -446,20 +454,20 @@ increment old = old { counter = succ . counter $ old }
 -- is a pending short option, but it does not match the short option
 -- given. Succeeds and consumes a pending short option if it matches
 -- the short option given; returns the short option parsed.
-pendingShortOpt ::
-  (Monad m, E.Error e)
-  => ShortOpt
-  -> ParserT s e m ShortOpt
+
+pendingShortOpt :: Monad m => ShortOpt -> ParserT s m ShortOpt
 pendingShortOpt so = ParserT $ \s ->
-  let err saw = return (Bad (E.parseErr (E.ExpPendingShortOpt so) saw), s)
+  let err saw = Expected ("short option: " ++ [(unShortOpt so)]) saw
+      es saw = return (Bad, s { errors = err saw : errors s })
       gd (res, newSt) = return (Good res, newSt)
-  in switch err gd $ do
-    when (sawStopper s) $ S.throw E.SawAlreadyStopper
-    (TextNonEmpty first rest) <-
-      maybe (S.throw E.SawNoPendingShorts) return (pendingShort s)
+  in switch es gd $ do
+    when (sawStopper s) $ S.throw "stopper"
+    (first, rest) <- case pendingShort s of
+      [] -> (S.throw "no pending short options") 
+      x:xs -> return (x, xs)
     when (unShortOpt so /= first)
-      (S.throw $ E.SawWrongPendingShort first)
-    return (so, increment s { pendingShort = toTextNonEmpty rest })
+      (S.throw ("wrong pending short option: " ++ [first]))
+    return (so, increment s { pendingShort = rest })
 
 -- | Parses only non-pending short options. Fails without consuming
 -- any input if, in order:
@@ -485,30 +493,31 @@ pendingShortOpt so = ParserT $ \s ->
 -- from the argument into a pending short, and removes the first word
 -- from remaining arguments to be parsed. Returns the short option
 -- parsed.
-nonPendingShortOpt ::
-  (E.Error e, Monad m)
-  => ShortOpt
-  -> ParserT s e m ShortOpt
+nonPendingShortOpt :: Monad m => ShortOpt -> ParserT s e m ShortOpt
 nonPendingShortOpt so = ParserT $ \s ->
-  let err saw =
-        return (Bad (E.parseErr (E.ExpNonPendingShortOpt so) saw), s)
+  let err saw = Expected $ msg ++ [unShortOpt so]
+      msg = "non pending short option"
+      errRet saw = return (Bad, s { errors = err saw : errors s })
       gd (g, n) = return (Good g, n)
-  in switch err gd $ do
-    maybe (return ()) (S.throw . E.SawStillPendingShorts) (pendingShort s)
-    when (sawStopper s) (S.throw E.SawAlreadyStopper)
+  in switch errRet gd $ do
+    case pendingShort s of
+      [] -> return ()
+      x -> S.throw ("pending short options: " ++ x)
+    when (sawStopper s) (S.throw "stopper")
     (a:as) <- case remaining s of
-      [] -> S.throw E.SawNoArgsLeft
+      [] -> S.throw "no arguments left"
       x -> return x
-    (maybeDash, word) <- case textHead a of
-      Nothing -> S.throw E.SawEmptyArg
-      (Just w) -> return w
-    when (maybeDash /= '-') $ S.throw (E.SawNotShortArg a)
-    (letter, arg) <- case textHead word of
-      Nothing -> S.throw E.SawSingleDashArg
-      (Just w) -> return w
-    when (letter /= unShortOpt so) $ S.throw (E.SawWrongShortArg letter)
-    when (letter == '-') $ S.throw E.SawNewStopper
-    let s' = increment s { pendingShort = toTextNonEmpty arg
+    (maybeDash, word) <- case a of
+      [] -> S.throw "zero length word"
+      x:xs -> return (x, xs)
+    when (maybeDash /= '-') $ S.throw "not an option"
+    (letter, arg) <- case word of
+      [] -> S.throw "argument is a single dash"
+      x:xs -> return (x, xs)
+    when (letter /= unShortOpt so) $
+      S.throw ("different short option: " ++ [unShortOpt so])
+    when (letter == '-') $ S.throw "new stopper"
+    let s' = increment s { pendingShort = arg
                          , remaining = as }
     return (so, s')
 
@@ -541,47 +550,56 @@ nonPendingShortOpt so = ParserT $ \s ->
 -- * the next argument on the command line does begin with two
 --   dashes but its text does not match the argument we're looking for
 exactLongOpt ::
-  (E.Error e, Monad m)
+  Monad m
   => LongOpt
-  -> ParserT s e m (LongOpt, Maybe Text)
+  -> ParserT s m (LongOpt, Maybe String)
 exactLongOpt lo = ParserT $ \s ->
-  let err saw = return (Bad (E.parseErr (E.ExpExactLong lo) saw), s)
+  let ert saw = return (Bad, err saw)
+      err saw = s { errors = Expected msg saw : errors s } where
+        msg = "long option: " ++ unLongOpt lo
       gd (g, n) = return (Good g, n)
-  in switch err gd $ do
-    maybe (return ()) (S.throw . E.SawStillPendingShorts) (pendingShort s)
-    when (sawStopper s) (S.throw E.SawAlreadyStopper)
+  in switch ert gd $ do
+    case pendingShort s of
+      [] -> return ()
+      xs -> S.throw ("pending short options: " ++ xs)
+    when (sawStopper s) (S.throw "stopper")
     (x:xs) <- case remaining s of
-      [] -> S.throw E.SawNoArgsLeft
+      [] -> S.throw "no arguments left"
       ls -> return ls
     let (pre, word, afterEq) = splitLongWord x
-    when (pre /= pack "--") $ S.throw (E.SawNotLongArg x)
-    when (X.null word && isNothing afterEq) (S.throw E.SawNewStopper)
-    when (word /= unLongOpt lo) $ S.throw (E.SawWrongLongArg word)
+    when (pre /= "--") $ S.throw "not long option"
+    when (null word && isNothing afterEq) ("new stopper")
+    when (word /= unLongOpt lo) $
+      E.throw ("wrong long option: " ++ unLongOpt lo)
     let s' = increment s { remaining = xs }
     return ((lo, afterEq), s')
 
--- | Takes a single Text and returns a tuple, where the first element
+-- | Takes a single String and returns a tuple, where the first element
 -- is the first two letters, the second element is everything from the
 -- third letter to the equal sign, and the third element is Nothing if
--- there is no equal sign, or Just Text with everything after the
+-- there is no equal sign, or Just String with everything after the
 -- equal sign if there is one.
-splitLongWord :: Text -> (Text, Text, Maybe Text)
+splitLongWord :: String -> (String, String, Maybe String)
 splitLongWord t = (f, s, r) where
-  (f, rest) = X.splitAt 2 t
-  (s, withEq) = X.break (== '=') rest
-  r = case textHead withEq of
-    Nothing -> Nothing
-    (Just (_, afterEq)) -> Just afterEq
+  (f, rest) = L.splitAt 2 t
+  (s, withEq) = L.break (== '=') rest
+  r = case withEq of
+    [] -> Nothing
+    _:xs -> xs
+
+
+-- START HERE
 
 -- | Examines the next word. If it matches a Text in the set
 -- unambiguously, returns a tuple of the word actually found and the
 -- matching word in the set.
 approxLongOpt ::
-  (E.Error e, Monad m)
+  Monad m
   => Set LongOpt
-  -> ParserT s e m (Text, LongOpt, Maybe Text)
+  -> ParserT s e m (String, LongOpt, Maybe String)
 approxLongOpt ts = ParserT $ \s ->
   let err saw = return (Bad (E.parseErr (E.ExpApproxLong ts) saw), s)
+      ert saw = return (Bad, Expected ""
       gd (g, newSt) = return (Good g, newSt)
   in switch err gd $ do
     maybe (return ()) (S.throw . E.SawStillPendingShorts) (pendingShort s)
