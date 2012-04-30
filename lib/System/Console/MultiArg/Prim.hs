@@ -110,23 +110,21 @@ data Error = Expected Expecting Saw
 -- way to determine whether the remaining list one ParseSt has been
 -- modified from another. When parsers modify remaining, they
 -- increment the counter.
-data ParseSt s = ParseSt { pendingShort :: String
-                         , remaining :: [String]
-                         , sawStopper :: Bool
-                         , userState :: s
-                         , counter :: Int
-                         , errors :: [Error]
-                         } deriving (Show, Eq)
+data ParseSt = ParseSt { pendingShort :: String
+                       , remaining :: [String]
+                       , sawStopper :: Bool
+                       , counter :: Int
+                       , errors :: [Error]
+                       } deriving (Show, Eq)
 
 -- | Load up the ParseSt with an initial user state and a list of
 -- commmand line arguments.
-defaultState :: s -> [String] -> ParseSt s
-defaultState s ts = ParseSt { pendingShort = ""
-                            , remaining = ts
-                            , sawStopper = False
-                            , userState = s
-                            , counter = 0
-                            , errors = [] }
+defaultState :: [String] -> ParseSt s
+defaultState ts = ParseSt { pendingShort = ""
+                          , remaining = ts
+                          , sawStopper = False
+                          , counter = 0
+                          , errors = [] }
 
 -- | Carries the result of each parse.
 data Result a = Bad | Good a
@@ -152,69 +150,34 @@ data Result a = Bad | Good a
 -- perform IO (for example, by examining the disk to see if arguments
 -- that specify files are valid.) If you don't need a monad
 -- transformer, just layer ParserT on top of Identity.
-data ParserT s m a =
-  ParserT { runParserT :: ParseSt s -> m (Result a, ParseSt s) }
+data Parser a =
+  Parser { runParser :: ParseSt -> (Result a, ParseSt s) }
 
-instance (Monad m) => Functor (ParserT s m) where
+instance Functor Parser where
   fmap = parserMap
 
-instance (Monad m) => Applicative (ParserT s m) where
+instance Applicative Parser where
   pure = good
   (<*>) = apply
 
-instance (Monad m) => Monoid (ParserT s m a) where
+instance Monoid (Parser a) where
   mempty = genericThrow
   mappend = choice
 
-instance (Monad m) => Alternative (ParserT s m) where
+instance Alternative Parser where
   empty = genericThrow
   (<|>) = choice
   many = several
 
-instance (Monad m) => Monad (ParserT s m) where
+instance Monad ParserT where
   (>>=) = combine
   return = good
   fail = throwString
 
-instance (Monad m) => MonadPlus (ParserT s m) where
+instance MonadPlus ParserT where
   mzero = genericThrow
   mplus = choice
 
-instance MonadTrans (ParserT s) where
-  lift = parserLift
-
-instance (MonadIO m) => MonadIO (ParserT s m) where
-  liftIO = parserIO
-
--- | @ParserS s a@ is a parser with user state s,
--- underlying monad Identity, and result type a.
-type ParserS s a = ParserT s Identity a
-
--- | @Parser a@ is a parser with user state (),
--- underlying monad Identity, and result type a.
-type Parser a = ParserT () Identity a
-
--- | Runs a parser that has a user state and an underlying monad
--- Identity.
-parseS ::
-  s
-  -- ^ The initial user state
-  
-  -> [String]
-  -- ^ Command line arguments
-
-  -> ParserS s a
-  -- ^ Parser to run
-  
-  -> (Exceptional [Error] a, s)
-  -- ^ Success or failure, and the final user state
-  
-parseSE s ts p =
-  let r = runIdentity (runParserT p (defaultState s ts))
-      (result, st') = r
-  in case result of
-    Good g -> (Success g, userState st')
-    Bad -> (Exception (errors st'), userState st')
 
 -- | Runs a parser that has no user state and an underlying monad of
 -- Identity and is parameterized on the error type.
@@ -228,56 +191,12 @@ parse ::
   -> Exceptional [Error] a
   -- ^ Success or failure
 
-parseE ts p =
-  let r = runIdentity (runParserT p (defaultState () ts))
-      (result, st') = r
+parse ts p =
+  let (result, st') = runParser p (defaultState ts)
   in case result of
     Good g -> Success g
     Bad -> Exception (errors st')
 
-
--- | The most complex parser runner. Runs a parser with a user-defined
--- state, error type, and underlying monad. Returns the final parse
--- result and the final user state, inside of the underlying monad.
-parseT ::
-  (Monad m)
-  => s
-  -- ^ Initial user state
-
-  -> [String]
-  -- ^ Command line arguments to parse
-
-  -> ParserT s m a
-  -- ^ Parser to run
-  
-  -> m (Exceptional [Error] a, s)
-  -- ^ Success or failure and the final user state, inside of the
-  -- underlying monad
-
-parseT s ts p = runParserT p (defaultState s ts) >>= \r ->
-  let (result, st') = r
-  in case result of
-    Good g -> return (Success g, userState st')
-    Bad -> return (Exception (errors st'), userState st')
-
--- | Lifts a computation of the underlying monad into the ParserT
--- monad. This provides the implementation for
--- 'Control.Monad.Trans.Class.lift'.
-parserLift ::
-  Monad m
-  => m a
-  -> ParserT s m a
-parserLift c = ParserT $ \s ->
-  c >>= \a -> return (Good a, s)
-
--- | Lifts a computation from the IO monad into the ParserT
--- monad. This provides the implementation for
--- 'Control.Monad.IO.Class.liftIO'.
-parserIO ::
-  MonadIO m
-  => IO a
-  -> ParserT s e m a
-parserIO c = parserLift . liftIO $ c
 
 -- | Combines two parsers into a single parser. The second parser can
 -- optionally depend upon the result from the first parser.
@@ -292,56 +211,43 @@ parserIO c = parserLift . liftIO $ c
 --
 -- This provides the implementation for '>>=' in
 -- 'Control.Monad.Monad'.
-combine ::
-  Monad m
-  => ParserT s m a
-  -> (a -> ParserT s m b)
-  -> ParserT s m b
-combine (ParserT l) f = ParserT $ \s ->
-  l s >>= \(r, s') ->
-  case r of
-    Bad -> return (Bad, s')
-    (Good g) ->
-      let (ParserT fr) = f g
-      in fr s'
+combine :: Parser a -> (a -> Parser b) -> Parser b
+combine a k = Parser $ \s ->
+  let (r, s') = runParser a s
+  in case r of
+    Bad -> (Bad, s')
+    Good g -> runParser (k g) s'
+
 
 -- | @lookAhead p@ runs parser p. If p succeeds, lookAhead p succeeds
 -- without consuming any input. If p fails without consuming any
 -- input, so does lookAhead. If p fails and consumes input, lookAhead
 -- also fails and consumes input. If this is undesirable, combine with
 -- "try".
-lookAhead ::
-  Monad m
-  => ParserT s m a
-  -> ParserT s m a
-lookAhead (ParserT p) = ParserT $ \s ->
-  p s >>= \(r, s') ->
-  return $ case r of
+lookAhead :: Parser a -> Parser a
+lookAhead a = Parser $ \s ->
+  let (r, s') = runParser a s
+  in case r of
     Good g -> (Good g, s)
     Bad -> (Bad, s')
+
 
 -- | @good a@ always succeeds without consuming any input and has
 -- result a. This provides the implementation for
 -- 'Control.Monad.Monad.return' and
 -- 'Control.Applicative.Applicative.pure'.
-good ::
-  Monad m
-  => a
-  -> ParserT s m a
-good a = ParserT $ \s ->
-  return (Good a, s)
+good :: a -> Parser a
+good a = ParserT $ \s -> (Good a, s)
+
 
 -- | @throwString s@ always fails without consuming any input. The
 -- failure contains a record of the string passed in by s. This
 -- provides the implementation for 'Control.Monad.Monad.fail'.
-throwString ::
-  Monad m
-  => String
-  -> ParserT s m a
-throwString e = ParserT $ \s ->
+throwString :: String -> Parser a
+throwString e = Parser $ \s ->
   let err = FromFail e
       s' = s { errors = err : errors s }
-  in return (Bad, s')
+  in (Bad, s')
 
 
 -- | @parserMap f p@ applies function f to the result of parser
@@ -349,17 +255,13 @@ throwString e = ParserT $ \s ->
 -- the result and another parser is returned with the result. If it
 -- fails, f is not applied and a failed parser is returned. This
 -- provides the implementation for 'Prelude.Functor.fmap'.
-parserMap ::
-  (Monad m)
-  => (a -> b)
-  -> ParserT s m a
-  -> ParserT s m b
-parserMap f (ParserT l) = ParserT $ \s ->
-  l s >>= \r ->
-  let (result, st') = r
-  in case result of
-    Good g -> return (Good (f g), st')
-    Bad -> return (Bad, st')
+parserMap :: (a -> b) -> Parser a -> Parser b
+parserMap f l = Parser $ \s ->
+  let (r, s') = runParser l s
+  in case r of
+    Good g -> (Good (f g), s')
+    Bad -> (Bad, s')
+
 
 -- | apply l r applies the function found in parser l to the result of
 -- parser r. First the l parser is run. If it succeeds, it has a
@@ -369,34 +271,30 @@ parserMap f (ParserT l) = ParserT $ \s ->
 -- parser l or parser r fails, then a failed parser is returned. This
 -- provides the implementation for '<*>' in
 -- 'Control.Applicative.Applicative'.
-apply ::
-  (Monad m)
-  => ParserT s m (a -> b)
-  -> ParserT s m a
-  -> ParserT s m b
-apply (ParserT x) (ParserT y) = ParserT $ \s ->
-  x s >>= \r ->
-  let (result, st') = r
-  in case result of
-    Good f -> y st' >>= \r' ->
-      let (result', st'') = r'
-      in case result' of
-        Good a -> return (Good (f a), st'')
-        Bad -> return (Bad, st'')
-    Bad -> return (Bad, st')
+apply :: Parser (a -> b) -> Parser a -> Parser b
+apply fa a = Parser $ \s ->
+  let (r, s') = runParser fa s
+  in case r of
+    Good g ->
+      let (ra, sa) = runParser a s'
+      in case ra of
+        Good ga -> (Good (g ga), sa)
+        Bad -> (Bad, sa)
+    Bad -> (Bad, s')
+
 
 -- | Fail with an unhelpful error message. Usually throw is more
 -- useful, but this is handy to implement some typeclass instances.
-genericThrow :: Monad m => ParserT s m a
+genericThrow :: Parser a
 genericThrow = throw UnknownError
 
 -- | throw e always fails without consuming any input and returns a
 -- failed parser with error state e.
-throw :: (Monad m) => Error -> ParserT s e m a
-throw e = ParserT $ \s ->
-  return (Bad, s { errors = e : errors s })
+throw :: Error -> Parser a
+throw e = Parser $ \s ->
+  (Bad, s { errors = e : errors s })
 
-noConsumed :: ParseSt s -> ParseSt s -> Bool
+noConsumed :: ParseSt -> ParseSt -> Bool
 noConsumed old new = counter old >= counter new
 
 -- | Runs the first parser. If it fails without consuming any input,
@@ -405,22 +303,19 @@ noConsumed old new = counter old >= counter new
 -- and consumes input, then returns the result of the first
 -- parser. This provides the implementation for
 -- '<|>' in 'Control.Applicative.Alternative'.
-choice ::
-  (Monad m)
-  => ParserT s m a
-  -> ParserT s m a
-  -> ParserT s m a
-choice (ParserT l) (ParserT r) = ParserT $ \sOld ->
-  l sOld >>= \(a, s') ->
-  case a of
+choice :: Parser a -> Parser a -> Parser a
+choice a b = ParserT $ \sOld ->
+  let (ra, sa) = runParser a sOld
+  in case ra of
     Good g ->
-      let s'' = s' { errors = [] }
-      in return (Good g, s'')
+      let sNew = sa { errors = [] }
+      in (Good g, sNew)
     Bad ->
-      if noConsumed sOld s'
-      then let s'' = sOld { errors = errors s' }
-           in r s''
-      else return (Bad, s')
+      if noConsumed sOld sa
+      then let sNew = sOld { errors = errors sa }
+           in runParser b sNew
+      else (Bad, sa)
+
 
 -- | Runs the parser given. If it succeeds, then returns the result of
 -- the parser. If it fails and consumes input, returns the result of
@@ -430,24 +325,20 @@ choice (ParserT l) (ParserT r) = ParserT $ \sOld ->
 -- If the parser fails without consuming any input but the user state
 -- has changed, the parser returned will reflect the changed user
 -- state.
-(<?>) ::
-  (Monad m)
-  => ParserT s m a
-  -> String
-  -> ParserT s m a
-(<?>) (ParserT l) e = ParserT $ \s ->
-  l s >>= \(r, s') ->
-  case r of
-    Good g -> return (Good g, s')
-    (Bad err) ->
+(<?>) :: Parser a -> String -> Parser a
+(<?>) l e = Parser $ \s ->
+  let (r, s') = runParser l e
+  in case r of
+    Good g -> (Good g, s')
+    Bad ->
       if noConsumed s s'
       then let s'' = s' { error = [Replaced e] }
-           in return (Bad, s'')
-      else return (Bad err, s')
+           in (Bad, s'')
+      else (Bad, s')
 
 infix 0 <?>
 
-increment :: ParseSt s -> ParseSt s
+increment :: ParseSt -> ParseSt
 increment old = old { counter = succ . counter $ old }
 
 -- | Parses only pending short options. Fails without consuming any
@@ -457,11 +348,11 @@ increment old = old { counter = succ . counter $ old }
 -- given. Succeeds and consumes a pending short option if it matches
 -- the short option given; returns the short option parsed.
 
-pendingShortOpt :: Monad m => ShortOpt -> ParserT s m ShortOpt
-pendingShortOpt so = ParserT $ \s ->
+pendingShortOpt :: ShortOpt -> Parser ShortOpt
+pendingShortOpt so = Parser $ \s ->
   let err saw = Expected ("short option: " ++ [(unShortOpt so)]) saw
-      es saw = return (Bad, s { errors = err saw : errors s })
-      gd (res, newSt) = return (Good res, newSt)
+      es saw = (Bad, s { errors = err saw : errors s })
+      gd (res, newSt) = (Good res, newSt)
   in switch es gd $ do
     when (sawStopper s) $ S.throw "stopper"
     (first, rest) <- case pendingShort s of
@@ -495,12 +386,12 @@ pendingShortOpt so = ParserT $ \s ->
 -- from the argument into a pending short, and removes the first word
 -- from remaining arguments to be parsed. Returns the short option
 -- parsed.
-nonPendingShortOpt :: Monad m => ShortOpt -> ParserT s e m ShortOpt
-nonPendingShortOpt so = ParserT $ \s ->
+nonPendingShortOpt :: ShortOpt -> ParserT ShortOpt
+nonPendingShortOpt so = Parser $ \s ->
   let err saw = Expected $ msg ++ [unShortOpt so]
       msg = "non pending short option"
-      errRet saw = return (Bad, s { errors = err saw : errors s })
-      gd (g, n) = return (Good g, n)
+      errRet saw = (Bad, s { errors = err saw : errors s })
+      gd (g, n) = (Good g, n)
   in switch errRet gd $ do
     checkPendingShorts s
     checkStopper s
@@ -546,15 +437,12 @@ nonPendingShortOpt so = ParserT $ \s ->
 --
 -- * the next argument on the command line does begin with two
 --   dashes but its text does not match the argument we're looking for
-exactLongOpt ::
-  Monad m
-  => LongOpt
-  -> ParserT s m (LongOpt, Maybe String)
-exactLongOpt lo = ParserT $ \s ->
-  let ert saw = return (Bad, err saw)
+exactLongOpt :: LongOpt -> ParserT (LongOpt, Maybe String)
+exactLongOpt lo = Parser $ \s ->
+  let ert saw = (Bad, err saw)
       err saw = s { errors = Expected msg saw : errors s } where
         msg = "long option: " ++ unLongOpt lo
-      gd (g, n) = return (Good g, n)
+      gd (g, n) = (Good g, n)
   in switch ert gd $ do
     checkPendingShorts s
     checkStopper s
@@ -578,17 +466,15 @@ splitLongWord t = (f, s, r) where
     _:xs -> xs
 
 
-checkPendingShorts :: ParseSt s -> Exceptional String ()
+checkPendingShorts :: ParseSt -> Exceptional String ()
 checkPendingShorts st = case pendingShort st of
   [] -> return ()
   str -> S.throw $ "pending short options: " ++ str
 
-checkStopper :: ParseSt s -> Exceptional String ()
+checkStopper :: ParseSt -> Exceptional String ()
 checkStopper st = when (sawStopper st) (S.throw "stopper")
 
-getLongOption ::
-  String
-  -> Exceptional String (String, Maybe String)
+getLongOption :: String -> Exceptional String (String, Maybe String)
 getLongOption str = do
   let (pre, word, afterEq) = splitLongWord str
   when (pre /= pack "--") (S.throw $ "not a long option: " ++ str)
@@ -596,7 +482,7 @@ getLongOption str = do
   return (word, afterEq)
   
 
-nextWord :: ParseSt s -> Exceptional String (String, ParseSt s)
+nextWord :: ParseSt -> Exceptional String (String, ParseSt)
 nextWord st = case remaining st of
   [] -> S.throw "no arguments left"
   x:xs ->
@@ -605,9 +491,9 @@ nextWord st = case remaining st of
 
 approxLongOptError ::
   Set LongOpt
-  -> ParseSt s
+  -> ParseSt
   -> String
-  -> ParseSt s
+  -> ParseSt
 approxLongOptError set st str = st { errors = newE : errors st } where
   newE = Expected exp str
   exp = "a long option: " ++ longs
@@ -618,12 +504,11 @@ approxLongOptError set st str = st { errors = newE : errors st } where
 -- unambiguously, returns a tuple of the word actually found and the
 -- matching word in the set.
 approxLongOpt ::
-  Monad m
-  => Set LongOpt
-  -> ParserT s m (String, LongOpt, Maybe String)
-approxLongOpt ts = ParserT $ \s ->
-  let err saw = return (Bad, approxLongOptError ts s saw)
-      gd (g, newSt) = return (Good g, newSt)
+  Set LongOpt
+  -> Parser (String, LongOpt, Maybe String)
+approxLongOpt ts = Parser $ \s ->
+  let err saw = (Bad, approxLongOptError ts s saw)
+      gd (g, newSt) = (Good g, newSt)
   in switch err gd $ do
     checkPendingShorts s
     x:s' <- nextWord s
@@ -655,12 +540,12 @@ approxLongOpt ts = ParserT $ \s ->
 --
 -- On success, returns the text of the pending short option argument
 -- (this text cannot be empty).
-pendingShortOptArg :: Monad m => ParserT s m String
-pendingShortOptArg = ParserT $ \s ->
-  let ert saw = return (Bad, err saw)
+pendingShortOptArg :: Parser String
+pendingShortOptArg = Parser $ \s ->
+  let ert saw = (Bad, err saw)
       err saw = s { errors = Expected msg saw : errors s } where
         msg = "pending short option argument"
-      gd (g, newSt) = return (Good g, newSt)
+      gd (g, newSt) = (Good g, newSt)
   in switch ert gd $ do
     checkStopper s
     case pendingShort s of
@@ -672,12 +557,12 @@ pendingShortOptArg = ParserT $ \s ->
 
 -- | Parses a "stopper" - that is, a double dash. Changes the internal
 -- state of the parser to reflect that a stopper has been seen.
-stopper :: Monad m => ParserT s m ()
-stopper = ParserT $ \s ->
+stopper :: Parser ()
+stopper = Parser $ \s ->
   let err saw = s { errors = Expected msg saw : errors s } where
         msg = "stopper"
-      ert saw = return (Bad, err saw)
-      gd (g, newSt) = return (Good g, newSt)
+      ert saw = (Bad, err saw)
+      gd (g, newSt) = (Good g, newSt)
   in switch ert gd $ do
     checkPendingShorts s
     checkStopper s
@@ -690,26 +575,26 @@ stopper = ParserT $ \s ->
 -- | try p behaves just like p, but if p fails, try p will not consume
 -- any input. However, the user state reflects any changes that parser
 -- p made to it.
-try :: Monad m => ParserT s m a -> ParserT s m a
-try (ParserT l) = ParserT $ \s ->
-  l s >>= \(r, s') ->
-  case r of
-    (Good g) -> return (Good g, s')
-    Bad -> return (Bad, s'') where
-      s'' = s { errors = errors s'
-              , userState = userState s' }
+try :: Parser a -> Parser a
+try a = Parser $ \s ->
+  let (r, s') = runParser a s
+  in case r of
+    Good g -> (Good g, s')
+    Bad -> (Bad, s'') where
+      s'' = s { errors = errors s' }
+      
 
 -- | Returns the next string on the command line as long as there are
 -- no pendings. Be careful - this will return the next string even if
 -- it looks like an option (that is, it starts with a dash.) Consider
 -- whether you should be using nonOptionPosArg instead. However this
 -- can be useful when parsing command line options after a stopper.
-nextArg :: Monad m => ParserT s m String
-nextArg = ParserT $ \s ->
-  let ert saw = return (Bad, err saw)
+nextArg :: Parser String
+nextArg = Parser $ \s ->
+  let ert saw = (Bad, err saw)
       err saw = s { errors = Expected msg saw : errors s } where
         msg = "next argument"
-      gd (g, newSt) = return (Good g, newSt)
+      gd (g, newSt) = (Good g, newSt)
   in switch ert gd $ do
     checkPendingShorts s
     nextWord
@@ -719,14 +604,12 @@ nextArg = ParserT $ \s ->
 -- no pendings and as long as the next string does not begin with a
 -- dash. If there has already been a stopper, then will return the
 -- next string even if it starts with a dash.
-nonOptionPosArg ::
-  (E.Error e, Monad m)
-  => ParserT s e m Text
-nonOptionPosArg = ParserT $ \s ->
-  let ert saw = return (Bad, err saw)
+nonOptionPosArg :: Parser String
+nonOptionPosArg = Parser $ \s ->
+  let ert saw = (Bad, err saw)
       err saw = s { errors = Expected msg saw : errors s } where
         msg = "non option positional argument"
-      gd (g, newSt) = return (Good g, newSt)
+      gd (g, newSt) = (Good g, newSt)
   in switch ert gd $ do
     checkPendingShorts s
     (x, s') <- nextWord s
@@ -763,42 +646,37 @@ nonOptionPosArg = ParserT $ \s ->
 -- Be particularly careful to get the order of the arguments
 -- correct. Applying this function to reversed arguments will yield
 -- bugs that are very difficult to diagnose.
-manyTill ::
-  Monad m
-  => ParserT s m a
-  -> ParserT s m end
-  -> ParserT s m [a]
-manyTill (ParserT r) (ParserT f) = ParserT $ \s ->
-  parseTill s r f >>= \till ->
-  return $ if lastRunFailed till
-           then (Bad, lastSt till)
-           else (Good (goods till), lastSt till)
+manyTill :: Parser a -> Parser end -> Parser [a]
+manyTill (Parser r) (Parser f) = Parser $ \s ->
+  let Till g lS lF = parseTill s r f
+  in if lF then (Bad, lS) else (Good g, lS)
 
 
-data Till s a =
+data Till a =
   Till { goods :: [a]
-       , lastSt :: ParseSt s
+       , lastSt :: ParseSt
        , lastRunFailed :: Bool }
 
 parseTill ::
-  (Monad m)
-  => ParseSt s
-  -> (ParseSt s -> m (Result a, ParseSt s))
-  -> (ParseSt s -> m (Result b, ParseSt s))
-  -> m (Till s a)
-parseTill s fr ff = ff s >>= \r ->
-  case r of
-    (Good _, s') -> return $ Till [] s' False
+  ParseSt
+  -> (ParseSt -> (Result a, ParseSt))
+  -> (ParseSt -> (Result b, ParseSt))
+  -> Till a
+parseTill s fr ff =
+  case ff s of
+    (Good _, s') -> Till [] s' False
     (Bad, _) ->
-      fr s >>= \r' ->
-      case r' of
-        (Bad, s') -> return $ Till [] s' True
-        (Good g, s') ->
-          parseTill s' fr ff >>= \r'' ->
-          let (Till gs lS lF) = r''
-          in if counter s' == counter s
-             then error "parseTill applied to parser that takes empty list"
-             else return $ Till (g:gs) lS lF
+      case fr s of
+        (Bad, s'') -> Till [] s'' True
+        (Good g, s'') ->
+          let Till gs lS lF = parseTill s'' fr ff
+          in if counter s'' = counter s
+             then parseTillErr
+             else Till (g:gs) lS lF
+
+parseTillErr :: a
+parseTillErr =
+  error "parseTill applied to parser that takes empty list"
 
 -- It is impossible to implement several and manyTill in terms of
 -- feed, as there is no easy way to specify what the starting value of
@@ -821,161 +699,38 @@ parseTill s fr ff = ff s >>= \r ->
 --
 -- This function provides the implementation for
 -- 'Control.Applicative.Alternative.many'.
-several ::
-  (Monad m)
-  => ParserT s m a
-  -> ParserT s m [a]
-several (ParserT l) = ParserT $ \s ->
-  parseRepeat s l >>= \r ->
-  let (result, finalGoodSt, finalBadSt) = r
+several :: Parser a -> Parser [a]
+several (Parser l) = Parser $ \s ->
+  let (result, finalGoodSt, finalBadSt) = parseRepeat s l
   in if noConsumed finalGoodSt finalBadSt
-     then return (Good result, finalGoodSt)
-     else return (Bad, finalBadSt)
+     then (Good result, finalGoodSt)
+     else (Bad, finalBadSt)
+
 
 parseRepeat ::
-  (Monad m)
-  => ParseSt s
-  -> (ParseSt s -> m (Result a, ParseSt s))
-  -> m ([a], ParseSt s, ParseSt s)
-parseRepeat st1 f = f st1 >>= \r ->
-  case r of
+  ParseSt
+  -> (ParseSt -> (Result a, ParseSt))
+  -> ([a], ParseSt, ParseSt)
+parseRepeat st1 f =
+  case f st1 of
     (Good a, st') ->
       if noConsumed st1 st'
       then error $ "several applied to parser that succeeds without"
            ++ " consuming any input"
       else
-        parseRepeat st' f >>= \r' ->
-        let (ls, finalGoodSt, finalBadSt) = r'
-        in return (a : ls, finalGoodSt, finalBadSt)
-    (Bad, st') -> return ([], st1, st')
-
--- | feed runs in a recursive loop. Each loop starts with three
--- variables: a function @f@ that takes an input @i@ and returns a
--- parser @p@, a function @g@ that takes an input @i@ and returns a
--- parser @e@ that must succeed for the recursion to end, and an
--- initial input @i@. This proceeds as follows:
---
--- 1. Apply @g@ to @i@ and run resulting parser @e@. If this parser
--- succeeds, feed succeeds and returns a list of all successful runs
--- of @p@. The result of @e@ is not returned, but otherwise the parser
--- returned reflects the updated internal parser state from the
--- running of @e@. (If that is a problem, wrap @e@ in 'lookAhead'.) If
--- @e@ fails and consumes input, feed fails and returns a failed
--- parser whose internal state reflects the state after @e@ fails. If
--- @e@ fails without consuming any input, proceed with the following
--- steps.
---
--- 2. Apply function @f@ to input @i@, yielding a parser @p@. Run
--- parser @p@. If @p@ fails, feed also fails. If @p@ succeeds, it
--- yields a new input, @i'@.
---
--- 3. If @p@ succeeded without consuming any input, an infinite loop
--- will result, so apply @error@.
---
--- 4. Repeat from step 1, but with the new input retured from @p@,
--- @i'@.
---
--- For the initial application of feed, you supply the function @f@,
--- the end parser @e@, and the initial state @i@.
---
--- This function is useful for running multiple times a parser that
--- depends on the result of previous runs of the parser. You could
--- implement something similar using the user state feature, but for
--- various reasons sometimes it is more useful to use 'feed' instead.
-
-feed ::
-  Monad m
-  => (a -> ParserT s m a)
-  -> (a -> ParserT s m end)
-  -> a
-  -> ParserT s m [a]
-feed f e i = ParserT $ \s ->
-  feedRecurse s f e i >>= \(s', lf) ->
-  let res = case lf of
-        EndFailure -> Bad
-        RepeatFailure -> Bad
-        RepeatSuccess ls -> Good ls
-  in return (res, s')
-
-data LastFeed a =
-  EndFailure
-  -- ^ The last run of the end parser failed and consumed input.
-  
-  | RepeatFailure
-    -- ^ The last run of the repetitive parser failed (whether or not
-    -- it consumed any input).
-
-  | RepeatSuccess [a]
-    -- ^ The last run of the repetitive parser succeeded; here are all
-    -- the results.
-
--- | Takes an initial state, a function @f@ that returns a parser @p@
--- to run repetitively, a parser @e@ that must succeed to stop the
--- recursion, and an input for @f@. Returns: @m (s, ei)@, where: 
---
--- * @m@ is the inner monad
---
--- * @s@ is the state after the last application of either @e@ or @p@.
---
--- * @lf@ is a 'LastFeed' (see above).
-feedRecurse ::
-  Monad m
-  => ParseSt s
-  -> (a -> ParserT s m a)
-  -> (a -> ParserT s m end)
-  -> a
-  -> m (ParseSt s, LastFeed a)
-feedRecurse st f fe i =
-  runParserT (fe i) st >>= \(eResult, eSt) ->
-  case eResult of
-    Good _ -> return (eSt, RepeatSuccess [])
-    Bad ->
-      if noConsumed st eSt
-      then
-        runParserT (f i) st >>= \(pResult, pSt) ->
-        case pResult of
-          Good g ->
-            if noConsumed st pSt
-            then feedRecurseError
-            else
-              feedRecurse pSt f fe g >>= \(recSt, lf) ->
-              let res = case lf of
-                    RepeatSuccess ls -> RepeatSuccess (g:ls)
-                    failed -> failed
-              in return (recSt, res)
-          Bad -> return (pSt, RepeatFailure)
-      else
-        return (eSt, EndFailure)
-
-feedRecurseError :: a
-feedRecurseError =
-  error $ "feedRecurse applied to parser that succeeds without"
-  ++ " consuming any input"
-
+        let (ls, finalGoodSt, finalBadSt) = parseRepeat st' f
+        in (a : ls, finalGoodSt, finalBadSt)
+    (Bad, st') -> ([], st1, st')
+    
 
 -- | Succeeds if there is no more input left.
-end :: Monad m => ParserT s m ()
-end = ParserT $ \s ->
-  let ert saw = return (Bad, err saw)
+end :: Parser ()
+end = Parser $ \s ->
+  let ert saw = (Bad, err saw)
       err saw = s { errors = Expected msg saw : errors s } where
         msg = "end of input"
-      gd (g, newSt) = return (Good g, newSt)
+      gd (g, newSt) = (Good g, newSt)
   in switch ert gd $ do
     checkPendingShorts s
     when (not . null . remaining $ s) (S.throw "more input")
     return ((), s)
-
--- | Gets the user state.
-get :: Monad m => ParserT s m s
-get = ParserT $ \s ->
-  return (Good (userState s), s)
-
--- | Puts a new user state.
-put :: Monad m => s -> ParserT s m ()
-put newUserSt = ParserT $ \s ->
-  return (Good (), s { userState = newUserSt })
-
--- | Modify the user state.
-modify :: Monad m => (s -> s) -> ParserT s m ()
-modify f = ParserT $ \s ->
-  return (Good (), s { userState = f (userState s) })
