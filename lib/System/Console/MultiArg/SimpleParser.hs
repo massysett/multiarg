@@ -26,7 +26,6 @@ import System.Console.MultiArg.Combinator (
 import System.Console.MultiArg.Option (
   makeLongOpt, makeShortOpt )
 import Control.Monad.Exception.Synchronous ( toEither )
-import System.Console.MultiArg.Error ( SimpleError )
 import Data.Text ( pack, unpack )
 import System.Environment ( getArgs )
 import Data.Monoid ( mconcat )

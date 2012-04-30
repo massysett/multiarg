@@ -3,9 +3,6 @@
 module System.Console.MultiArg.Prim (
     -- * Parser types
   Parser,
-  ParserE,
-  ParserSE,
-  ParserT,
   
   -- * Running a parser
   
@@ -15,9 +12,6 @@ module System.Console.MultiArg.Prim (
   -- 'System.Console.MultiArg.GetArgs' before you use
   -- 'System.Environment.getArgs'.
   parse,
-  parseE,
-  parseSE,
-  parseT,
   
   -- * Higher-level parser combinators
   parserMap,
@@ -30,11 +24,6 @@ module System.Console.MultiArg.Prim (
   -- ** Running parsers multiple times
   several,
   manyTill,
-  feed,
-
-  -- ** Monad lifting
-  parserLift,
-  parserIO,
 
   -- ** Failure and errors
   throw,
@@ -63,40 +52,27 @@ module System.Console.MultiArg.Prim (
   -- ** Miscellaneous
   end,
   
-  -- * User state
-  get,
-  put,
-  modify
   ) where
 
 
-import qualified System.Console.MultiArg.Error as E
 import System.Console.MultiArg.Option
   (ShortOpt,
     unShortOpt,
-    makeShortOpt,
     LongOpt,
     unLongOpt, 
     makeLongOpt )
-import System.Console.MultiArg.TextNonEmpty
-  ( TextNonEmpty ( TextNonEmpty ) )
 import Control.Applicative ( Applicative, Alternative )
 import qualified Control.Applicative
 import Control.Monad.Exception.Synchronous
   (Exceptional(Success, Exception), switch )
 import qualified Control.Monad.Exception.Synchronous as S
-import Data.Functor.Identity ( runIdentity )
-import Data.Text ( Text, pack, isPrefixOf, cons )
 import qualified Data.Set as Set
 import Data.Set ( Set )
 import Control.Monad ( when, MonadPlus(mzero, mplus) )
-import Control.Monad.Trans.Class ( lift )
 import Data.Maybe ( isNothing )
 import Data.Monoid ( Monoid ( mempty, mappend ) )
-import Data.Functor.Identity ( Identity )
-import Control.Monad.Trans.Class ( MonadTrans )
-import Control.Monad.IO.Class ( MonadIO ( liftIO ) )
 import qualified Data.List as L
+import Data.List (isPrefixOf)
 
 type Expecting = String
 type Saw = String
@@ -105,6 +81,7 @@ data Error = Expected Expecting Saw
              | FromFail String
              | Replaced String
              | UnknownError
+             deriving Show
 
 -- | Carries the internal state of the parser. The counter is a simple
 -- way to determine whether the remaining list one ParseSt has been
@@ -115,11 +92,11 @@ data ParseSt = ParseSt { pendingShort :: String
                        , sawStopper :: Bool
                        , counter :: Int
                        , errors :: [Error]
-                       } deriving (Show, Eq)
+                       } deriving Show
 
 -- | Load up the ParseSt with an initial user state and a list of
 -- commmand line arguments.
-defaultState :: [String] -> ParseSt s
+defaultState :: [String] -> ParseSt
 defaultState ts = ParseSt { pendingShort = ""
                           , remaining = ts
                           , sawStopper = False
@@ -151,7 +128,7 @@ data Result a = Bad | Good a
 -- that specify files are valid.) If you don't need a monad
 -- transformer, just layer ParserT on top of Identity.
 data Parser a =
-  Parser { runParser :: ParseSt -> (Result a, ParseSt s) }
+  Parser { runParser :: ParseSt -> (Result a, ParseSt) }
 
 instance Functor Parser where
   fmap = parserMap
@@ -169,12 +146,12 @@ instance Alternative Parser where
   (<|>) = choice
   many = several
 
-instance Monad ParserT where
+instance Monad Parser where
   (>>=) = combine
   return = good
   fail = throwString
 
-instance MonadPlus ParserT where
+instance MonadPlus Parser where
   mzero = genericThrow
   mplus = choice
 
@@ -237,7 +214,7 @@ lookAhead a = Parser $ \s ->
 -- 'Control.Monad.Monad.return' and
 -- 'Control.Applicative.Applicative.pure'.
 good :: a -> Parser a
-good a = ParserT $ \s -> (Good a, s)
+good a = Parser $ \s -> (Good a, s)
 
 
 -- | @throwString s@ always fails without consuming any input. The
@@ -304,7 +281,7 @@ noConsumed old new = counter old >= counter new
 -- parser. This provides the implementation for
 -- '<|>' in 'Control.Applicative.Alternative'.
 choice :: Parser a -> Parser a -> Parser a
-choice a b = ParserT $ \sOld ->
+choice a b = Parser $ \sOld ->
   let (ra, sa) = runParser a sOld
   in case ra of
     Good g ->
@@ -327,12 +304,12 @@ choice a b = ParserT $ \sOld ->
 -- state.
 (<?>) :: Parser a -> String -> Parser a
 (<?>) l e = Parser $ \s ->
-  let (r, s') = runParser l e
+  let (r, s') = runParser l s
   in case r of
     Good g -> (Good g, s')
     Bad ->
       if noConsumed s s'
-      then let s'' = s' { error = [Replaced e] }
+      then let s'' = s' { errors = [Replaced e] }
            in (Bad, s'')
       else (Bad, s')
 
@@ -386,16 +363,16 @@ pendingShortOpt so = Parser $ \s ->
 -- from the argument into a pending short, and removes the first word
 -- from remaining arguments to be parsed. Returns the short option
 -- parsed.
-nonPendingShortOpt :: ShortOpt -> ParserT ShortOpt
+nonPendingShortOpt :: ShortOpt -> Parser ShortOpt
 nonPendingShortOpt so = Parser $ \s ->
-  let err saw = Expected $ msg ++ [unShortOpt so]
+  let err saw = Expected (msg ++ [unShortOpt so]) saw
       msg = "non pending short option"
       errRet saw = (Bad, s { errors = err saw : errors s })
       gd (g, n) = (Good g, n)
   in switch errRet gd $ do
     checkPendingShorts s
     checkStopper s
-    (a:s') <- nextWord s
+    (a, s') <- nextWord s
     (maybeDash, word) <- case a of
       [] -> S.throw "zero length word"
       x:xs -> return (x, xs)
@@ -437,7 +414,7 @@ nonPendingShortOpt so = Parser $ \s ->
 --
 -- * the next argument on the command line does begin with two
 --   dashes but its text does not match the argument we're looking for
-exactLongOpt :: LongOpt -> ParserT (LongOpt, Maybe String)
+exactLongOpt :: LongOpt -> Parser (LongOpt, Maybe String)
 exactLongOpt lo = Parser $ \s ->
   let ert saw = (Bad, err saw)
       err saw = s { errors = Expected msg saw : errors s } where
@@ -446,10 +423,10 @@ exactLongOpt lo = Parser $ \s ->
   in switch ert gd $ do
     checkPendingShorts s
     checkStopper s
-    x:s' <- nextWord s
+    (x, s') <- nextWord s
     (word, afterEq) <- getLongOption x
     when (word /= unLongOpt lo) $
-      E.throw ("wrong long option: " ++ unLongOpt lo)
+      S.throw ("wrong long option: " ++ unLongOpt lo)
     return ((lo, afterEq), s')
 
 -- | Takes a single String and returns a tuple, where the first element
@@ -463,7 +440,7 @@ splitLongWord t = (f, s, r) where
   (s, withEq) = L.break (== '=') rest
   r = case withEq of
     [] -> Nothing
-    _:xs -> xs
+    _:xs -> Just xs
 
 
 checkPendingShorts :: ParseSt -> Exceptional String ()
@@ -477,7 +454,7 @@ checkStopper st = when (sawStopper st) (S.throw "stopper")
 getLongOption :: String -> Exceptional String (String, Maybe String)
 getLongOption str = do
   let (pre, word, afterEq) = splitLongWord str
-  when (pre /= pack "--") (S.throw $ "not a long option: " ++ str)
+  when (pre /= "--") (S.throw $ "not a long option: " ++ str)
   when (null word && isNothing afterEq) (S.throw ("stopper"))
   return (word, afterEq)
   
@@ -486,7 +463,7 @@ nextWord :: ParseSt -> Exceptional String (String, ParseSt)
 nextWord st = case remaining st of
   [] -> S.throw "no arguments left"
   x:xs ->
-    let s' = increment s { remaining = xs }
+    let s' = increment st { remaining = xs }
     in return (x, s')
 
 approxLongOptError ::
@@ -495,8 +472,8 @@ approxLongOptError ::
   -> String
   -> ParseSt
 approxLongOptError set st str = st { errors = newE : errors st } where
-  newE = Expected exp str
-  exp = "a long option: " ++ longs
+  newE = Expected ex str
+  ex = "a long option: " ++ longs
   longs = concat . L.intersperse ", " $ opts
   opts = fmap unLongOpt . Set.toList $ set
 
@@ -511,21 +488,20 @@ approxLongOpt ts = Parser $ \s ->
       gd (g, newSt) = (Good g, newSt)
   in switch err gd $ do
     checkPendingShorts s
-    x:s' <- nextWord s
+    (x, s') <- nextWord s
     (word, afterEq) <- getLongOption x
     opt <- case makeLongOpt word of
       Nothing -> S.throw $ "word cannot be a long option: " ++ word
       Just o -> return o
     if Set.member opt ts
-      then return (word, opt, afterEq)
+      then return ((word, opt, afterEq), s')
       else do
       let p t = word `isPrefixOf` (unLongOpt t)
           matches = Set.filter p ts
       case Set.toList matches of
-      [] -> S.throw ("no matching option: " ++ word)
-      (m:[]) -> let s' = increment s { remaining = xs }
-                in return ((word, m, afterEq), s')
-      _ -> S.throw ("ambiguous word: " ++ word)
+        [] -> S.throw ("no matching option: " ++ word)
+        (m:[]) -> return ((word, m, afterEq), s')
+        _ -> S.throw ("ambiguous word: " ++ word)
 
 -- | Parses only pending short option arguments. For example, for the
 -- @tail@ command, if you enter the option @-c25@, then after parsing
@@ -566,9 +542,11 @@ stopper = Parser $ \s ->
   in switch ert gd $ do
     checkPendingShorts s
     checkStopper s
-    (x, s') <- nextWord
-    when (not $ pack "--" `isPrefixOf` x) (S.throw E.SawNotStopper)
-    when (X.length x /= 2) (S.throw E.SawNotStopper)
+    (x, s') <- nextWord s
+    when (not $ "--" `isPrefixOf` x)
+      (S.throw "not a stopper")
+    when (length x /= 2)
+      (S.throw "not a stopper")
     let s'' = s' { sawStopper = True }
     return ((), s'')
 
@@ -597,7 +575,7 @@ nextArg = Parser $ \s ->
       gd (g, newSt) = (Good g, newSt)
   in switch ert gd $ do
     checkPendingShorts s
-    nextWord
+    nextWord s
 
 
 -- | Returns the next string on the command line as long as there are
@@ -653,9 +631,9 @@ manyTill (Parser r) (Parser f) = Parser $ \s ->
 
 
 data Till a =
-  Till { goods :: [a]
-       , lastSt :: ParseSt
-       , lastRunFailed :: Bool }
+  Till { _goods :: [a]
+       , _lastSt :: ParseSt
+       , _lastRunFailed :: Bool }
 
 parseTill ::
   ParseSt
@@ -670,7 +648,7 @@ parseTill s fr ff =
         (Bad, s'') -> Till [] s'' True
         (Good g, s'') ->
           let Till gs lS lF = parseTill s'' fr ff
-          in if counter s'' = counter s
+          in if counter s'' == counter s
              then parseTillErr
              else Till (g:gs) lS lF
 

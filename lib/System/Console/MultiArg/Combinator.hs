@@ -4,8 +4,6 @@
 -- functions have no access to the internals of the parser.
 module System.Console.MultiArg.Combinator (
   -- * Parser combinators
-  option,
-  optionMaybe,
   notFollowedBy,
   
   -- * Short options
@@ -41,62 +39,40 @@ import qualified Data.Set as Set
 import Control.Monad ( liftM )
 
 import System.Console.MultiArg.Prim
-  ( ParserT, throw, try, approxLongOpt,
+  ( Parser, throw, try, approxLongOpt,
     nextArg, pendingShortOptArg, nonOptionPosArg,
     pendingShortOpt, nonPendingShortOpt,
-    exactLongOpt, nextArg, (<?>))
+    exactLongOpt, nextArg, (<?>),
+    Error(Expected))
 import System.Console.MultiArg.Option
-  ( LongOpt, ShortOpt )
-import qualified System.Console.MultiArg.Error as E
-import System.Console.MultiArg.Error
-  ( Error, parseErr )
+  ( LongOpt, ShortOpt, unLongOpt, unShortOpt )
 import Control.Applicative ((<|>), many)
 import Control.Monad ( void )
 import Data.Monoid ( mconcat )
-
--- | @option x p@ runs parser p. If p fails without consuming any
--- input, returns x. Otherwise, returns p.
-option :: (Error e, Monad m) =>
-          a
-          -> ParserT s e m a
-          -> ParserT s e m a
-option x p = p <|> return x
-
--- | @optionMaybe p@ runs parser p. If p fails without returning any
--- input, returns Nothing. If p succeeds, returns the result of p
--- wrapped in a Just. If p fails but consumes input, optionMaybe
--- fails.
-optionMaybe :: (Error e, Monad m)
-               => ParserT s e m a
-               -> ParserT s e m (Maybe a)
-optionMaybe p = option Nothing (liftM Just p)
 
 -- | @notFollowedBy p@ succeeds only if parser p fails. If p fails,
 -- notFollowedBy succeeds without consuming any input. If p succeeds
 -- and consumes input, notFollowedBy fails and consumes input. If p
 -- succeeds and does not consume any input, notFollowedBy fails and
 -- does not consume any input.
-notFollowedBy :: (Error e, Monad m)
-                 => ParserT s e m a
-                 -> ParserT s e m ()
+notFollowedBy :: Parser a -> Parser ()
 notFollowedBy p =
-  void $ ((try p >> throw (E.parseErr E.ExpNotFollowedBy E.SawFollowedBy))
+  void $ ((try p >> fail "notFollowedBy failed")
           <|> return ())
 
 
 -- | Parses only a non-GNU style long option (that is, one that does
 -- not take option arguments by attaching them with an equal sign,
 -- such as @--lines=20@).
-nonGNUexactLongOpt :: (Error e, Monad m)
-                      => LongOpt
-                      -> ParserT s e m LongOpt
+nonGNUexactLongOpt :: LongOpt -> Parser LongOpt
 nonGNUexactLongOpt l = try $ do
   (lo, maybeArg) <- exactLongOpt l
   case maybeArg of
     Nothing -> return lo
     (Just t) ->
-      throw (parseErr (E.ExpNonGNUExactLong l)
-            (E.SawGNULongOptArg t))
+      let e = "option " ++ unLongOpt l ++ " does not take an argument"
+      in fail e
+
 
 -- | Takes a long option and a set of long options. If the next word
 -- on the command line unambiguously starts with the name of the long
