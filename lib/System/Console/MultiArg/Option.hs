@@ -23,10 +23,10 @@ newtype ShortOpt = ShortOpt { unShortOpt :: Char } deriving (Show, Eq, Ord)
 -- | This function is partial. It calls error if its argument is a
 -- single dash. This is the only way to make a short option so it
 -- prevents you from making one that is invalid.
-makeShortOpt :: Char -> ShortOpt
+makeShortOpt :: Char -> Maybe ShortOpt
 makeShortOpt c = case c of
-  '-' -> error "short option must not be a dash"
-  x -> ShortOpt x
+  '-' -> Nothing
+  x -> Just $ ShortOpt x
 
 -- | Long options. Options that are preceded with two dashes on the
 -- command line and typically consist of an entire mnemonic word, such
@@ -41,10 +41,10 @@ data LongOpt = LongOpt { unLongOpt :: String } deriving (Show, Eq, Ord)
 -- | This function is partial. It calls error if its argument contains
 -- text that is not a valid long option. This is the only way to make
 -- a long option so it prevents you from making invalid ones.
-makeLongOpt :: String -> LongOpt
+makeLongOpt :: String -> Maybe LongOpt
 makeLongOpt t = case isValidLongOptText t of
-  True -> LongOpt t
-  False -> error $ "invalid long option: " ++ t
+  True -> Just $ LongOpt t
+  False -> Nothing
 
 isValidLongOptText :: String -> Bool
 isValidLongOptText s = case s of
