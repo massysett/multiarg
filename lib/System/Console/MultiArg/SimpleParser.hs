@@ -13,12 +13,16 @@ module System.Console.MultiArg.SimpleParser (
     -- * Exceptions
   , Ex.Exceptional (Exception, Success)
   , P.Error(Expected, FromFail, Replaced, UnknownError)
+    
+    -- * Get command line arguments
+  , G.getArgs
   
     -- * The parser
   , parse
   ) where
 
 import qualified System.Console.MultiArg.Prim as P
+import qualified System.Console.MultiArg.GetArgs as G
 import qualified System.Console.MultiArg.Combinator as C
 import qualified Control.Monad.Exception.Synchronous as Ex
 import Control.Applicative ( many, (<|>), optional, (*>),

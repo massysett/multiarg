@@ -145,24 +145,6 @@ module System.Console.MultiArg (
   --
   -- multiarg can be complicated, although I'd like to believe this is
   -- because it addresses a complicated problem in a flexible way.
-  --
-  -- Internally the combinators in "System.Console.MultiArg.Prim" use
-  -- strict "Data.Text" values rather than "String"s. That is because
-  -- this library was built for an application that sometimes parses an
-  -- enormous amount of command line data, and I thought that using
-  -- Data.Text would yield some memory savings while retaining Unicode
-  -- safety. Though I cannot remember whether this actually yielded any
-  -- space savings (it did not lead to more space usage, at least) it
-  -- also made the parser consistent with the rest of that program,
-  -- which also uses Data.Text. I have considered making this library
-  -- use either Data.Text or Strings but that makes it a lot more
-  -- complicated for little gain. The SimpleParser module, however,
-  -- wraps the "Data.Text" values up and exposes only Strings in the
-  -- interface, keeping things nice and simple. This does mean that
-  -- Strings have to be converted to Data.Text and back again, but the
-  -- performance hit will not be significant unless you are parsing an
-  -- obscene amount of data--and if you're doing that, you might want to
-  -- use Data.Text anyway :)
 
   module System.Console.MultiArg.SimpleParser ) where
 
