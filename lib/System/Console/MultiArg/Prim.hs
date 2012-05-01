@@ -482,7 +482,8 @@ approxLongOptError set st str = st { errors = newE : errors st } where
 
 -- | Examines the next word. If it matches a Text in the set
 -- unambiguously, returns a tuple of the word actually found and the
--- matching word in the set.
+-- matching word in the set. If the Set is empty, this parser will
+-- always fail.
 approxLongOpt ::
   Set LongOpt
   -> Parser (String, LongOpt, Maybe String)

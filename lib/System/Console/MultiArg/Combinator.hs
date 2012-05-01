@@ -17,24 +17,21 @@ module System.Console.MultiArg.Combinator (
 import Data.List (isPrefixOf, intersperse)
 import Data.Set ( Set )
 import qualified Data.Set as Set
-import Control.Applicative ((<*>), (<$>), optional, (<$),
-                            (*>))
+import Control.Applicative ((<*>), optional, (<$))
 
 import System.Console.MultiArg.Prim
   ( Parser, throw, try, approxLongOpt,
     nextArg, pendingShortOptArg, nonOptionPosArg,
-    pendingShortOpt, nonPendingShortOpt,
-    exactLongOpt, nextArg, (<?>),
+    pendingShortOpt, nonPendingShortOpt, nextArg,
     Error(Expected))
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt, unLongOpt,
     makeLongOpt, makeShortOpt )
 import Control.Applicative ((<|>), many)
-import Control.Monad ( void, replicateM )
 import qualified Data.Map as M
 import Data.Map ((!))
 import Data.Monoid ( mconcat )
-import Data.Maybe (catMaybes)
+
 
 -- | @notFollowedBy p@ succeeds only if parser p fails. If p fails,
 -- notFollowedBy succeeds without consuming any input. If p succeeds
@@ -43,8 +40,8 @@ import Data.Maybe (catMaybes)
 -- does not consume any input.
 notFollowedBy :: Parser a -> Parser ()
 notFollowedBy p =
-  void $ ((try p >> fail "notFollowedBy failed")
-          <|> return ())
+  () <$ ((try p >> fail "notFollowedBy failed")
+         <|> return ())
 
 
 -- | Examines the possible words in Set. If there are no pendings,
@@ -92,13 +89,14 @@ data ArgSpec a =
 
 parseOption :: [OptSpec a] -> Parser a
 parseOption os =
-  let ls = [noArgs, optArgs, oneArgs, twoArgs, varArgs] <*> [os]
-  in case mconcat ls of
-    Nothing -> error "no options given to parse."
-    Just p -> p
+  let longs = longOptParser os
+  in case mconcat ([shortOpt] <*> os) of
+    Nothing -> longs
+    Just shorts -> longs <|> shorts
   
-noArgs :: [OptSpec a] -> Maybe (Parser a)
-noArgs os = undefined
+longOptParser :: [OptSpec a] -> Parser a
+longOptParser os = longOpt (longOptSet os) (longOptMap os)
+      
 
 longOptSet :: [OptSpec a] -> Set LongOpt
 longOptSet = Set.fromList . concatMap toOpts where
@@ -113,13 +111,13 @@ longOpt ::
   Set LongOpt
   -> M.Map LongOpt (ArgSpec a)
   -> Parser a
-longOpt set map = do
+longOpt set mp = do
   (_, lo, maybeArg) <- approxLongOpt set
-  let spec = map ! lo
+  let spec = mp ! lo
   case spec of
     NoArg a -> case maybeArg of
       Nothing -> return a
-      Just arg -> fail $ "option " ++ unLongOpt lo
+      Just _ -> fail $ "option " ++ unLongOpt lo
                   ++ " does not take argument"
     OptionalArg f -> return (f maybeArg)
     OneArg f -> case maybeArg of
@@ -155,6 +153,14 @@ shortOpt o = mconcat parsers where
       VariableArg f -> shortVariableArg opt f
 
 shortVariableArg :: ShortOpt -> ([String] -> a) -> Parser a
+shortVariableArg opt f = do
+  (pendingShortOpt opt <|> nonPendingShortOpt opt)
+  maybeSameWordArg <- optional pendingShortOptArg
+  args <- many nonOptionPosArg
+  case maybeSameWordArg of
+    Nothing -> return (f args)
+    Just arg1 -> return (f (arg1:args))
+  
 
 shortTwoArg :: ShortOpt -> (String -> String -> a) -> Parser a
 shortTwoArg opt f = do
@@ -194,24 +200,3 @@ shortOptionalArg opt f = do
         Nothing -> return (f Nothing)
         Just a -> return (f (Just a))
     Just a -> return (f (Just a))
-  
-{-
-noArgs os = shorts <|> longs where
-  opts = filter p os where
-    p (OptSpec _ _ as) = case as of
-      NoArg _ -> True
-      _ -> False
--}
-
-optArgs :: [OptSpec a] -> Maybe (Parser a)
-optArgs = undefined
-
-oneArgs :: [OptSpec a] -> Maybe (Parser a)
-oneArgs = undefined
-
-twoArgs :: [OptSpec a] -> Maybe (Parser a)
-twoArgs = undefined
-
-varArgs :: [OptSpec a] -> Maybe (Parser a)
-varArgs = undefined
-
