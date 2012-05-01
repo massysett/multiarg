@@ -1,12 +1,16 @@
 -- | Parser primitives. These are the only functions that have access
--- to the internals of the parser.
+-- to the internals of the parser. Use these functions if you want to
+-- build your own parser from scratch. If your needs are simpler, you
+-- will want to look at 'System.Console.MultiArg.SimpleParser' or
+-- 'System.Console.MultiArg.Combinator', which do a lot of grunt work
+-- for you.
 module System.Console.MultiArg.Prim (
     -- * Parser types
   Parser,
   
   -- * Running a parser
   
-  -- | Each parser runner is applied to a list of Text, which are the
+  -- | Each parser runner is applied to a list of Strings, which are the
   -- command line arguments to parse. If there is any chance that you
   -- will be parsing Unicode strings, see the documentation in
   -- 'System.Console.MultiArg.GetArgs' before you use

@@ -6,6 +6,10 @@ module System.Console.MultiArg.Combinator (
   -- * Parser combinators
   notFollowedBy,
   
+  -- * Miscellaneous tests
+  nextLooksLong,
+  nextLooksShort,
+
   -- * Combined long and short option parser
   OptSpec(OptSpec, longOpts, shortOpts, argSpec),
   ArgSpec(NoArg, OptionalArg, OneArg, TwoArg, VariableArg),
@@ -23,6 +27,7 @@ import System.Console.MultiArg.Prim
   ( Parser, throw, try, approxLongOpt,
     nextArg, pendingShortOptArg, nonOptionPosArg,
     pendingShortOpt, nonPendingShortOpt, nextArg,
+    lookAhead,
     Error(Expected))
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt, unLongOpt,
@@ -63,6 +68,30 @@ matchApproxWord s = try $ do
     _ ->
       let msg = "word is ambiguous: " ++ a
       in err msg
+
+-- | Returns True if the next argument on the command line looks like
+-- a long option--that is, it is preceded by two dashes. Does not
+-- consume any input. Never fails.
+nextLooksLong :: Parser Bool
+nextLooksLong = do
+  maybeNext <- optional (lookAhead nextArg)
+  return $ case maybeNext of
+    Nothing -> False
+    Just n ->
+      if "--" `isPrefixOf` n && (length n /= 2)
+      then True else False
+
+-- | Returns True if the next argument on the command line looks like
+-- a short option--that is, it is preceded by one dash. Does not
+-- consume any input. Never fails.
+nextLooksShort :: Parser Bool
+nextLooksShort = do
+  maybeNext <- optional (lookAhead nextArg)
+  return $ case maybeNext of
+    Nothing -> False
+    Just n ->
+      if "-" `isPrefixOf` n && (n /= "--")
+      then True else False
 
 unsafeShortOpt :: Char -> ShortOpt
 unsafeShortOpt c = case makeShortOpt c of
@@ -122,7 +151,7 @@ longOpt set mp = do
     OptionalArg f -> return (f maybeArg)
     OneArg f -> case maybeArg of
       Nothing -> do
-        a1 <- nonOptionPosArg
+        a1 <- nextArg
         return $ f a1
       Just a -> return $ f a
     TwoArg f -> case maybeArg of
