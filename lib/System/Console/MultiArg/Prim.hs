@@ -44,6 +44,7 @@ module System.Console.MultiArg.Prim (
 
   -- ** Stoppers
   stopper,
+  resetStopper,
   
   -- ** Positional (non-option) arguments
   nextArg,
@@ -553,6 +554,13 @@ stopper = Parser $ \s ->
       (S.throw "not a stopper")
     let s'' = s' { sawStopper = True }
     return ((), s'')
+
+-- | If a stopper has already been seen, change the internal state
+-- back to indicating that no stopper has been seen.
+resetStopper :: Parser ()
+resetStopper = Parser $ \s ->
+  let s' = s { sawStopper = False }
+  in (Good (), s')
 
 -- | try p behaves just like p, but if p fails, try p will not consume
 -- any input. However, the user state reflects any changes that parser
