@@ -39,7 +39,8 @@ module System.Console.MultiArg.Combinator (
 import Data.List (isPrefixOf, intersperse)
 import Data.Set ( Set )
 import qualified Data.Set as Set
-import Control.Applicative ((<*>), (<$>), optional, (<$))
+import Control.Applicative ((<*>), (<$>), optional, (<$),
+                            (*>))
 
 import System.Console.MultiArg.Prim
   ( Parser, throw, try, approxLongOpt,
@@ -73,7 +74,7 @@ notFollowedBy p =
 -- such as @--lines=20@).
 nonGNUexactLongOpt :: LongOpt -> Parser LongOpt
 nonGNUexactLongOpt l = try $ do
-  (lo, maybeArg) <- exactLongOpt l
+  maybeArg <- exactLongOpt l
   case maybeArg of
     Nothing -> return lo
     (Just _) ->
@@ -104,35 +105,34 @@ matchApproxWord s = try $ do
 -- | Parses short options that do not take any argument. (It is
 -- however okay for the short option to be combined with other short
 -- options in the same word.)
-shortNoArg :: ShortOpt -> Parser ShortOpt
+shortNoArg :: ShortOpt -> Parser ()
 shortNoArg s = pendingShortOpt s <|> nonPendingShortOpt s
 
 -- | Parses short options that take an optional argument. The argument
 -- can be combined in the same word with the short option (@-c42@) or
 -- can be in the ext word (@-c 42@).
-shortOptionalArg :: ShortOpt -> Parser (ShortOpt, Maybe String)
+shortOptionalArg :: ShortOpt -> Parser (Maybe String)
 shortOptionalArg s = do
-  so <- shortNoArg s
+  shortNoArg s
   a <- optional (pendingShortOptArg <|> nonOptionPosArg)
-  return (so, a)
+  return a
 
 -- | Parses short options that take a required argument.  The argument
 -- can be combined in the same word with the short option (@-c42@) or
 -- can be in the ext word (@-c 42@).
-shortOneArg :: ShortOpt -> Parser (ShortOpt, String)
+shortOneArg :: ShortOpt -> Parser String
 shortOneArg s =
-  (,) <$> shortNoArg s <*> (pendingShortOptArg <|> nextArg)
+  shortNoArg s *> (pendingShortOptArg <|> nextArg)
 
 
 -- | Parses short options that take two required arguments. The first
 -- argument can be combined in the same word with the short option
 -- (@-c42@) or can be in the ext word (@-c 42@). The next argument
 -- will have to be in a separate word.
-shortTwoArg :: ShortOpt -> Parser (ShortOpt, String, String)
-shortTwoArg s = do
-  (so, a1) <- shortOneArg s
-  a2 <- nextArg
-  return (so, a1, a2)
+shortTwoArg :: ShortOpt -> Parser (String, String)
+shortTwoArg s =
+  (,) <$> shortOneArg s <*> nextArg
+
 
 -- | Parses short options that take a variable number of
 -- arguments. This will keep on parsing option arguments until it
@@ -142,52 +142,52 @@ shortTwoArg s = do
 -- with a stopper. The first argument can be combined in the same word
 -- with the short option (@-c42@) or can be in the ext word (@-c
 -- 42@). Subsequent arguments will have to be in separate words.
-shortVariableArg :: ShortOpt -> Parser (ShortOpt, [String])
+shortVariableArg :: ShortOpt -> Parser [String]
 shortVariableArg s = do
-  so <- shortNoArg s
+  shortNoArg s
   firstArg <- optional pendingShortOptArg
   rest <- many nonOptionPosArg
   let result = maybe rest ( : rest ) firstArg
-  return (so, result)
+  return result
 
 -- | Parses long options that do not take any argument.
-longNoArg :: LongOpt -> Parser LongOpt
+longNoArg :: LongOpt -> Parser ()
 longNoArg = nonGNUexactLongOpt
 
 -- | Parses long options that take a single, optional argument. The
 -- single argument can be given GNU-style (@--lines=20@) or non-GNU
 -- style in separate words (@lines 20@).
-longOptionalArg :: LongOpt -> Parser (LongOpt, Maybe String)
+longOptionalArg :: LongOpt -> Parser (Maybe String)
 longOptionalArg = exactLongOpt
 
 -- | Parses long options that take a single, required argument. The
 -- single argument can be given GNU-style (@--lines=20@) or non-GNU
 -- style in separate words (@lines 20@).
-longOneArg :: LongOpt -> Parser (LongOpt, String)
+longOneArg :: LongOpt -> Parser String
 longOneArg l = do
-  (lo, mt) <- longOptionalArg l
+  mt <- longOptionalArg l
   case mt of
-    (Just t) -> return (lo, t)
+    (Just t) -> return t
     Nothing -> do
       a <- nextArg
            <?> ("option " ++ unLongOpt l ++ "requires an argument")
-      return (l, a)
+      return a
 
 -- | Parses long options that take a double, required argument. The
 -- first argument can be given GNU-style (@--lines=20@) or non-GNU
 -- style in separate words (@lines 20@). The second argument will have
 -- to be in a separate word.
-longTwoArg :: LongOpt -> Parser (LongOpt, String, String)
+longTwoArg :: LongOpt -> Parser (String, String)
 longTwoArg l = do
-  (lo, mt) <- longOptionalArg l
+  mt <- longOptionalArg l
   case mt of
     (Just t) -> do
       a2 <- nextArg
-      return (lo, t, a2)
+      return (t, a2)
     Nothing -> do
       a1 <- nextArg
       a2 <- nextArg
-      return (lo, a1, a2)
+      return (a1, a2)
 
 -- | Parses long options that take a variable number of
 -- arguments. This will keep on parsing option arguments until it
@@ -198,11 +198,11 @@ longTwoArg l = do
 -- with the short option (@--lines=20@) or can be in the ext word
 -- (@--lines 42@). Subsequent arguments will have to be in separate
 -- words.
-longVariableArg :: LongOpt -> Parser (LongOpt, [String])
+longVariableArg :: LongOpt -> Parser [String]
 longVariableArg l = do
-  (lo, mt) <- longOptionalArg l
+  mt <- longOptionalArg l
   rest <- many nonOptionPosArg
-  return (lo, maybe rest (:rest) mt)
+  return (maybe rest (:rest) mt)
 
 -- | Parses at least one long option and a variable number of short
 -- and long options that take no arguments.
@@ -213,11 +213,11 @@ mixedNoArg ::
   -> Parser (Either ShortOpt LongOpt)
 mixedNoArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
-    r <- longNoArg lo
-    return $ Right r
+    longNoArg lo
+    return $ Right lo
   toShort so = do
-    s <- shortNoArg so
-    return $ Left s
+    shortNoArg so
+    return $ Left so
   f = toLong l
   longs = map toLong ls
   shorts = map toShort ss
@@ -374,8 +374,18 @@ longOpt set map = do
         Just a1 -> a1 : as
 
 
-shortOpt :: [([Char], ArgSpec a)] -> Parser a
-shortOpt 
+shortOpt :: OptSpec a -> Maybe (Parser a)
+shortOpt = undefined
+{-
+shortOpt o = mconcat parsers where
+  parsers = map mkParser . shortOpts $ o
+  mkParser c =
+    let opt = unsafeShortOpt c
+    in Just $ case argSpec o of
+      NoArg a -> a <$ shortNoArg opt
+      OptionalArg f -> do
+        (_, maybeStr) <- 
+-}
 {-
 noArgs os = shorts <|> longs where
   opts = filter p os where

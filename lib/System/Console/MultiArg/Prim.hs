@@ -328,11 +328,11 @@ increment old = old { counter = succ . counter $ old }
 -- given. Succeeds and consumes a pending short option if it matches
 -- the short option given; returns the short option parsed.
 
-pendingShortOpt :: ShortOpt -> Parser ShortOpt
+pendingShortOpt :: ShortOpt -> Parser ()
 pendingShortOpt so = Parser $ \s ->
   let err saw = Expected ("short option: " ++ [(unShortOpt so)]) saw
       es saw = (Bad, s { errors = err saw : errors s })
-      gd (res, newSt) = (Good res, newSt)
+      gd newSt = (Good (), newSt)
   in switch es gd $ do
     when (sawStopper s) $ S.throw "stopper"
     (first, rest) <- case pendingShort s of
@@ -340,7 +340,7 @@ pendingShortOpt so = Parser $ \s ->
       x:xs -> return (x, xs)
     when (unShortOpt so /= first)
       (S.throw ("wrong pending short option: " ++ [first]))
-    return (so, increment s { pendingShort = rest })
+    return (increment s { pendingShort = rest })
 
 -- | Parses only non-pending short options. Fails without consuming
 -- any input if, in order:
@@ -366,12 +366,12 @@ pendingShortOpt so = Parser $ \s ->
 -- from the argument into a pending short, and removes the first word
 -- from remaining arguments to be parsed. Returns the short option
 -- parsed.
-nonPendingShortOpt :: ShortOpt -> Parser ShortOpt
+nonPendingShortOpt :: ShortOpt -> Parser ()
 nonPendingShortOpt so = Parser $ \s ->
   let err saw = Expected (msg ++ [unShortOpt so]) saw
       msg = "non pending short option"
       errRet saw = (Bad, s { errors = err saw : errors s })
-      gd (g, n) = (Good g, n)
+      gd n = (Good (), n)
   in switch errRet gd $ do
     checkPendingShorts s
     checkStopper s
@@ -387,7 +387,7 @@ nonPendingShortOpt so = Parser $ \s ->
       S.throw ("different short option: " ++ [unShortOpt so])
     when (letter == '-') $ S.throw "new stopper"
     let s'' = s' { pendingShort = arg }
-    return (so, s'')
+    return s''
 
 -- | Parses an exact long option. That is, the text of the
 -- command-line option must exactly match the text of the
@@ -417,7 +417,7 @@ nonPendingShortOpt so = Parser $ \s ->
 --
 -- * the next argument on the command line does begin with two
 --   dashes but its text does not match the argument we're looking for
-exactLongOpt :: LongOpt -> Parser (LongOpt, Maybe String)
+exactLongOpt :: LongOpt -> Parser (Maybe String)
 exactLongOpt lo = Parser $ \s ->
   let ert saw = (Bad, err saw)
       err saw = s { errors = Expected msg saw : errors s } where
@@ -430,7 +430,7 @@ exactLongOpt lo = Parser $ \s ->
     (word, afterEq) <- getLongOption x
     when (word /= unLongOpt lo) $
       S.throw ("wrong long option: " ++ unLongOpt lo)
-    return ((lo, afterEq), s')
+    return (afterEq, s')
 
 -- | Takes a single String and returns a tuple, where the first element
 -- is the first two letters, the second element is everything from the
