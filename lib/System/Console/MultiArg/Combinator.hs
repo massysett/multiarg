@@ -15,8 +15,6 @@ module System.Console.MultiArg.Combinator (
 
   -- * Long options
   nonGNUexactLongOpt,
-  matchApproxLongOpt,
-  matchNonGNUApproxLongOpt,
   longNoArg,
   longOptionalArg,
   longOneArg,
@@ -30,13 +28,18 @@ module System.Console.MultiArg.Combinator (
   mixedTwoArg,
   mixedVariableArg,
   
+  -- * Combined long and short option parser
+  OptSpec(OptSpec, longOpts, shortOpts, argSpec),
+  ArgSpec(NoArg, OptionalArg, OneArg, TwoArg, VariableArg),
+  parseOption,
+  
   -- * Other words
   matchApproxWord ) where
   
-import Data.Text ( Text, isPrefixOf )
+import Data.List (isPrefixOf, intersperse)
 import Data.Set ( Set )
 import qualified Data.Set as Set
-import Control.Monad ( liftM )
+import Control.Applicative ((<*>), (<$>), optional, (<$))
 
 import System.Console.MultiArg.Prim
   ( Parser, throw, try, approxLongOpt,
@@ -45,10 +48,14 @@ import System.Console.MultiArg.Prim
     exactLongOpt, nextArg, (<?>),
     Error(Expected))
 import System.Console.MultiArg.Option
-  ( LongOpt, ShortOpt, unLongOpt, unShortOpt )
+  ( LongOpt, ShortOpt, unLongOpt,
+    makeLongOpt, makeShortOpt )
 import Control.Applicative ((<|>), many)
-import Control.Monad ( void )
+import Control.Monad ( void, replicateM )
+import qualified Data.Map as M
+import Data.Map ((!))
 import Data.Monoid ( mconcat )
+import Data.Maybe (catMaybes)
 
 -- | @notFollowedBy p@ succeeds only if parser p fails. If p fails,
 -- notFollowedBy succeeds without consuming any input. If p succeeds
@@ -69,95 +76,59 @@ nonGNUexactLongOpt l = try $ do
   (lo, maybeArg) <- exactLongOpt l
   case maybeArg of
     Nothing -> return lo
-    (Just t) ->
+    (Just _) ->
       let e = "option " ++ unLongOpt l ++ " does not take an argument"
       in fail e
 
-
--- | Takes a long option and a set of long options. If the next word
--- on the command line unambiguously starts with the name of the long
--- option given, returns the actual text found on the command line,
--- the long option, and the text of any GNU-style option
--- argument. Make sure that the long option you are looking for is
--- both the first argument and that it is included in the set;
--- otherwise this parser will always fail.
-matchApproxLongOpt :: (Error e, Monad m)
-                      => LongOpt
-                      -> Set LongOpt
-                      -> ParserT s e m (Text, LongOpt, Maybe Text)
-matchApproxLongOpt l s = try $ do
-  a@(t, lo, _) <- approxLongOpt s
-  if lo == l
-    then return a
-    else throw (parseErr (E.ExpMatchingApproxLong l s)
-               (E.SawNotMatchingApproxLong t lo))
-
--- | Like matchApproxLongOpt but only parses non-GNU-style long
--- options.
-matchNonGNUApproxLongOpt :: (Error e, Monad m)
-                            => LongOpt
-                            -> Set LongOpt
-                            -> ParserT s e m (Text, LongOpt)
-matchNonGNUApproxLongOpt l s = try $ do
-  (t, lo, arg) <- matchApproxLongOpt l s
-  let err b = throw (parseErr (E.ExpNonGNUMatchingApproxLong l s)
-                    (E.SawMatchingApproxLongWithArg b))
-  maybe (return (t, lo)) err arg
 
 -- | Examines the possible words in Set. If there are no pendings,
 -- then get the next word and see if it matches one of the words in
 -- Set. If so, returns the word actually parsed and the matching word
 -- from Set. If there is no match, fails without consuming any input.
-matchApproxWord :: (Error e, Monad m)
-                   => Set Text
-                   -> ParserT s e m (Text, Text)
+matchApproxWord :: Set String -> Parser (String, String)
 matchApproxWord s = try $ do
   a <- nextArg
   let p t = a `isPrefixOf` t
       matches = Set.filter p s
-      err saw = throw (parseErr (E.ExpApproxWord s) saw)
+      err saw = throw $ Expected
+                ("word matching one of: "
+                 ++ (concat . intersperse ", " $ Set.toList s))
+                saw
   case Set.toList matches of
-    [] -> err (E.SawNoMatches a)
+    [] -> err "no matches"
     (x:[]) -> return (a, x)
-    _ -> err (E.SawMultipleApproxMatches matches a)
+    _ ->
+      let msg = "word is ambiguous: " ++ a
+      in err msg
 
 -- | Parses short options that do not take any argument. (It is
 -- however okay for the short option to be combined with other short
 -- options in the same word.)
-shortNoArg :: (Error e, Monad m)
-            => ShortOpt
-            -> ParserT s e m ShortOpt
+shortNoArg :: ShortOpt -> Parser ShortOpt
 shortNoArg s = pendingShortOpt s <|> nonPendingShortOpt s
 
 -- | Parses short options that take an optional argument. The argument
 -- can be combined in the same word with the short option (@-c42@) or
 -- can be in the ext word (@-c 42@).
-shortOptionalArg :: (Error e, Monad m)
-                 => ShortOpt
-                 -> ParserT s e m (ShortOpt, Maybe Text)
+shortOptionalArg :: ShortOpt -> Parser (ShortOpt, Maybe String)
 shortOptionalArg s = do
   so <- shortNoArg s
-  a <- optionMaybe (pendingShortOptArg <|> nonOptionPosArg)
+  a <- optional (pendingShortOptArg <|> nonOptionPosArg)
   return (so, a)
 
 -- | Parses short options that take a required argument.  The argument
 -- can be combined in the same word with the short option (@-c42@) or
 -- can be in the ext word (@-c 42@).
-shortOneArg :: (Error e, Monad m) =>
-               ShortOpt
-               -> ParserT s e m (ShortOpt, Text)
-shortOneArg s = do
-  so <- shortNoArg s
-  a <- pendingShortOptArg <|> nextArg
-  return (so, a)
+shortOneArg :: ShortOpt -> Parser (ShortOpt, String)
+shortOneArg s =
+  (,) <$> shortNoArg s <*> (pendingShortOptArg <|> nextArg)
+
 
 -- | Parses short options that take two required arguments. The first
 -- argument can be combined in the same word with the short option
 -- (@-c42@) or can be in the ext word (@-c 42@). The next argument
 -- will have to be in a separate word.
-shortTwoArg :: (Error e, Monad m)
-               => ShortOpt
-               -> ParserT s e m (ShortOpt, Text, Text)
+shortTwoArg :: ShortOpt -> Parser (ShortOpt, String, String)
 shortTwoArg s = do
   (so, a1) <- shortOneArg s
   a2 <- nextArg
@@ -171,51 +142,42 @@ shortTwoArg s = do
 -- with a stopper. The first argument can be combined in the same word
 -- with the short option (@-c42@) or can be in the ext word (@-c
 -- 42@). Subsequent arguments will have to be in separate words.
-shortVariableArg :: (Error e, Monad m)
-                 => ShortOpt
-                 -> ParserT s e m (ShortOpt, [Text])
+shortVariableArg :: ShortOpt -> Parser (ShortOpt, [String])
 shortVariableArg s = do
   so <- shortNoArg s
-  firstArg <- optionMaybe pendingShortOptArg
+  firstArg <- optional pendingShortOptArg
   rest <- many nonOptionPosArg
   let result = maybe rest ( : rest ) firstArg
   return (so, result)
 
 -- | Parses long options that do not take any argument.
-longNoArg :: (Error e, Monad m)
-           => LongOpt
-           -> ParserT s e m LongOpt
+longNoArg :: LongOpt -> Parser LongOpt
 longNoArg = nonGNUexactLongOpt
 
 -- | Parses long options that take a single, optional argument. The
 -- single argument can be given GNU-style (@--lines=20@) or non-GNU
 -- style in separate words (@lines 20@).
-longOptionalArg :: (Error e, Monad m)
-                   => LongOpt
-                   -> ParserT s e m (LongOpt, Maybe Text)
+longOptionalArg :: LongOpt -> Parser (LongOpt, Maybe String)
 longOptionalArg = exactLongOpt
 
 -- | Parses long options that take a single, required argument. The
 -- single argument can be given GNU-style (@--lines=20@) or non-GNU
 -- style in separate words (@lines 20@).
-longOneArg :: (Error e, Monad m)
-                 => LongOpt
-                 -> ParserT s e m (LongOpt, Text)
+longOneArg :: LongOpt -> Parser (LongOpt, String)
 longOneArg l = do
   (lo, mt) <- longOptionalArg l
   case mt of
     (Just t) -> return (lo, t)
     Nothing -> do
-      a <- nextArg <?> E.parseErr E.ExpLongOptArg E.SawNoArgsLeft
+      a <- nextArg
+           <?> ("option " ++ unLongOpt l ++ "requires an argument")
       return (l, a)
 
 -- | Parses long options that take a double, required argument. The
 -- first argument can be given GNU-style (@--lines=20@) or non-GNU
 -- style in separate words (@lines 20@). The second argument will have
 -- to be in a separate word.
-longTwoArg :: (Error e, Monad m)
-                 => LongOpt
-                 -> ParserT s e m (LongOpt, Text, Text)
+longTwoArg :: LongOpt -> Parser (LongOpt, String, String)
 longTwoArg l = do
   (lo, mt) <- longOptionalArg l
   case mt of
@@ -236,9 +198,7 @@ longTwoArg l = do
 -- with the short option (@--lines=20@) or can be in the ext word
 -- (@--lines 42@). Subsequent arguments will have to be in separate
 -- words.
-longVariableArg :: (Error e, Monad m)
-                   => LongOpt
-                   -> ParserT s e m (LongOpt, [Text])
+longVariableArg :: LongOpt -> Parser (LongOpt, [String])
 longVariableArg l = do
   (lo, mt) <- longOptionalArg l
   rest <- many nonOptionPosArg
@@ -246,11 +206,11 @@ longVariableArg l = do
 
 -- | Parses at least one long option and a variable number of short
 -- and long options that take no arguments.
-mixedNoArg :: (Error e, Monad m)
-              => LongOpt
-              -> [LongOpt]
-              -> [ShortOpt]
-              -> ParserT s e m (Either ShortOpt LongOpt)
+mixedNoArg ::
+  LongOpt
+  -> [LongOpt]
+  -> [ShortOpt]
+  -> Parser (Either ShortOpt LongOpt)
 mixedNoArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     r <- longNoArg lo
@@ -265,11 +225,10 @@ mixedNoArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
 -- | Parses at least one long option and a variable number of short
 -- and long options that take an optional argument.
 mixedOptionalArg ::
-  (Error e, Monad m)
-  => LongOpt
+  LongOpt
   -> [LongOpt]
   -> [ShortOpt]
-  -> ParserT s e m ((Either ShortOpt LongOpt), Maybe Text)
+  -> Parser ((Either ShortOpt LongOpt), Maybe String)
 mixedOptionalArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     (o, a) <- longOptionalArg lo
@@ -284,11 +243,10 @@ mixedOptionalArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
 -- | Parses at least one long option and additional long and short
 -- options that take one argument.
 mixedOneArg ::
-  (Error e, Monad m)
-  => LongOpt
+  LongOpt
   -> [LongOpt]
   -> [ShortOpt]
-  -> ParserT s e m ((Either ShortOpt LongOpt), Text)
+  -> Parser ((Either ShortOpt LongOpt), String)
 mixedOneArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     (o, a) <- longOneArg lo
@@ -303,11 +261,10 @@ mixedOneArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
 -- | Parses at least one long option and additonal long and short
 -- options that take two arguments.
 mixedTwoArg ::
-  (Error e, Monad m)
-  => LongOpt
+  LongOpt
   -> [LongOpt]
   -> [ShortOpt]
-  -> ParserT s e m ((Either ShortOpt LongOpt), Text, Text)
+  -> Parser ((Either ShortOpt LongOpt), String, String)
 mixedTwoArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     (o, a1, a2) <- longTwoArg lo
@@ -322,11 +279,10 @@ mixedTwoArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
 -- | Parses at least one long option and additional long and short
 -- options that take a variable number of arguments.
 mixedVariableArg ::
-  (Error e, Monad m)
-  => LongOpt
+  LongOpt
   -> [LongOpt]
   -> [ShortOpt]
-  -> ParserT s e m ((Either ShortOpt LongOpt), [Text])
+  -> Parser ((Either ShortOpt LongOpt), [String])
 mixedVariableArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   toLong lo = do
     (o, a) <- longVariableArg lo
@@ -337,4 +293,106 @@ mixedVariableArg l ls ss = mconcat ([f] ++ longs ++ shorts) where
   f = toLong l
   longs = map toLong ls
   shorts = map toShort ss
+
+
+unsafeShortOpt :: Char -> ShortOpt
+unsafeShortOpt c = case makeShortOpt c of
+  Nothing -> error $ "invalid short option: " ++ [c]
+  Just o -> o
+
+unsafeLongOpt :: String -> LongOpt
+unsafeLongOpt c = case makeLongOpt c of
+  Nothing -> error $ "invalid long option: " ++ c
+  Just o -> o
+
+
+data OptSpec a =
+  OptSpec { longOpts :: [String]
+          , shortOpts :: [Char]
+          , argSpec :: ArgSpec a }
+
+data ArgSpec a =
+  NoArg a
+  | OptionalArg (Maybe String -> a)
+  | OneArg (String -> a)
+  | TwoArg (String -> String -> a)
+  | VariableArg ([String] -> a)
+
+parseOption :: [OptSpec a] -> Parser a
+parseOption os =
+  let ls = [noArgs, optArgs, oneArgs, twoArgs, varArgs] <*> [os]
+  in case mconcat ls of
+    Nothing -> error "no options given to parse."
+    Just p -> p
+  
+noArgs :: [OptSpec a] -> Maybe (Parser a)
+noArgs os = undefined
+
+noArgShort :: a -> [Char] -> Maybe (Parser a)
+noArgShort a = mconcat . map toParser where
+  toParser c = Just (a <$ shortNoArg (unsafeShortOpt c))
+
+longOptSet :: [OptSpec a] -> Set LongOpt
+longOptSet = Set.fromList . concatMap toOpts where
+  toOpts = map unsafeLongOpt . longOpts
+
+longOptMap :: [OptSpec a] -> M.Map LongOpt (ArgSpec a)
+longOptMap = M.fromList . concatMap toPairs where
+  toPairs (OptSpec los _ as) = map (toPair as) los where
+    toPair a s = (unsafeLongOpt s, a)
+
+longOpt ::
+  Set LongOpt
+  -> M.Map LongOpt (ArgSpec a)
+  -> Parser a
+longOpt set map = do
+  (_, lo, maybeArg) <- approxLongOpt set
+  let spec = map ! lo
+  case spec of
+    NoArg a -> case maybeArg of
+      Nothing -> return a
+      Just arg -> fail $ "option " ++ unLongOpt lo
+                  ++ " does not take argument"
+    OptionalArg f -> return (f maybeArg)
+    OneArg f -> case maybeArg of
+      Nothing -> do
+        a1 <- nonOptionPosArg
+        return $ f a1
+      Just a -> return $ f a
+    TwoArg f -> case maybeArg of
+      Nothing -> do
+        a1 <- nextArg
+        a2 <- nextArg
+        return $ f a1 a2
+      Just a1 -> do
+        a2 <- nextArg
+        return $ f a1 a2
+    VariableArg f -> do
+      as <- many nonOptionPosArg
+      return . f $ case maybeArg of
+        Nothing -> as
+        Just a1 -> a1 : as
+
+
+shortOpt :: [([Char], ArgSpec a)] -> Parser a
+shortOpt 
+{-
+noArgs os = shorts <|> longs where
+  opts = filter p os where
+    p (OptSpec _ _ as) = case as of
+      NoArg _ -> True
+      _ -> False
+-}
+
+optArgs :: [OptSpec a] -> Maybe (Parser a)
+optArgs = undefined
+
+oneArgs :: [OptSpec a] -> Maybe (Parser a)
+oneArgs = undefined
+
+twoArgs :: [OptSpec a] -> Maybe (Parser a)
+twoArgs = undefined
+
+varArgs :: [OptSpec a] -> Maybe (Parser a)
+varArgs = undefined
 

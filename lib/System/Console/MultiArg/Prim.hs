@@ -52,6 +52,9 @@ module System.Console.MultiArg.Prim (
   -- ** Miscellaneous
   end,
   
+  -- * Errors
+  Error(Expected, FromFail, Replaced, UnknownError)
+
   ) where
 
 
