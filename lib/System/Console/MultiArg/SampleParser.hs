@@ -12,9 +12,6 @@ module System.Console.MultiArg.SampleParser where
 
 import System.Console.MultiArg.SimpleParser as P
 
--- | One way to use MultiArg is to write parsers that return each
--- different option using different data constructors in an algebraic
--- data type; we'll call this \"the algebraic method\".
 data Flag =
   Bytes String
   | Follow (Maybe String)
@@ -30,8 +27,9 @@ data Flag =
   | Filename String
   deriving Show
 
-specsAlgebraic :: [P.OptSpec Flag]
-specsAlgebraic =
+specs :: [P.OptSpec Flag]
+
+specs =
   [ P.OptSpec ["bytes"]                     ['c']     (P.OneArg Bytes)
   , P.OptSpec ["follow"]                    ['f']     (P.OptionalArg Follow)
   , P.OptSpec ["follow-retry"]              ['F']     (P.NoArg Retry)
@@ -45,38 +43,8 @@ specsAlgebraic =
   , P.OptSpec ["version"]                   []        (P.NoArg Version)
   ]
 
-sampleAlgebraicMain :: IO ()
-sampleAlgebraicMain = do
+sampleMain :: IO ()
+sampleMain = do
   as <- P.getArgs
-  let r = P.parse P.Intersperse specsAlgebraic Filename as
+  let r = P.parse P.Intersperse specs Filename as
   print r
-
--- | Another way to use MultiArg is to write parsers that return a
--- function that transforms a record; we'll call this \"the record
--- method\". This can be useful for writing more complex parsers. For
--- example, Flag type above returned all its arguments as
--- strings--even those which might be more useful as @Int@s. Here
--- let's have a record that contains all the options, with some of the
--- arguments converted to different types.
-data Options = Options {
-  tailSpec :: TailSpec
-  , follow :: Maybe String
-  , retry :: Bool
-  , stats :: Maybe Int
-  , pid :: Maybe Int
-  , quiet :: Bool
-  , sleep :: Maybe Int
-  , verbose :: Bool
-  , help :: Bool
-  , version :: Bool
-  , filenames :: [String]
-  } deriving Show
-
-data TailSpec = TBytes Int | TLines Int
-              deriving Show
-
--- | Reads Int values without crashing if they are invalid.
-readInt :: String -> P.Exceptional String Int
-readInt s = case reads s of
-  (x, ""):[] -> return x
-  _ -> P.Exception $ "invalid number: " ++ s
