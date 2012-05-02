@@ -104,18 +104,84 @@ unsafeLongOpt c = case makeLongOpt c of
   Just o -> o
 
 
-data OptSpec a =
-  OptSpec { longOpts :: [String]
-          , shortOpts :: [Char]
-          , argSpec :: ArgSpec a }
+-- |Specifies options for the 'parseOption' function. Each OptSpec
+-- represents one command-line option.
+data OptSpec a = OptSpec {
+  longOpts :: [String]
+  -- ^ Each String is a single long option, such as @version@. When
+  -- the user specifies long options on the command line, she must
+  -- type two dashes; however, do not include the dashes when you
+  -- specify the long option here. Strings you specify as long options
+  -- cannot include a dash as either the first or the second
+  -- character, and they cannot include an equal sign anywhere. If
+  -- your long option does not meet these conditions, a runtime error
+  -- will occur.
 
+          
+  , shortOpts :: [Char]
+    -- ^ Each Char is a single short option, such as @v@. The
+    -- character cannot be a dash; if it is, a runtime error will occur.
+    
+  , argSpec :: ArgSpec a
+    -- ^ What to do each time one of the given long options or
+    -- short options appears on the command line.
+  }
+
+-- | Specifies how many arguments each option takes. As with
+-- 'System.Console.GetOpt.ArgDescr', there are (at least) two ways to
+-- use this type. You can simply represent each possible option using
+-- different data constructors in an algebraic data type. Or you can
+-- have each ArgSpec yield a function that transforms a record. For
+-- examples of each, see "System.Console.MultiArg.SampleParser".
 data ArgSpec a =
   NoArg a
-  | OptionalArg (Maybe String -> a)
-  | OneArg (String -> a)
-  | TwoArg (String -> String -> a)
-  | VariableArg ([String] -> a)
+  -- ^ This option takes no arguments
 
+  | OptionalArg (Maybe String -> a)
+    -- ^ This option takes an optional argument. As noted in \"The Tao
+    -- of Option Parsing\", optional arguments can result in some
+    -- ambiguity. (Read it here:
+    -- <http://optik.sourceforge.net/doc/1.5/tao.html>) If option @a@
+    -- takes an optional argument, and @b@ is also an option, what
+    -- does @-ab@ mean? SimpleParser resolves this ambiguity by
+    -- assuming that @b@ is an argument to @a@. If the user does not
+    -- like this, she can specify @-a -b@ (in such an instance @-b@ is
+    -- not parsed as an option to @-a@, because @-b@ begins with a
+    -- hyphen and therefore \"looks like\" an option.) Certainly
+    -- though, optional arguments lead to ambiguity, so if you don't
+    -- like it, don't use them :)
+
+  | OneArg (String -> a)
+    -- ^ This option takes one argument. Here, if option @a@ takes one
+    -- argument, @-a -b@ will be parsed with @-b@ being an argument to
+    -- option @a@, even though @-b@ starts with a hyphen and therefore
+    -- \"looks like\" an option.
+    
+  | TwoArg (String -> String -> a)
+    -- ^ This option takes two arguments. Parsed similarly to 'OneArg'.
+
+  | VariableArg ([String] -> a)
+    -- ^ This option takes a variable number of arguments--zero or
+    -- more. Option arguments continue until the command line contains
+    -- a word that begins with a hyphen. For example, if option @a@
+    -- takes a variable number of arguments, then @-a one two three
+    -- -b@ will be parsed as @a@ taking three arguments, and @-a -b@
+    -- will be parsed as @a@ taking no arguments. If the user enters
+    -- @-a@ as the last option on the command line, then the only way
+    -- to indicate the end of arguments for @a@ and the beginning of
+    -- positional argments is with a stopper.
+    
+
+-- | Parses a single command line option. Examines all the options
+-- specified using multiple OptSpec and parses one option on the
+-- command line accordingly. Fails without consuming any input if the
+-- next word on the command line is not a recognized option. Allows
+-- the user to specify the shortest unambiguous match for long
+-- options; for example, the user could type @--verb@ for @--verbose@
+-- and @--vers@ for @--version@.
+--
+-- For an example that uses this function, see
+-- "System.Console.MultiArg.SimpleParser".
 parseOption :: [OptSpec a] -> Parser a
 parseOption os =
   let longs = longOptParser os
