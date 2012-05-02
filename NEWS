@@ -12,3 +12,19 @@ Changes since release 0.1.0.0:
   to carry out stateful parses without using a user state. Sometimes
   this aids in composability--for instance, I use it when combining
   parsers from different parts of the same program.
+
+Release 0.4.0.0, [date]
+Changes since release 0.2.0.0:
+
+* Code written for version 0.2.* will not work at all with this
+  version.
+
+* Removed dependency on text library.
+
+* Dramatically simplified code for primitive parsers. No more custom
+error types, monad transformers, or user states. This sort of
+functionality is easily implemented in the parsers that you can build;
+baking it into the primitive parsers makes things needlessly
+complicated.
+
+* Reworked included combinators in Combinator module.

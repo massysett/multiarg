@@ -1,7 +1,7 @@
 -- | A simple command line parser that can parse options that take an
 -- optional argument, one or two arguments, or a variable number of
 -- arguments. For sample code that uses this parser, see
--- 'System.Console.MultiArg.SampleParser'.
+-- "System.Console.MultiArg.SampleParser".
 module System.Console.MultiArg.SimpleParser (
   -- * Interspersion control
   Intersperse (Intersperse, StopOptions)

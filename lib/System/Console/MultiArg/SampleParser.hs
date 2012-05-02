@@ -2,8 +2,11 @@
 -- be a command-line parser for the version of the Unix command @tail@
 -- that is included with GNU coreutils version 8.5. "main" simply gets
 -- the command line arguments, parses them, and prints out what was
--- parsed. To test it out, there is a @sample.hs@ file in the
--- @binaries@ directory of the multiarg archive that you can compile.
+-- parsed. To test it out, simply compile an executable that looks
+-- like this and then feed it different options:
+--
+-- > import System.Console.MultiArg.SampleParser
+-- > main = sampleMain
 --
 -- The code in the module is the sample code; the sample code is not
 -- in the Haddock documentation! If you're reading this in Haddock,

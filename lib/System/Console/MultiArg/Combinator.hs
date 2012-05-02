@@ -131,8 +131,9 @@ data OptSpec a = OptSpec {
 -- 'System.Console.GetOpt.ArgDescr', there are (at least) two ways to
 -- use this type. You can simply represent each possible option using
 -- different data constructors in an algebraic data type. Or you can
--- have each ArgSpec yield a function that transforms a record. For
--- examples of each, see "System.Console.MultiArg.SampleParser".
+-- have each ArgSpec yield a function that transforms a record. For an
+-- example that uses an algebraid data type, see
+-- "System.Console.MultiArg.SampleParser".
 data ArgSpec a =
   NoArg a
   -- ^ This option takes no arguments

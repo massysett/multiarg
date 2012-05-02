@@ -1,8 +1,8 @@
 -- | Parser primitives. These are the only functions that have access
 -- to the internals of the parser. Use these functions if you want to
 -- build your own parser from scratch. If your needs are simpler, you
--- will want to look at 'System.Console.MultiArg.SimpleParser' or
--- 'System.Console.MultiArg.Combinator', which do a lot of grunt work
+-- will want to look at "System.Console.MultiArg.SimpleParser" or
+-- "System.Console.MultiArg.Combinator", which do a lot of grunt work
 -- for you.
 module System.Console.MultiArg.Prim (
     -- * Parser types
@@ -13,7 +13,7 @@ module System.Console.MultiArg.Prim (
   -- | Each parser runner is applied to a list of Strings, which are the
   -- command line arguments to parse. If there is any chance that you
   -- will be parsing Unicode strings, see the documentation in
-  -- 'System.Console.MultiArg.GetArgs' before you use
+  -- "System.Console.MultiArg.GetArgs" before you use
   -- 'System.Environment.getArgs'.
   parse,
   
@@ -58,7 +58,9 @@ module System.Console.MultiArg.Prim (
   end,
   
   -- * Errors
-  Error(Expected, FromFail, Replaced, UnknownError)
+  Error(Expected, FromFail, Replaced, UnknownError),
+  Expecting,
+  Saw
 
   ) where
 
@@ -85,11 +87,21 @@ import Data.List (isPrefixOf)
 type Expecting = String
 type Saw = String
 
-data Error = Expected Expecting Saw
-             | FromFail String
-             | Replaced String
-             | UnknownError
-             deriving Show
+-- | Error messages.
+data Error =
+  Expected Expecting Saw
+  -- ^ The parser expected to see one thing, but it actually saw
+  -- something else.
+  | FromFail String
+    -- ^ The 'fail' function was applied.
+    
+  | Replaced String
+    -- ^ A previous list of error messages was replaced with this error message.
+    
+  | UnknownError
+    -- ^ Any other error; used by 'genericThrow'.
+
+  deriving Show
 
 -- | Carries the internal state of the parser. The counter is a simple
 -- way to determine whether the remaining list one ParseSt has been
@@ -114,27 +126,13 @@ defaultState ts = ParseSt { pendingShort = ""
 -- | Carries the result of each parse.
 data Result a = Bad | Good a
 
--- | @ParserT s e m a@ is a parser with user state s, error type e,
--- underlying monad m, and result type a. Internally the parser is a
--- state monad which keeps track of what is remaining to be
--- parsed. Since the parser has an internal state anyway, the user can
--- add to this state (this is called the user state.) The parser
--- ignores this user state so you can use it however you wish. If you
--- do not need a user state, just make it the unit type ().
+-- | Parsers. Internally the parser tracks what input remains to be
+-- parsed, whether there are any pending short options, and whether a
+-- stopper has been seen. A parser can return a value of any type.
 --
 -- The parser also includes the notion of failure. Any parser can
 -- fail; a failed parser affects the behavior of combinators such as
--- combine. The failure type should be a instance of
--- System.Console.MultiArg.Error.Error. This allows you to define your
--- own type and use it for the failure type, which can be useful when
--- combining MultiArg with your own program.
---
--- The underlying monad is m. This makes ParserT into a monad
--- transformer; you can layer it on top of other monads. For instance
--- you might layer it on top of the IO monad so that your parser can
--- perform IO (for example, by examining the disk to see if arguments
--- that specify files are valid.) If you don't need a monad
--- transformer, just layer ParserT on top of Identity.
+-- combine.
 data Parser a =
   Parser { runParser :: ParseSt -> (Result a, ParseSt) }
 
@@ -164,8 +162,9 @@ instance MonadPlus Parser where
   mplus = choice
 
 
--- | Runs a parser that has no user state and an underlying monad of
--- Identity and is parameterized on the error type.
+-- | Runs a parser. This is the only way to change a value of type
+-- @Parser a@ into a value of type @a@ (that is, it is the only way to
+-- \"get out of the Parser monad\" or to \"escape the Parser monad\".)
 parse ::
   [String]
   -- ^ Command line arguments to parse
@@ -174,7 +173,12 @@ parse ::
   -- ^ Parser to run
   
   -> Exceptional [Error] a
-  -- ^ Success or failure
+  -- ^ Success or failure. Any parser might fail; for example, the
+  -- command line might not have any values left to parse. Use of the
+  -- @<|>@ combinator can lead to a list of failures. If multiple
+  -- parsers are tried one after another using the @<|>@ combinator,
+  -- and each fails without consuming any input, then multiple Error
+  -- will result, one for each failure.
 
 parse ts p =
   let (result, st') = runParser p (defaultState ts)
@@ -306,10 +310,6 @@ choice a b = Parser $ \sOld ->
 -- the parser. If it fails and consumes input, returns the result of
 -- the parser. If it fails without consuming any input, then changes
 -- the error using the function given.
---
--- If the parser fails without consuming any input but the user state
--- has changed, the parser returned will reflect the changed user
--- state.
 (<?>) :: Parser a -> String -> Parser a
 (<?>) l e = Parser $ \s ->
   let (r, s') = runParser l s
@@ -369,8 +369,7 @@ pendingShortOpt so = Parser $ \s ->
 --
 -- Otherwise, consumes the next argument, puts any remaining letters
 -- from the argument into a pending short, and removes the first word
--- from remaining arguments to be parsed. Returns the short option
--- parsed.
+-- from remaining arguments to be parsed.
 nonPendingShortOpt :: ShortOpt -> Parser ()
 nonPendingShortOpt so = Parser $ \s ->
   let err saw = Expected (msg ++ [unShortOpt so]) saw
@@ -567,8 +566,7 @@ resetStopper = Parser $ \s ->
   in (Good (), s')
 
 -- | try p behaves just like p, but if p fails, try p will not consume
--- any input. However, the user state reflects any changes that parser
--- p made to it.
+-- any input.
 try :: Parser a -> Parser a
 try a = Parser $ \s ->
   let (r, s') = runParser a s
@@ -672,9 +670,6 @@ parseTillErr :: a
 parseTillErr =
   error "parseTill applied to parser that takes empty list"
 
--- It is impossible to implement several and manyTill in terms of
--- feed, as there is no easy way to specify what the starting value of
--- the state for feed would be.
 
 -- | several p runs parser p zero or more times and returns all the
 -- results. This proceeds like this: parser p is run and, if it
