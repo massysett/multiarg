@@ -58,7 +58,7 @@ module System.Console.MultiArg.Prim (
   end,
   
   -- * Errors
-  Error(Expected, FromFail, Replaced, UnknownError),
+  Message(Expected, FromFail, Replaced, UnknownError),
   Expecting,
   Saw
 
@@ -84,14 +84,17 @@ import Data.Monoid ( Monoid ( mempty, mappend ) )
 import qualified Data.List as L
 import Data.List (isPrefixOf)
 
-type Expecting = String
-type Saw = String
+type Location = String
+
+-- | An Error contains a list of Messages and a String indicating
+-- where the error happened.
+data Error = Error [Message] Location deriving Show
 
 -- | Error messages.
-data Error =
-  Expected Expecting Saw
+data Message =
+  Expected String
   -- ^ The parser expected to see one thing, but it actually saw
-  -- something else.
+  -- something else. The string indicates what was expected.
   | FromFail String
     -- ^ The 'fail' function was applied.
     
@@ -111,7 +114,7 @@ data ParseSt = ParseSt { pendingShort :: String
                        , remaining :: [String]
                        , sawStopper :: Bool
                        , counter :: Int
-                       , errors :: [Error]
+                       , errors :: [Message]
                        } deriving Show
 
 -- | Load up the ParseSt with an initial user state and a list of
@@ -172,7 +175,7 @@ parse ::
   -> Parser a
   -- ^ Parser to run
   
-  -> Exceptional [Error] a
+  -> Exceptional Error a
   -- ^ Success or failure. Any parser might fail; for example, the
   -- command line might not have any values left to parse. Use of the
   -- @<|>@ combinator can lead to a list of failures. If multiple
@@ -279,7 +282,7 @@ genericThrow = throw UnknownError
 
 -- | throw e always fails without consuming any input and returns a
 -- failed parser with error state e.
-throw :: Error -> Parser a
+throw :: Message -> Parser a
 throw e = Parser $ \s ->
   (Bad, s { errors = e : errors s })
 
