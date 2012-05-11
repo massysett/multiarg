@@ -90,6 +90,18 @@ type Location = String
 -- where the error happened.
 data Error = Error [Message] Location deriving Show
 
+-- | Extract a Location from a ParseSt for use in error messages.
+location :: ParseSt -> Location
+location st = pending ++ next ++ stop where
+  pending
+    | null (pendingShort st) = ""
+    | otherwise = "short option or short option argument: "
+                  ++ pendingShort st ++ " "
+  next = case remaining st of
+    [] -> "no words remaining"
+    x:xs -> "next word: " ++ x
+  stop = if sawStopper st then " (stopper already seen)" else ""
+
 -- | Error messages.
 data Message =
   Expected String
@@ -187,7 +199,9 @@ parse ts p =
   let (result, st') = runParser p (defaultState ts)
   in case result of
     Good g -> Success g
-    Bad -> Exception (errors st')
+    Bad ->
+      let e = Error (errors st') (location st')
+      in Exception e
 
 
 -- | Combines two parsers into a single parser. The second parser can
@@ -305,7 +319,11 @@ choice a b = Parser $ \sOld ->
     Bad ->
       if noConsumed sOld sa
       then let sNew = sOld { errors = errors sa }
-           in runParser b sNew
+               (rb, sb) = runParser b sNew
+           in case rb of
+             Good g' -> let sb' = sb { errors = [] }
+                        in (Good g', sb')
+             Bad -> (Bad, sb)
       else (Bad, sa)
 
 
@@ -338,16 +356,15 @@ increment old = old { counter = succ . counter $ old }
 
 pendingShortOpt :: ShortOpt -> Parser ()
 pendingShortOpt so = Parser $ \s ->
-  let err saw = Expected ("short option: " ++ [(unShortOpt so)]) saw
-      es saw = (Bad, s { errors = err saw : errors s })
+  let err = Expected ("short option: " ++ [(unShortOpt so)])
+      es = (Bad, s { errors = err : errors s })
       gd newSt = (Good (), newSt)
-  in switch es gd $ do
-    when (sawStopper s) $ S.throw "stopper"
+  in maybe es gd $ do
+    when (sawStopper s) Nothing
     (first, rest) <- case pendingShort s of
-      [] -> (S.throw "no pending short options") 
+      [] -> Nothing
       x:xs -> return (x, xs)
-    when (unShortOpt so /= first)
-      (S.throw ("wrong pending short option: " ++ [first]))
+    when (unShortOpt so /= first) Nothing
     return (increment s { pendingShort = rest })
 
 -- | Parses only non-pending short options. Fails without consuming
@@ -375,11 +392,11 @@ pendingShortOpt so = Parser $ \s ->
 -- from remaining arguments to be parsed.
 nonPendingShortOpt :: ShortOpt -> Parser ()
 nonPendingShortOpt so = Parser $ \s ->
-  let err saw = Expected (msg ++ [unShortOpt so]) saw
+  let err = Expected (msg ++ [unShortOpt so])
       msg = "non pending short option"
-      errRet saw = (Bad, s { errors = err saw : errors s })
+      errRet = (Bad, s { errors = err : errors s })
       gd n = (Good (), n)
-  in switch errRet gd $ do
+  in maybe errRet gd $ do
     checkPendingShorts s
     checkStopper s
     (a, s') <- nextWord s
