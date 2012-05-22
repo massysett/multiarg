@@ -12,7 +12,8 @@ module System.Console.MultiArg.SimpleParser (
     
     -- * Exceptions
   , Ex.Exceptional (Exception, Success)
-  , P.Error(Expected, FromFail, Replaced, UnknownError)
+  , P.Error (Error)
+  , P.Message (Expected, FromFail, Replaced, UnknownError)
     
     -- * Get command line arguments
   , G.getArgs
@@ -60,7 +61,7 @@ parse ::
   -- using the functions in there if there is any chance that you will
   -- be parsing command lines that have non-ASCII strings.
 
-  -> Ex.Exceptional [P.Error] [a]
+  -> Ex.Exceptional P.Error [a]
 parse i os p as =
   let optParser = C.parseOption os
       parser = case i of

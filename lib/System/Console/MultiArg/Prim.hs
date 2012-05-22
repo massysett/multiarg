@@ -59,8 +59,7 @@ module System.Console.MultiArg.Prim (
   
   -- * Errors
   Message(Expected, FromFail, Replaced, UnknownError),
-  Expecting,
-  Saw
+  Error(Error)
 
   ) where
 
@@ -74,12 +73,10 @@ import System.Console.MultiArg.Option
 import Control.Applicative ( Applicative, Alternative )
 import qualified Control.Applicative
 import Control.Monad.Exception.Synchronous
-  (Exceptional(Success, Exception), switch )
-import qualified Control.Monad.Exception.Synchronous as S
+  (Exceptional(Success, Exception))
 import qualified Data.Set as Set
 import Data.Set ( Set )
-import Control.Monad ( when, MonadPlus(mzero, mplus) )
-import Data.Maybe ( isNothing )
+import Control.Monad ( when, MonadPlus(mzero, mplus), guard )
 import Data.Monoid ( Monoid ( mempty, mappend ) )
 import qualified Data.List as L
 import Data.List (isPrefixOf)
@@ -99,7 +96,7 @@ location st = pending ++ next ++ stop where
                   ++ pendingShort st ++ " "
   next = case remaining st of
     [] -> "no words remaining"
-    x:xs -> "next word: " ++ x
+    x:_ -> "next word: " ++ x
   stop = if sawStopper st then " (stopper already seen)" else ""
 
 -- | Error messages.
@@ -397,19 +394,17 @@ nonPendingShortOpt so = Parser $ \s ->
       errRet = (Bad, s { errors = err : errors s })
       gd n = (Good (), n)
   in maybe errRet gd $ do
-    checkPendingShorts s
-    checkStopper s
+    guard (noPendingShorts s)
+    guard (noStopper s)
     (a, s') <- nextWord s
     (maybeDash, word) <- case a of
-      [] -> S.throw "zero length word"
+      [] -> Nothing
       x:xs -> return (x, xs)
-    when (maybeDash /= '-') $ S.throw "not an option"
+    guard (maybeDash == '-')
     (letter, arg) <- case word of
-      [] -> S.throw "argument is a single dash"
+      [] -> Nothing
       x:xs -> return (x, xs)
-    when (letter /= unShortOpt so) $
-      S.throw ("different short option: " ++ [unShortOpt so])
-    when (letter == '-') $ S.throw "new stopper"
+    guard (letter == unShortOpt so)
     let s'' = s' { pendingShort = arg }
     return s''
 
@@ -443,17 +438,16 @@ nonPendingShortOpt so = Parser $ \s ->
 --   dashes but its text does not match the argument we're looking for
 exactLongOpt :: LongOpt -> Parser (Maybe String)
 exactLongOpt lo = Parser $ \s ->
-  let ert saw = (Bad, err saw)
-      err saw = s { errors = Expected msg saw : errors s } where
+  let ert = (Bad, err)
+      err = s { errors = Expected msg : errors s } where
         msg = "long option: " ++ unLongOpt lo
       gd (g, n) = (Good g, n)
-  in switch ert gd $ do
-    checkPendingShorts s
-    checkStopper s
+  in maybe ert gd $ do
+    guard (noPendingShorts s)
+    guard (noStopper s)
     (x, s') <- nextWord s
     (word, afterEq) <- getLongOption x
-    when (word /= unLongOpt lo) $
-      S.throw ("wrong long option: " ++ unLongOpt lo)
+    guard (word == unLongOpt lo)
     return (afterEq, s')
 
 -- | Takes a single String and returns a tuple, where the first element
@@ -470,25 +464,25 @@ splitLongWord t = (f, s, r) where
     _:xs -> Just xs
 
 
-checkPendingShorts :: ParseSt -> Exceptional String ()
-checkPendingShorts st = case pendingShort st of
-  [] -> return ()
-  str -> S.throw $ "pending short options: " ++ str
+noPendingShorts :: ParseSt -> Bool
+noPendingShorts st = case pendingShort st of
+  [] -> True
+  _ -> False
 
-checkStopper :: ParseSt -> Exceptional String ()
-checkStopper st = when (sawStopper st) (S.throw "stopper")
+noStopper :: ParseSt -> Bool
+noStopper = not . sawStopper
 
-getLongOption :: String -> Exceptional String (String, Maybe String)
+getLongOption :: String -> Maybe (String, Maybe String)
 getLongOption str = do
+  guard (str /= "--")
   let (pre, word, afterEq) = splitLongWord str
-  when (pre /= "--") (S.throw $ "not a long option: " ++ str)
-  when (null word && isNothing afterEq) (S.throw ("stopper"))
+  guard (pre == "--")
   return (word, afterEq)
   
 
-nextWord :: ParseSt -> Exceptional String (String, ParseSt)
+nextWord :: ParseSt -> Maybe (String, ParseSt)
 nextWord st = case remaining st of
-  [] -> S.throw "no arguments left"
+  [] -> Nothing
   x:xs ->
     let s' = increment st { remaining = xs }
     in return (x, s')
@@ -496,10 +490,9 @@ nextWord st = case remaining st of
 approxLongOptError ::
   Set LongOpt
   -> ParseSt
-  -> String
   -> ParseSt
-approxLongOptError set st str = st { errors = newE : errors st } where
-  newE = Expected ex str
+approxLongOptError set st = st { errors = newE : errors st } where
+  newE = Expected ex
   ex = "a long option: " ++ longs
   longs = concat . L.intersperse ", " $ opts
   opts = fmap unLongOpt . Set.toList $ set
@@ -512,24 +505,22 @@ approxLongOpt ::
   Set LongOpt
   -> Parser (String, LongOpt, Maybe String)
 approxLongOpt ts = Parser $ \s ->
-  let err saw = (Bad, approxLongOptError ts s saw)
+  let err = (Bad, approxLongOptError ts s)
       gd (g, newSt) = (Good g, newSt)
-  in switch err gd $ do
-    checkPendingShorts s
+  in maybe err gd $ do
+    guard (noPendingShorts s)
     (x, s') <- nextWord s
     (word, afterEq) <- getLongOption x
-    opt <- case makeLongOpt word of
-      Nothing -> S.throw $ "word cannot be a long option: " ++ word
-      Just o -> return o
+    opt <- makeLongOpt word
     if Set.member opt ts
       then return ((word, opt, afterEq), s')
       else do
       let p t = word `isPrefixOf` (unLongOpt t)
           matches = Set.filter p ts
       case Set.toList matches of
-        [] -> S.throw ("no matching option: " ++ word)
+        [] -> Nothing
         (m:[]) -> return ((word, m, afterEq), s')
-        _ -> S.throw ("ambiguous word: " ++ word)
+        _ -> Nothing
 
 -- | Parses only pending short option arguments. For example, for the
 -- @tail@ command, if you enter the option @-c25@, then after parsing
@@ -546,14 +537,14 @@ approxLongOpt ts = Parser $ \s ->
 -- (this text cannot be empty).
 pendingShortOptArg :: Parser String
 pendingShortOptArg = Parser $ \s ->
-  let ert saw = (Bad, err saw)
-      err saw = s { errors = Expected msg saw : errors s } where
+  let ert = (Bad, err)
+      err = s { errors = Expected msg : errors s } where
         msg = "pending short option argument"
       gd (g, newSt) = (Good g, newSt)
-  in switch ert gd $ do
-    checkStopper s
+  in maybe ert gd $ do
+    guard (noStopper s)
     case pendingShort s of
-      [] -> S.throw "no pending short option argument"
+      [] -> Nothing
       xs ->
         let newSt = increment s { pendingShort = "" }
         in return (xs, newSt)
@@ -563,18 +554,15 @@ pendingShortOptArg = Parser $ \s ->
 -- state of the parser to reflect that a stopper has been seen.
 stopper :: Parser ()
 stopper = Parser $ \s ->
-  let err saw = s { errors = Expected msg saw : errors s } where
+  let err = s { errors = Expected msg : errors s } where
         msg = "stopper"
-      ert saw = (Bad, err saw)
+      ert = (Bad, err)
       gd (g, newSt) = (Good g, newSt)
-  in switch ert gd $ do
-    checkPendingShorts s
-    checkStopper s
+  in maybe ert gd $ do
+    guard (noPendingShorts s)
+    guard (noStopper s)
     (x, s') <- nextWord s
-    when (not $ "--" `isPrefixOf` x)
-      (S.throw "not a stopper")
-    when (length x /= 2)
-      (S.throw "not a stopper")
+    guard (x == "--")
     let s'' = s' { sawStopper = True }
     return ((), s'')
 
@@ -603,12 +591,12 @@ try a = Parser $ \s ->
 -- can be useful when parsing command line options after a stopper.
 nextArg :: Parser String
 nextArg = Parser $ \s ->
-  let ert saw = (Bad, err saw)
-      err saw = s { errors = Expected msg saw : errors s } where
+  let ert = (Bad, err)
+      err = s { errors = Expected msg : errors s } where
         msg = "next argument"
       gd (g, newSt) = (Good g, newSt)
-  in switch ert gd $ do
-    checkPendingShorts s
+  in maybe ert gd $ do
+    guard (noPendingShorts s)
     nextWord s
 
 
@@ -618,12 +606,12 @@ nextArg = Parser $ \s ->
 -- next string even if it starts with a dash.
 nonOptionPosArg :: Parser String
 nonOptionPosArg = Parser $ \s ->
-  let ert saw = (Bad, err saw)
-      err saw = s { errors = Expected msg saw : errors s } where
+  let ert = (Bad, err)
+      err = s { errors = Expected msg : errors s } where
         msg = "non option positional argument"
       gd (g, newSt) = (Good g, newSt)
-  in switch ert gd $ do
-    checkPendingShorts s
+  in maybe ert gd $ do
+    guard (noPendingShorts s)
     (x, s') <- nextWord s
     result <-
       if sawStopper s
@@ -631,7 +619,7 @@ nonOptionPosArg = Parser $ \s ->
       else case x of
         [] -> return x
         f:_ -> if f == '-'
-               then S.throw $ "argument with leading dash: " ++ x
+               then Nothing
                else return x
     return (result, s')
 
@@ -735,11 +723,11 @@ parseRepeat st1 f =
 -- | Succeeds if there is no more input left.
 end :: Parser ()
 end = Parser $ \s ->
-  let ert saw = (Bad, err saw)
-      err saw = s { errors = Expected msg saw : errors s } where
+  let ert = (Bad, err)
+      err = s { errors = Expected msg : errors s } where
         msg = "end of input"
       gd (g, newSt) = (Good g, newSt)
-  in switch ert gd $ do
-    checkPendingShorts s
-    when (not . null . remaining $ s) (S.throw "more input")
+  in maybe ert gd $ do
+    guard (noPendingShorts s)
+    guard (null . remaining $ s)
     return ((), s)

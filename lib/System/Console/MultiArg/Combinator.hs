@@ -28,7 +28,7 @@ import System.Console.MultiArg.Prim
     nextArg, pendingShortOptArg, nonOptionPosArg,
     pendingShortOpt, nonPendingShortOpt, nextArg,
     lookAhead,
-    Error(Expected))
+    Message(Expected))
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt, unLongOpt,
     makeLongOpt, makeShortOpt )
@@ -58,16 +58,14 @@ matchApproxWord s = try $ do
   a <- nextArg
   let p t = a `isPrefixOf` t
       matches = Set.filter p s
-      err saw = throw $ Expected
-                ("word matching one of: "
-                 ++ (concat . intersperse ", " $ Set.toList s))
-                saw
+      err = throw $ Expected
+            ("word matching one of: "
+             ++ (concat . intersperse ", " $ Set.toList s))
   case Set.toList matches of
-    [] -> err "no matches"
+    [] -> err
     (x:[]) -> return (a, x)
-    _ ->
-      let msg = "word is ambiguous: " ++ a
-      in err msg
+    _ -> err
+
 
 -- | Returns True if the next argument on the command line looks like
 -- a long option--that is, it is preceded by two dashes. Does not
