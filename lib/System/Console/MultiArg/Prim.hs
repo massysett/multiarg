@@ -354,7 +354,7 @@ increment old = old { counter = succ . counter $ old }
 
 pendingShortOpt :: ShortOpt -> Parser ()
 pendingShortOpt so = Parser $ \s ->
-  let err = Expected ("short option: " ++ [(unShortOpt so)])
+  let err = Expected ("pending short option: " ++ [(unShortOpt so)])
       es = (Bad, s { errors = err : errors s })
       gd newSt = (Good (), newSt)
   in maybe es gd $ do
@@ -391,7 +391,7 @@ pendingShortOpt so = Parser $ \s ->
 nonPendingShortOpt :: ShortOpt -> Parser ()
 nonPendingShortOpt so = Parser $ \s ->
   let err = Expected (msg ++ [unShortOpt so])
-      msg = "non pending short option"
+      msg = "non pending short option: "
       errRet = (Bad, s { errors = err : errors s })
       gd n = (Good (), n)
   in maybe errRet gd $ do

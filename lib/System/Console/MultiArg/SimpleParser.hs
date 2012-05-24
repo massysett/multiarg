@@ -26,7 +26,8 @@ import qualified System.Console.MultiArg.Prim as P
 import qualified System.Console.MultiArg.GetArgs as G
 import qualified System.Console.MultiArg.Combinator as C
 import qualified Control.Monad.Exception.Synchronous as Ex
-import Control.Applicative ( many, (<|>), optional, (*>), (<*) )
+import Control.Applicative ( many, (<|>), optional, (*>),
+                             (<$))
 import Data.Maybe (catMaybes)
 
 -- | What to do after encountering the first non-option,
@@ -69,16 +70,11 @@ parse i os p as =
         StopOptions -> parseStopOpts optParser p
   in P.parse as parser
 
-looksLikeOpt :: P.Parser ()
-looksLikeOpt = do
-  b1 <- C.nextLooksLong
-  b2 <- C.nextLooksShort
-  if b1 || b2
-    then return ()
-    else fail "next word looks does not look like an option"
-
 parseOptsNoIntersperse :: P.Parser a -> P.Parser [a]
-parseOptsNoIntersperse p = many p <* C.notFollowedBy looksLikeOpt
+parseOptsNoIntersperse p = P.manyTill p e where
+  e = P.end <|> nonOpt
+  nonOpt = P.lookAhead next
+  next = ((() <$ P.nonOptionPosArg) <|> P.stopper)
 
 
 parseStopOpts :: P.Parser a -> (String -> a) -> P.Parser [a]

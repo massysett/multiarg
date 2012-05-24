@@ -47,7 +47,7 @@ specs =
   ]
 
 sampleMain :: P.Intersperse -> IO ()
-sampleMain = do
+sampleMain i = do
   as <- P.getArgs
-  let r = P.parse P.Intersperse specs Filename as
+  let r = P.parse i specs Filename as
   print r
