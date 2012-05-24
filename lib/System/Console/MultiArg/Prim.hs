@@ -59,7 +59,8 @@ module System.Console.MultiArg.Prim (
   
   -- * Errors
   Message(Expected, FromFail, Replaced, UnknownError),
-  Error(Error)
+  Error(Error),
+  Location
 
   ) where
 
