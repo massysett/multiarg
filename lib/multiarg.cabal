@@ -39,8 +39,6 @@ source-repository head
     location: git://github.com/massysett/multiarg.git
 
 Library
-    hs-source-dirs: lib
-
     Build-depends:
         base ==4.*,
         explicit-exception ==0.1.*,
