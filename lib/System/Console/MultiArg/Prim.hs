@@ -105,8 +105,8 @@ data Message =
   Expected String
   -- ^ The parser expected to see one thing, but it actually saw
   -- something else. The string indicates what was expected.
-  | FromFail String
-    -- ^ The 'fail' function was applied.
+  | StrMsg String
+    -- ^ The 'fromString' function was applied.
     
   | Replaced String
     -- ^ A previous list of error messages was replaced with this error message.

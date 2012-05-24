@@ -80,18 +80,7 @@ parseStopOpts optParser p = do
 parseFirsts :: P.Parser a -> (String -> a) -> P.Parser [a]
 parseFirsts optParser p =  do
   let beforeStopperPosArg = p <$> P.nonOptionPosArg
-  r <- many (optParser <|> beforeStopperPosArg)
-  looksLong <- C.nextLooksLong
-  if looksLong then do
-    n <- P.nextArg
-    fail $ "unrecognized long option: " ++ n
-    else return ()
-  looksShort <- C.nextLooksShort
-  if looksShort then do
-    n <- P.nextArg
-    fail $ "unrecognized short option: " ++ n
-    else return ()
-  return r
+  many (optParser <|> beforeStopperPosArg)
 
 parseIntersperse :: P.Parser a -> (String -> a) -> P.Parser [a]
 parseIntersperse optParser p = do
