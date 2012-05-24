@@ -28,10 +28,10 @@ import System.Console.MultiArg.Prim
     nextArg, pendingShortOptArg, nonOptionPosArg,
     pendingShortOpt, nonPendingShortOpt, nextArg,
     lookAhead,
-    Message(Expected))
+    Message(Expected), (<?>))
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt, unLongOpt,
-    makeLongOpt, makeShortOpt )
+    makeLongOpt, makeShortOpt, unShortOpt )
 import Control.Applicative ((<|>), many)
 import qualified Data.Map as M
 import Data.Map ((!))
@@ -240,7 +240,8 @@ shortOpt o = mconcat parsers where
   mkParser c =
     let opt = unsafeShortOpt c
     in Just $ case argSpec o of
-      NoArg a -> a <$ (pendingShortOpt opt <|> nonPendingShortOpt opt)
+      NoArg a -> a <$ (pendingShortOpt opt <|> nonPendingShortOpt opt
+                       <?> ("short option: " ++ [c]))
       OptionalArg f -> shortOptionalArg opt f
       OneArg f -> shortOneArg opt f
       TwoArg f -> shortTwoArg opt f
@@ -248,7 +249,8 @@ shortOpt o = mconcat parsers where
 
 shortVariableArg :: ShortOpt -> ([String] -> a) -> Parser a
 shortVariableArg opt f = do
-  (pendingShortOpt opt <|> nonPendingShortOpt opt)
+  pendingShortOpt opt <|> nonPendingShortOpt opt
+    <?> ("short option: " ++ [unShortOpt opt])
   maybeSameWordArg <- optional pendingShortOptArg
   args <- many nonOptionPosArg
   case maybeSameWordArg of
@@ -258,7 +260,8 @@ shortVariableArg opt f = do
 
 shortTwoArg :: ShortOpt -> (String -> String -> a) -> Parser a
 shortTwoArg opt f = do
-  (pendingShortOpt opt <|> nonPendingShortOpt opt)
+  pendingShortOpt opt <|> nonPendingShortOpt opt
+    <?> ("short option: " ++ [unShortOpt opt])
   maybeSameWordArg <- optional pendingShortOptArg
   case maybeSameWordArg of
     Nothing -> do
@@ -268,24 +271,24 @@ shortTwoArg opt f = do
     Just arg1 -> do 
       arg2 <- nextArg
       return (f arg1 arg2)
-
-  
   
 
 shortOneArg :: ShortOpt -> (String -> a) -> Parser a
 shortOneArg opt f = do
-  (pendingShortOpt opt <|> nonPendingShortOpt opt)
+  pendingShortOpt opt <|> nonPendingShortOpt opt
+    <?> ("short option: " ++ [unShortOpt opt])
   maybeSameWordArg <- optional pendingShortOptArg
   case maybeSameWordArg of
     Nothing -> do
       arg <- nextArg
       return (f arg)
     Just a -> return (f a)
-  
+
 
 shortOptionalArg :: ShortOpt -> (Maybe String -> a) -> Parser a
 shortOptionalArg opt f = do
-  (pendingShortOpt opt <|> nonPendingShortOpt opt)
+  pendingShortOpt opt <|> nonPendingShortOpt opt
+    <?> ("short option: " ++ [unShortOpt opt])
   maybeSameWordArg <- optional pendingShortOptArg
   case maybeSameWordArg of
     Nothing -> do
