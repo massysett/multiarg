@@ -13,7 +13,7 @@ module System.Console.MultiArg.SimpleParser (
     -- * Exceptions
   , Ex.Exceptional (Exception, Success)
   , P.Error (Error)
-  , P.Message (Expected, FromFail, Replaced, UnknownError)
+  , P.Message (Expected, StrMsg, Replaced, UnknownError)
     
     -- * Get command line arguments
   , G.getArgs
@@ -26,8 +26,8 @@ import qualified System.Console.MultiArg.Prim as P
 import qualified System.Console.MultiArg.GetArgs as G
 import qualified System.Console.MultiArg.Combinator as C
 import qualified Control.Monad.Exception.Synchronous as Ex
-import Control.Applicative ( many, (<|>), optional, (*>),
-                             (<$>))
+import Control.Applicative ( many, (<|>), optional, (*>), (<*) )
+import Data.Maybe (catMaybes)
 
 -- | What to do after encountering the first non-option,
 -- non-option-argument word on the command line? In either case, no
@@ -69,26 +69,33 @@ parse i os p as =
         StopOptions -> parseStopOpts optParser p
   in P.parse as parser
 
+looksLikeOpt :: P.Parser ()
+looksLikeOpt = do
+  b1 <- C.nextLooksLong
+  b2 <- C.nextLooksShort
+  if b1 || b2
+    then return ()
+    else fail "next word looks does not look like an option"
+
+parseOptsNoIntersperse :: P.Parser a -> P.Parser [a]
+parseOptsNoIntersperse p = many p <* C.notFollowedBy looksLikeOpt
+
+
 parseStopOpts :: P.Parser a -> (String -> a) -> P.Parser [a]
 parseStopOpts optParser p = do
-  opts <- many optParser
+  opts <- parseOptsNoIntersperse optParser
   _ <- optional P.stopper
   args <- many P.nextArg
   return $ opts ++ (map p args)
 
 
-parseFirsts :: P.Parser a -> (String -> a) -> P.Parser [a]
-parseFirsts optParser p =  do
-  let beforeStopperPosArg = p <$> P.nonOptionPosArg
-  many (optParser <|> beforeStopperPosArg)
-
+-- | @parseIntersperse o p@ parses options and positional arguments,
+-- where o is a parser that parses options, and p is a function that,
+-- when applied to a string, returns the appropriate type.
 parseIntersperse :: P.Parser a -> (String -> a) -> P.Parser [a]
-parseIntersperse optParser p = do
-  firsts <- parseFirsts optParser p
-  let afterStop = P.stopper *> many P.nextArg
-  after <- optional afterStop
-  let more = case after of
-        Nothing -> []
-        Just m -> m
-  P.end
-  return $ firsts ++ (map p more)
+parseIntersperse optParser p =
+  let pa = P.nonOptionPosArg >>= return . Just . p
+      po = optParser >>= return . Just
+      ps = P.stopper *> return Nothing
+      parser = po <|> ps <|> pa
+  in P.manyTill parser P.end >>= return . catMaybes

@@ -58,7 +58,7 @@ module System.Console.MultiArg.Prim (
   end,
   
   -- * Errors
-  Message(Expected, FromFail, Replaced, UnknownError),
+  Message(Expected, StrMsg, Replaced, UnknownError),
   Error(Error),
   Location
 
@@ -249,7 +249,7 @@ good a = Parser $ \s -> (Good a, s)
 -- provides the implementation for 'Control.Monad.Monad.fail'.
 throwString :: String -> Parser a
 throwString e = Parser $ \s ->
-  let err = FromFail e
+  let err = StrMsg e
       s' = s { errors = err : errors s }
   in (Bad, s')
 

@@ -46,8 +46,14 @@ specs =
   , P.OptSpec ["version"]                   []        (P.NoArg Version)
   ]
 
-sampleMain :: IO ()
-sampleMain = do
+sampleMainIntersperse :: IO ()
+sampleMainIntersperse = do
   as <- P.getArgs
   let r = P.parse P.Intersperse specs Filename as
+  print r
+
+sampleMainStopOptions :: IO ()
+sampleMainStopOptions = do
+  as <- P.getArgs
+  let r = P.parse P.StopOptions specs Filename as
   print r
