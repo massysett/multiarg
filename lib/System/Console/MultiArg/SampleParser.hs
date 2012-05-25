@@ -11,7 +11,12 @@
 -- The code in the module is the sample code; the sample code is not
 -- in the Haddock documentation! If you're reading this in Haddock,
 -- you will want to also take a look at the actual source code.
-module System.Console.MultiArg.SampleParser where
+module System.Console.MultiArg.SampleParser (
+  Flag(..)
+  , specs
+  , P.Intersperse(..)
+  , sampleMain
+  ) where
 
 import System.Console.MultiArg.SimpleParser as P
 

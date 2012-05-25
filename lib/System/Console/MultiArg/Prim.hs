@@ -188,8 +188,8 @@ parse ::
   -> Exceptional Error a
   -- ^ Success or failure. Any parser might fail; for example, the
   -- command line might not have any values left to parse. Use of the
-  -- @<|>@ combinator can lead to a list of failures. If multiple
-  -- parsers are tried one after another using the @<|>@ combinator,
+  -- 'choice' combinator can lead to a list of failures. If multiple
+  -- parsers are tried one after another using the 'choice' combinator,
   -- and each fails without consuming any input, then multiple Error
   -- will result, one for each failure.
 
