@@ -6,10 +6,6 @@ module System.Console.MultiArg.Combinator (
   -- * Parser combinators
   notFollowedBy,
   
-  -- * Miscellaneous tests
-  nextLooksLong,
-  nextLooksShort,
-
   -- * Combined long and short option parser
   OptSpec(OptSpec, longOpts, shortOpts, argSpec),
   ArgSpec(NoArg, OptionalArg, OneArg, TwoArg, VariableArg),
@@ -27,11 +23,10 @@ import System.Console.MultiArg.Prim
   ( Parser, throw, try, approxLongOpt,
     nextArg, pendingShortOptArg, nonOptionPosArg,
     pendingShortOpt, nonPendingShortOpt, nextArg,
-    lookAhead,
     Message(Expected))
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt, unLongOpt,
-    makeLongOpt, makeShortOpt, unShortOpt )
+    makeLongOpt, makeShortOpt )
 import Control.Applicative ((<|>), many)
 import qualified Data.Map as M
 import Data.Map ((!))
@@ -66,30 +61,6 @@ matchApproxWord s = try $ do
     (x:[]) -> return (a, x)
     _ -> err
 
-
--- | Returns True if the next argument on the command line looks like
--- a long option--that is, it is preceded by two dashes. Does not
--- consume any input. Never fails.
-nextLooksLong :: Parser Bool
-nextLooksLong = do
-  maybeNext <- optional (lookAhead nextArg)
-  return $ case maybeNext of
-    Nothing -> False
-    Just n ->
-      if "--" `isPrefixOf` n && (length n /= 2)
-      then True else False
-
--- | Returns True if the next argument on the command line looks like
--- a short option--that is, it is preceded by one dash. Does not
--- consume any input. Never fails.
-nextLooksShort :: Parser Bool
-nextLooksShort = do
-  maybeNext <- optional (lookAhead nextArg)
-  return $ case maybeNext of
-    Nothing -> False
-    Just n ->
-      if "-" `isPrefixOf` n && (n /= "--")
-      then True else False
 
 unsafeShortOpt :: Char -> ShortOpt
 unsafeShortOpt c = case makeShortOpt c of
@@ -130,7 +101,7 @@ data OptSpec a = OptSpec {
 -- use this type. You can simply represent each possible option using
 -- different data constructors in an algebraic data type. Or you can
 -- have each ArgSpec yield a function that transforms a record. For an
--- example that uses an algebraid data type, see
+-- example that uses an algebraic data type, see
 -- "System.Console.MultiArg.SampleParser".
 data ArgSpec a =
   NoArg a

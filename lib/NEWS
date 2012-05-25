@@ -19,12 +19,14 @@ Changes since release 0.2.0.0:
 * Code written for version 0.2.* will not work at all with this
   version.
 
-* Removed dependency on text library.
+* Removed dependency on text library. multiarg now only deals with
+  plain Strings. The memory usage concerns that originally led me to
+  use Texts were unfounded.
 
 * Dramatically simplified code for primitive parsers. No more custom
-error types, monad transformers, or user states. This sort of
-functionality is easily implemented in the parsers that you can build;
-baking it into the primitive parsers makes things needlessly
-complicated.
+  error types, monad transformers, or user states. This sort of
+  functionality is easily implemented in the parsers that you can
+  build; baking it into the primitive parsers makes things needlessly
+  complicated.
 
 * Reworked included combinators in Combinator module.

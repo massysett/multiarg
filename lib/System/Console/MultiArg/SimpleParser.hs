@@ -52,8 +52,16 @@ data Intersperse =
 -- | Parse a command line. 
 parse ::
   Intersperse
+  -- ^ What to do after encountering the first positional argument
+  
   -> [C.OptSpec a]
+  -- ^ All possible options
+  
   -> (String -> a)
+  -- ^ How to handle positional arguments. This function is applied to
+  -- the appropriate string every time the parser encounters a
+  -- positional argument.
+
   -> [String]
   -- ^ The command line to parse. This function correctly handles
   -- Unicode strings; however, because 'System.Environment.getArgs'

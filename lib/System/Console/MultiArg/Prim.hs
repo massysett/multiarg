@@ -11,10 +11,7 @@ module System.Console.MultiArg.Prim (
   -- * Running a parser
   
   -- | Each parser runner is applied to a list of Strings, which are the
-  -- command line arguments to parse. If there is any chance that you
-  -- will be parsing Unicode strings, see the documentation in
-  -- "System.Console.MultiArg.GetArgs" before you use
-  -- 'System.Environment.getArgs'.
+  -- command line arguments to parse. 
   parse,
   
   -- * Higher-level parser combinators
@@ -180,7 +177,11 @@ instance MonadPlus Parser where
 -- \"get out of the Parser monad\" or to \"escape the Parser monad\".)
 parse ::
   [String]
-  -- ^ Command line arguments to parse
+  -- ^ Command line arguments to parse. Presumably you got these from
+  -- 'getArgs'. If there is any chance that you will be parsing
+  -- Unicode strings, see the documentation in
+  -- "System.Console.MultiArg.GetArgs" before you use
+  -- 'System.Environment.getArgs'.
   
   -> Parser a
   -- ^ Parser to run
@@ -327,8 +328,9 @@ choice a b = Parser $ \sOld ->
 
 -- | Runs the parser given. If it succeeds, then returns the result of
 -- the parser. If it fails and consumes input, returns the result of
--- the parser. If it fails without consuming any input, then changes
--- the error using the function given.
+-- the parser. If it fails without consuming any input, then removes
+-- all previous errors, replacing them with a single error of type
+-- Replaced containing the string given.
 (<?>) :: Parser a -> String -> Parser a
 (<?>) l e = Parser $ \s ->
   let (r, s') = runParser l s
@@ -350,7 +352,7 @@ increment old = old { counter = succ . counter $ old }
 -- pending short options. Fails without consuming any input if there
 -- is a pending short option, but it does not match the short option
 -- given. Succeeds and consumes a pending short option if it matches
--- the short option given; returns the short option parsed.
+-- the short option given.
 
 pendingShortOpt :: ShortOpt -> Parser ()
 pendingShortOpt so = Parser $ \s ->
@@ -500,8 +502,8 @@ approxLongOptError set st = st { errors = newE : errors st } where
 
 -- | Examines the next word. If it matches a Text in the set
 -- unambiguously, returns a tuple of the word actually found and the
--- matching word in the set. If the Set is empty, this parser will
--- always fail.
+-- matching word in the set and the accompanying text after the equal
+-- sign (if any). If the Set is empty, this parser will always fail.
 approxLongOpt ::
   Set LongOpt
   -> Parser (String, LongOpt, Maybe String)
@@ -534,8 +536,8 @@ approxLongOpt ts = Parser $ \s ->
 --
 -- * there are no pending short option arguments
 --
--- On success, returns the text of the pending short option argument
--- (this text cannot be empty).
+-- On success, returns the String of the pending short option argument
+-- (this String will never be empty).
 pendingShortOptArg :: Parser String
 pendingShortOptArg = Parser $ \s ->
   let ert = (Bad, err)
@@ -551,7 +553,7 @@ pendingShortOptArg = Parser $ \s ->
         in return (xs, newSt)
 
 
--- | Parses a "stopper" - that is, a double dash. Changes the internal
+-- | Parses a \"stopper\" - that is, a double dash. Changes the internal
 -- state of the parser to reflect that a stopper has been seen.
 stopper :: Parser ()
 stopper = Parser $ \s ->
@@ -601,10 +603,15 @@ nextArg = Parser $ \s ->
     nextWord s
 
 
--- | Returns the next string on the command line as long as there are
--- no pendings and as long as the next string does not begin with a
--- dash. If there has already been a stopper, then will return the
--- next string even if it starts with a dash.
+-- | If there are pending short options, fails without consuming any input.
+--
+-- Otherwise, if a stopper has NOT already been parsed, then returns
+-- the next word if it is either a single dash or any other word that
+-- does not begin with a dash. If the next word does not meet these
+-- criteria, fails without consuming any input.
+--
+-- Otherwise, if a stopper has already been parsed, then returns the
+-- next word, regardless of whether it begins with a dash or not.
 nonOptionPosArg :: Parser String
 nonOptionPosArg = Parser $ \s ->
   let ert = (Bad, err)
@@ -619,6 +626,7 @@ nonOptionPosArg = Parser $ \s ->
       then return x
       else case x of
         [] -> return x
+        '-':[] -> return "-"
         f:_ -> if f == '-'
                then Nothing
                else return x

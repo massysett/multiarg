@@ -1,8 +1,6 @@
--- | These types represent options. They are abstract and in a
--- separate module to prevent you from accidentally making an option
--- with an invalid name. Option names cannot have a dash as their
--- first or second character, and long option names cannot have an
--- equals sign anywhere in the name.
+-- | These types represent options. Option names cannot have a dash as
+-- their first or second character, and long option names cannot have
+-- an equals sign anywhere in the name.
 module System.Console.MultiArg.Option (
   ShortOpt,
   unShortOpt,
@@ -20,9 +18,8 @@ import Data.List (find)
 -- pathological ones like newlines).
 newtype ShortOpt = ShortOpt { unShortOpt :: Char } deriving (Show, Eq, Ord)
 
--- | This function is partial. It calls error if its argument is a
--- single dash. This is the only way to make a short option so it
--- prevents you from making one that is invalid.
+-- | Creates a short option. Returns Nothing if the character is not
+-- valid for a short option.
 makeShortOpt :: Char -> Maybe ShortOpt
 makeShortOpt c = case c of
   '-' -> Nothing
@@ -38,9 +35,8 @@ makeShortOpt c = case c of
 -- pathological ones like newlines).
 data LongOpt = LongOpt { unLongOpt :: String } deriving (Show, Eq, Ord)
 
--- | This function is partial. It calls error if its argument contains
--- text that is not a valid long option. This is the only way to make
--- a long option so it prevents you from making invalid ones.
+-- | Makes a long option. Returns Nothing if the string is not a valid
+-- long option.
 makeLongOpt :: String -> Maybe LongOpt
 makeLongOpt t = case isValidLongOptText t of
   True -> Just $ LongOpt t

@@ -6,7 +6,12 @@
 -- like this and then feed it different options:
 --
 -- > import System.Console.MultiArg.SampleParser
--- > main = sampleMain
+-- > main = sampleMain Intersperse
+--
+-- or:
+--
+-- > import System.Console.MultiArg.SampleParser
+-- > main = sampleMain StopOptions
 --
 -- The code in the module is the sample code; the sample code is not
 -- in the Haddock documentation! If you're reading this in Haddock,
