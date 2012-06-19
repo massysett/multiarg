@@ -5,6 +5,7 @@
 module System.Console.MultiArg.Combinator (
   -- * Parser combinators
   notFollowedBy,
+  (<?>),
   
   -- * Combined long and short option parser
   OptSpec(OptSpec, longOpts, shortOpts, argSpec),
@@ -23,10 +24,10 @@ import System.Console.MultiArg.Prim
   ( Parser, throw, try, approxLongOpt,
     nextArg, pendingShortOptArg, nonOptionPosArg,
     pendingShortOpt, nonPendingShortOpt, nextArg,
-    Message(Expected))
+    Message(Expected, Replaced), (<??>))
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt, unLongOpt,
-    makeLongOpt, makeShortOpt )
+    makeLongOpt, makeShortOpt, unShortOpt )
 import Control.Applicative ((<|>), many)
 import qualified Data.Map as M
 import Data.Map ((!))
@@ -43,6 +44,16 @@ notFollowedBy p =
   () <$ ((try p >> fail "notFollowedBy failed")
          <|> return ())
 
+
+-- | Runs the parser given. If it succeeds, then returns the result of
+-- the parser. If it fails and consumes input, returns the result of
+-- the parser. If it fails without consuming any input, then removes
+-- all previous errors, replacing them with a single error of type
+-- Replaced containing the string given.
+(<?>) :: Parser a -> String -> Parser a
+(<?>) l e = l <??> (const [Replaced e])
+
+infix 0 <?>
 
 -- | Examines the possible words in Set. If there are no pendings,
 -- then get the next word and see if it matches one of the words in
@@ -211,15 +222,23 @@ shortOpt o = mconcat parsers where
   mkParser c =
     let opt = unsafeShortOpt c
     in Just $ case argSpec o of
-      NoArg a -> a <$ (pendingShortOpt opt <|> nonPendingShortOpt opt)
+      NoArg a -> a <$ nextShort opt
       OptionalArg f -> shortOptionalArg opt f
       OneArg f -> shortOneArg opt f
       TwoArg f -> shortTwoArg opt f
       VariableArg f -> shortVariableArg opt f
 
+-- | Parses a short option without an argument, either pending or
+-- non-pending. Fails with a single error message rather than two.
+nextShort :: ShortOpt -> Parser ()
+nextShort o = p <??> e where
+  p = pendingShortOpt o <|> nonPendingShortOpt o
+  err = Expected ("short option: " ++ [unShortOpt o])
+  e ls = err : (drop 2 ls)
+
 shortVariableArg :: ShortOpt -> ([String] -> a) -> Parser a
 shortVariableArg opt f = do
-  pendingShortOpt opt <|> nonPendingShortOpt opt
+  nextShort opt
   maybeSameWordArg <- optional pendingShortOptArg
   args <- many nonOptionPosArg
   case maybeSameWordArg of
@@ -229,7 +248,7 @@ shortVariableArg opt f = do
 
 shortTwoArg :: ShortOpt -> (String -> String -> a) -> Parser a
 shortTwoArg opt f = do
-  pendingShortOpt opt <|> nonPendingShortOpt opt
+  nextShort opt
   maybeSameWordArg <- optional pendingShortOptArg
   case maybeSameWordArg of
     Nothing -> do
@@ -243,7 +262,7 @@ shortTwoArg opt f = do
 
 shortOneArg :: ShortOpt -> (String -> a) -> Parser a
 shortOneArg opt f = do
-  pendingShortOpt opt <|> nonPendingShortOpt opt
+  nextShort opt
   maybeSameWordArg <- optional pendingShortOptArg
   case maybeSameWordArg of
     Nothing -> do
@@ -254,7 +273,7 @@ shortOneArg opt f = do
 
 shortOptionalArg :: ShortOpt -> (Maybe String -> a) -> Parser a
 shortOptionalArg opt f = do
-  pendingShortOpt opt <|> nonPendingShortOpt opt
+  nextShort opt
   maybeSameWordArg <- optional pendingShortOptArg
   case maybeSameWordArg of
     Nothing -> do

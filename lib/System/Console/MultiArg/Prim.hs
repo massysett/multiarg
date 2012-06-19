@@ -30,7 +30,7 @@ module System.Console.MultiArg.Prim (
   throw,
   throwString,
   genericThrow,
-  (<?>),
+  (<??>),
   try,
   
   -- * Parsers
@@ -326,23 +326,22 @@ choice a b = Parser $ \sOld ->
       else (Bad, sa)
 
 
--- | Runs the parser given. If it succeeds, then returns the result of
--- the parser. If it fails and consumes input, returns the result of
--- the parser. If it fails without consuming any input, then removes
--- all previous errors, replacing them with a single error of type
--- Replaced containing the string given.
-(<?>) :: Parser a -> String -> Parser a
-(<?>) l e = Parser $ \s ->
+-- | Runs the parser given. If it fails /without consuming any input/,
+-- then applies the given function to the list of messages and replaces
+-- the list of messages with the list returned by the
+-- function. Otherwise, returns the result of the parser.
+(<??>) :: Parser a -> ([Message] -> [Message]) -> Parser a
+(<??>) l f = Parser $ \s ->
   let (r, s') = runParser l s
   in case r of
     Good g -> (Good g, s')
     Bad ->
       if noConsumed s s'
-      then let s'' = s' { errors = [Replaced e] }
+      then let s'' = s' { errors = f $ errors s' }
            in (Bad, s'')
       else (Bad, s')
 
-infix 0 <?>
+infix 0 <??>
 
 increment :: ParseSt -> ParseSt
 increment old = old { counter = succ . counter $ old }
