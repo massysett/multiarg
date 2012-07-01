@@ -13,7 +13,7 @@ Changes since release 0.1.0.0:
   this aids in composability--for instance, I use it when combining
   parsers from different parts of the same program.
 
-Release 0.4.0.0, [date]
+Release 0.4.0.0, June 30, 2012
 Changes since release 0.2.0.0:
 
 * Code written for version 0.2.* will not work at all with this

@@ -1,5 +1,5 @@
 Name: multiarg-test-bin
-Version: 0.3.0.0
+Version: 0.4.0.0
 Cabal-version: >= 1.8
 Build-Type: Simple
 License: MIT
@@ -17,7 +17,7 @@ description: Test binaries for multiarg
 Executable tailIntersperse
   Build-depends:
     base ==4.*,
-    multiarg ==0.3.0.0
+    multiarg ==0.4.0.0
 
   main-is: tailIntersperse.hs
   ghc-options: -Wall
@@ -25,7 +25,7 @@ Executable tailIntersperse
 Executable tailNoIntersperse
   Build-depends:
     base ==4.*,
-    multiarg ==0.3.0.0
+    multiarg ==0.4.0.0
 
   main-is: tailNoIntersperse.hs
   ghc-options: -Wall
