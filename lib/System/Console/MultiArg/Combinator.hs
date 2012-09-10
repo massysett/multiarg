@@ -15,10 +15,11 @@ module System.Console.MultiArg.Combinator (
   -- * Other words
   matchApproxWord ) where
   
-import Data.List (isPrefixOf, intersperse)
+import Data.List (isPrefixOf, intersperse, nubBy)
 import Data.Set ( Set )
 import qualified Data.Set as Set
-import Control.Applicative ((<*>), optional, (<$))
+import Control.Applicative ((<$>), (<*>), optional, (<$),
+                            pure, (<**>))
 
 import System.Console.MultiArg.Prim
   ( Parser, throw, try, approxLongOpt,
@@ -139,7 +140,12 @@ data ArgSpec a =
     -- \"looks like\" an option.
     
   | TwoArg (String -> String -> a)
-    -- ^ This option takes two arguments. Parsed similarly to 'OneArg'.
+    -- ^ This option takes two arguments. Parsed similarly to
+    -- 'OneArg'.
+    
+  | ThreeArg (String -> String -> String -> a)
+    -- ^ This option takes three arguments. Parsed similarly to
+    -- 'OneArg'.
 
   | VariableArg ([String] -> a)
     -- ^ This option takes a variable number of arguments--zero or
@@ -151,6 +157,15 @@ data ArgSpec a =
     -- @-a@ as the last option on the command line, then the only way
     -- to indicate the end of arguments for @a@ and the beginning of
     -- positional argments is with a stopper.
+    
+  | ChoiceArg [(String, a)]
+    -- ^ This option takes a single argument, which must match one of
+    -- the strings given in the list. The user may supply the shortest
+    -- unambiguous string. If the argument list to ChoiceArg has
+    -- duplicate strings, only the first string is used. For instance,
+    -- ChoiceArg could be useful if you were parsing the @--color@
+    -- option to GNU grep, which requires the user to supply one of
+    -- three arguments: @always@, @never@, or @auto@.
     
 
 -- | Parses a single command line option. Examines all the options
@@ -196,24 +211,21 @@ longOpt set mp = do
       Just _ -> fail $ "option " ++ unLongOpt lo
                   ++ " does not take argument"
     OptionalArg f -> return (f maybeArg)
-    OneArg f -> case maybeArg of
-      Nothing -> do
-        a1 <- nextArg
-        return $ f a1
-      Just a -> return $ f a
-    TwoArg f -> case maybeArg of
-      Nothing -> do
-        a1 <- nextArg
-        a2 <- nextArg
-        return $ f a1 a2
-      Just a1 -> do
-        a2 <- nextArg
-        return $ f a1 a2
+    OneArg f -> maybe (f <$> nextArg) (pure . f) maybeArg
+    TwoArg f -> maybe (f <$> nextArg <*> nextArg)
+                (\a1 -> f a1 <$> nextArg) maybeArg
     VariableArg f -> do
       as <- many nonOptionPosArg
       return . f $ case maybeArg of
         Nothing -> as
         Just a1 -> a1 : as
+    ChoiceArg ls -> case maybeArg of
+      Nothing -> err
+      Just a -> 
+                 
+                 fail $ "option " ++ unLongOpt lo
+                 ++ " requires an argument: "
+                 ++ (intersperse ", " . map fst $ ls)
 
 
 shortOpt :: OptSpec a -> Maybe (Parser a)
@@ -282,3 +294,20 @@ shortOptionalArg opt f = do
         Nothing -> return (f Nothing)
         Just a -> return (f (Just a))
     Just a -> return (f (Just a))
+
+-- | Finds the unambiguous short match for a string, if there is
+-- one. Returns a string describing the error condition if there is
+-- one, or the matching result if successful.
+matchAbbrev :: [(String, a)] -> String -> Maybe a
+matchAbbrev ls s =
+  let ls' = nubBy (\x y -> fst x == fst y) ls
+  in case lookup s ls' of
+    Just a -> return a
+    Nothing ->
+      let pdct (t, _) = s `isPrefixOf` t
+      in case filter pdct ls of
+        (_, a):[] -> return a
+        _ -> Nothing
+
+
+      
