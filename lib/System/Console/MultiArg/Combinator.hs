@@ -19,7 +19,7 @@ import Data.List (isPrefixOf, intersperse, nubBy)
 import Data.Set ( Set )
 import qualified Data.Set as Set
 import Control.Applicative ((<$>), (<*>), optional, (<$),
-                            pure, (<**>))
+                            (*>))
 
 import System.Console.MultiArg.Prim
   ( Parser, throw, try, approxLongOpt,
@@ -205,40 +205,42 @@ longOpt ::
 longOpt set mp = do
   (_, lo, maybeArg) <- approxLongOpt set
   let spec = mp ! lo
+      maybeNextArg = maybe nextArg return maybeArg
   case spec of
     NoArg a -> case maybeArg of
       Nothing -> return a
       Just _ -> fail $ "option " ++ unLongOpt lo
                   ++ " does not take argument"
     OptionalArg f -> return (f maybeArg)
-    OneArg f -> maybe (f <$> nextArg) (pure . f) maybeArg
-    TwoArg f -> maybe (f <$> nextArg <*> nextArg)
-                (\a1 -> f a1 <$> nextArg) maybeArg
+    OneArg f -> f <$> maybeNextArg
+    TwoArg f -> f <$> maybeNextArg <*> nextArg
+    ThreeArg f -> f <$> maybeNextArg <*> nextArg <*> nextArg
     VariableArg f -> do
       as <- many nonOptionPosArg
       return . f $ case maybeArg of
         Nothing -> as
         Just a1 -> a1 : as
-    ChoiceArg ls -> case maybeArg of
-      Nothing -> err
-      Just a -> 
-                 
-                 fail $ "option " ++ unLongOpt lo
-                 ++ " requires an argument: "
-                 ++ (intersperse ", " . map fst $ ls)
-
+    ChoiceArg ls -> do
+      s <- maybeNextArg
+      case matchAbbrev ls s of
+        Nothing -> fail $ "option " ++ unLongOpt lo
+                   ++ " requires an argument: "
+                   ++ (concat . intersperse ", " . map fst $ ls)
+        Just g -> return g
 
 shortOpt :: OptSpec a -> Maybe (Parser a)
 shortOpt o = mconcat parsers where
   parsers = map mkParser . shortOpts $ o
   mkParser c =
     let opt = unsafeShortOpt c
-    in Just $ case argSpec o of
-      NoArg a -> a <$ nextShort opt
-      OptionalArg f -> shortOptionalArg opt f
-      OneArg f -> shortOneArg opt f
-      TwoArg f -> shortTwoArg opt f
-      VariableArg f -> shortVariableArg opt f
+    in Just $ nextShort opt *> case argSpec o of
+      NoArg a -> return a
+      OptionalArg f -> shortOptionalArg f
+      OneArg f -> shortOneArg f
+      TwoArg f -> shortTwoArg f
+      ThreeArg f -> shortThreeArg f
+      VariableArg f -> shortVariableArg f
+      ChoiceArg ls -> shortChoiceArg opt ls
 
 -- | Parses a short option without an argument, either pending or
 -- non-pending. Fails with a single error message rather than two.
@@ -248,9 +250,8 @@ nextShort o = p <??> e where
   err = Expected ("short option: " ++ [unShortOpt o])
   e ls = err : (drop 2 ls)
 
-shortVariableArg :: ShortOpt -> ([String] -> a) -> Parser a
-shortVariableArg opt f = do
-  nextShort opt
+shortVariableArg :: ([String] -> a) -> Parser a
+shortVariableArg f = do
   maybeSameWordArg <- optional pendingShortOptArg
   args <- many nonOptionPosArg
   case maybeSameWordArg of
@@ -258,34 +259,34 @@ shortVariableArg opt f = do
     Just arg1 -> return (f (arg1:args))
   
 
-shortTwoArg :: ShortOpt -> (String -> String -> a) -> Parser a
-shortTwoArg opt f = do
-  nextShort opt
-  maybeSameWordArg <- optional pendingShortOptArg
-  case maybeSameWordArg of
-    Nothing -> do
-      arg1 <- nextArg
-      arg2 <- nextArg
-      return (f arg1 arg2)
-    Just arg1 -> do 
-      arg2 <- nextArg
-      return (f arg1 arg2)
-  
-
-shortOneArg :: ShortOpt -> (String -> a) -> Parser a
-shortOneArg opt f = do
-  nextShort opt
-  maybeSameWordArg <- optional pendingShortOptArg
-  case maybeSameWordArg of
-    Nothing -> do
-      arg <- nextArg
-      return (f arg)
-    Just a -> return (f a)
+shortOneArg :: (String -> a) -> Parser a
+shortOneArg f = f <$> firstShortArg
 
 
-shortOptionalArg :: ShortOpt -> (Maybe String -> a) -> Parser a
-shortOptionalArg opt f = do
-  nextShort opt
+firstShortArg :: Parser String
+firstShortArg =
+  optional pendingShortOptArg >>= maybe nextArg return
+
+
+shortChoiceArg :: ShortOpt -> [(String, a)] -> Parser a
+shortChoiceArg opt ls =
+  firstShortArg
+  >>= maybe err return . matchAbbrev ls
+  where
+    err = fail $ "option " ++ [unShortOpt opt] ++ " requires "
+          ++ "one argument: "
+          ++ (concat . intersperse " " . map fst $ ls)
+
+
+
+shortTwoArg :: (String -> String -> a) -> Parser a
+shortTwoArg f = f <$> firstShortArg <*> nextArg
+
+shortThreeArg :: (String -> String -> String -> a) -> Parser a
+shortThreeArg f = f <$> firstShortArg <*> nextArg <*> nextArg
+
+shortOptionalArg :: (Maybe String -> a) -> Parser a
+shortOptionalArg f = do
   maybeSameWordArg <- optional pendingShortOptArg
   case maybeSameWordArg of
     Nothing -> do
