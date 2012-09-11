@@ -9,7 +9,8 @@ module System.Console.MultiArg.Combinator (
   
   -- * Combined long and short option parser
   OptSpec(OptSpec, longOpts, shortOpts, argSpec),
-  ArgSpec(NoArg, OptionalArg, OneArg, TwoArg, VariableArg),
+  ArgSpec(NoArg, OptionalArg, OneArg, TwoArg,
+          ThreeArg, VariableArg, ChoiceArg),
   parseOption,
   
   -- * Other words
