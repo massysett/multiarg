@@ -177,6 +177,14 @@ data ArgSpec a =
 -- options; for example, the user could type @--verb@ for @--verbose@
 -- and @--vers@ for @--version@.
 --
+-- This function is applied to a list of OptSpec, rather than to a
+-- single OptSpec, because in order to correctly handle the parsing of
+-- shortened long options (e.g. @--verb@ rather than @--verbose@) it
+-- is necessary for one function to have access to all of the
+-- OptSpec. Applying this function multiple times to different lists
+-- of OptSpec and then using the @<|>@ function to combine them will
+-- break the proper parsing of shortened long options.
+--
 -- For an example that uses this function, see
 -- "System.Console.MultiArg.SimpleParser".
 parseOption :: [OptSpec a] -> Parser a
