@@ -109,6 +109,9 @@ data OptSpec a = OptSpec {
     -- short options appears on the command line.
   }
 
+instance Functor OptSpec where
+  fmap f (OptSpec ls ss as) = OptSpec ls ss (fmap f as)
+
 -- | Specifies how many arguments each option takes. As with
 -- 'System.Console.GetOpt.ArgDescr', there are (at least) two ways to
 -- use this type. You can simply represent each possible option using
@@ -168,6 +171,23 @@ data ArgSpec a =
     -- option to GNU grep, which requires the user to supply one of
     -- three arguments: @always@, @never@, or @auto@.
     
+
+instance Functor ArgSpec where
+  fmap f a = case a of
+    NoArg i -> NoArg $ f i
+    OptionalArg g ->
+      OptionalArg $ \ms -> f (g ms)
+    OneArg g ->
+      OneArg $ \s1 -> f (g s1)
+    TwoArg g ->
+      TwoArg $ \s1 s2 -> f (g s1 s2)
+    ThreeArg g ->
+      ThreeArg $ \s1 s2 s3 -> f (g s1 s2 s3)
+    VariableArg g ->
+      VariableArg $ \ls -> f (g ls)
+    ChoiceArg gs ->
+      ChoiceArg . map (\(s, r) -> (s, f r)) $ gs
+
 
 -- | Parses a single command line option. Examines all the options
 -- specified using multiple OptSpec and parses one option on the
@@ -320,4 +340,3 @@ matchAbbrev ls s =
         _ -> Nothing
 
 
-      
