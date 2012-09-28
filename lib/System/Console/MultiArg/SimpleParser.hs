@@ -5,19 +5,19 @@
 module System.Console.MultiArg.SimpleParser (
   -- * Interspersion control
   Intersperse (Intersperse, StopOptions)
-  
+
   -- * Option specifications
   , C.OptSpec (OptSpec, longOpts, shortOpts, argSpec)
   , C.ArgSpec (NoArg, OptionalArg, OneArg, TwoArg, VariableArg)
-    
+
     -- * Exceptions
   , Ex.Exceptional (Exception, Success)
   , P.Error (Error)
   , P.Message (Expected, StrMsg, Replaced, UnknownError)
-    
+
     -- * Get command line arguments
   , G.getArgs
-  
+
     -- * The parser
   , parse
   ) where
@@ -26,8 +26,8 @@ import qualified System.Console.MultiArg.Prim as P
 import qualified System.Console.MultiArg.GetArgs as G
 import qualified System.Console.MultiArg.Combinator as C
 import qualified Control.Monad.Exception.Synchronous as Ex
-import Control.Applicative ( many, (<|>), optional, (*>),
-                             (<$))
+import Control.Applicative ( many, (<|>), optional,
+                             (<$), (<*>), (<*), (<$>))
 import Data.Maybe (catMaybes)
 
 -- | What to do after encountering the first non-option,
@@ -42,21 +42,21 @@ data Intersperse =
   -- command line is entered, then @-b@ will result in an error
   -- because @-b@ starts with a hyphen and therefore \"looks like\" an
   -- option.
-  
+
   | StopOptions
     -- ^ No additional options will be parsed after encountering the
     -- first positional argument. For example, if @a@ and @b@ are
     -- options, in the command line @-a posarg -b@, @b@ will be parsed
     -- as a positional argument rather than as an option.
 
--- | Parse a command line. 
+-- | Parse a command line.
 parse ::
   Intersperse
   -- ^ What to do after encountering the first positional argument
-  
+
   -> [C.OptSpec a]
   -- ^ All possible options
-  
+
   -> (String -> a)
   -- ^ How to handle positional arguments. This function is applied to
   -- the appropriate string every time the parser encounters a
@@ -82,15 +82,15 @@ parseOptsNoIntersperse :: P.Parser a -> P.Parser [a]
 parseOptsNoIntersperse p = P.manyTill p e where
   e = P.end <|> nonOpt
   nonOpt = P.lookAhead next
-  next = ((() <$ P.nonOptionPosArg) <|> P.stopper)
+  next = (() <$ P.nonOptionPosArg) <|> P.stopper
 
 
 parseStopOpts :: P.Parser a -> (String -> a) -> P.Parser [a]
-parseStopOpts optParser p = do
-  opts <- parseOptsNoIntersperse optParser
-  _ <- optional P.stopper
-  args <- many P.nextArg
-  return $ opts ++ (map p args)
+parseStopOpts optParser p =
+  (\opts args -> opts ++ map p args)
+  <$> parseOptsNoIntersperse optParser
+  <* optional P.stopper
+  <*> many P.nextArg
 
 
 -- | @parseIntersperse o p@ parses options and positional arguments,
@@ -98,8 +98,8 @@ parseStopOpts optParser p = do
 -- when applied to a string, returns the appropriate type.
 parseIntersperse :: P.Parser a -> (String -> a) -> P.Parser [a]
 parseIntersperse optParser p =
-  let pa = P.nonOptionPosArg >>= return . Just . p
-      po = optParser >>= return . Just
-      ps = P.stopper *> return Nothing
+  let pa = (Just . p) <$> P.nonOptionPosArg
+      po = Just <$> optParser
+      ps = Nothing <$ P.stopper
       parser = po <|> ps <|> pa
-  in P.manyTill parser P.end >>= return . catMaybes
+  in catMaybes <$> P.manyTill parser P.end

@@ -11,6 +11,7 @@ module System.Console.MultiArg.Option (
   where
 
 import Data.List (find)
+import Data.Maybe (isNothing)
 
 -- | Short options. Options that are preceded with a single dash on
 -- the command line and consist of a single letter. That single letter
@@ -38,19 +39,19 @@ data LongOpt = LongOpt { unLongOpt :: String } deriving (Show, Eq, Ord)
 -- | Makes a long option. Returns Nothing if the string is not a valid
 -- long option.
 makeLongOpt :: String -> Maybe LongOpt
-makeLongOpt t = case isValidLongOptText t of
-  True -> Just $ LongOpt t
-  False -> Nothing
+makeLongOpt t =
+  if isValidLongOptText t then Just $ LongOpt t else Nothing
+
 
 isValidLongOptText :: String -> Bool
 isValidLongOptText s = case s of
   [] -> False
   x:xs ->
-    if x == '-' || x == '='
+    if x `elem` ['-', '=']
     then False
     else case xs of
       [] -> True
       y:_ ->
-        if y == '-' || y == '='
+        if y `elem` ['-', '=']
         then False
-        else maybe True (const False) (find (== '=') xs)
+        else isNothing . find (== '=') $ xs

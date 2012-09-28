@@ -7,13 +7,13 @@
 module System.Console.MultiArg.Prim (
     -- * Parser types
   Parser,
-  
+
   -- * Running a parser
-  
+
   -- | Each parser runner is applied to a list of Strings, which are the
-  -- command line arguments to parse. 
+  -- command line arguments to parse.
   parse,
-  
+
   -- * Higher-level parser combinators
   parserMap,
   good,
@@ -21,7 +21,7 @@ module System.Console.MultiArg.Prim (
   choice,
   combine,
   lookAhead,
-  
+
   -- ** Running parsers multiple times
   several,
   manyTill,
@@ -32,13 +32,13 @@ module System.Console.MultiArg.Prim (
   genericThrow,
   (<??>),
   try,
-  
+
   -- * Parsers
   -- ** Short options and arguments
   pendingShortOpt,
   nonPendingShortOpt,
-  pendingShortOptArg,  
-  
+  pendingShortOptArg,
+
   -- ** Long options and arguments
   exactLongOpt,
   approxLongOpt,
@@ -46,14 +46,14 @@ module System.Console.MultiArg.Prim (
   -- ** Stoppers
   stopper,
   resetStopper,
-  
+
   -- ** Positional (non-option) arguments
   nextArg,
   nonOptionPosArg,
-  
+
   -- ** Miscellaneous
   end,
-  
+
   -- * Errors
   Message(Expected, StrMsg, Replaced, UnknownError),
   Error(Error),
@@ -66,7 +66,7 @@ import System.Console.MultiArg.Option
   (ShortOpt,
     unShortOpt,
     LongOpt,
-    unLongOpt, 
+    unLongOpt,
     makeLongOpt )
 import Control.Applicative ( Applicative, Alternative )
 import qualified Control.Applicative
@@ -77,7 +77,7 @@ import Data.Set ( Set )
 import Control.Monad ( when, MonadPlus(mzero, mplus), guard )
 import Data.Monoid ( Monoid ( mempty, mappend ) )
 import qualified Data.List as L
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, intercalate)
 
 type Location = String
 
@@ -104,10 +104,10 @@ data Message =
   -- something else. The string indicates what was expected.
   | StrMsg String
     -- ^ The 'fromString' function was applied.
-    
+
   | Replaced String
     -- ^ A previous list of error messages was replaced with this error message.
-    
+
   | UnknownError
     -- ^ Any other error; used by 'genericThrow'.
 
@@ -182,10 +182,10 @@ parse ::
   -- Unicode strings, see the documentation in
   -- "System.Console.MultiArg.GetArgs" before you use
   -- 'System.Environment.getArgs'.
-  
+
   -> Parser a
   -- ^ Parser to run
-  
+
   -> Exceptional Error a
   -- ^ Success or failure. Any parser might fail; for example, the
   -- command line might not have any values left to parse. Use of the
@@ -355,7 +355,7 @@ increment old = old { counter = succ . counter $ old }
 
 pendingShortOpt :: ShortOpt -> Parser ()
 pendingShortOpt so = Parser $ \s ->
-  let err = Expected ("pending short option: " ++ [(unShortOpt so)])
+  let err = Expected ("pending short option: " ++ [unShortOpt so])
       es = (Bad, s { errors = err : errors s })
       gd newSt = (Good (), newSt)
   in maybe es gd $ do
@@ -480,7 +480,7 @@ getLongOption str = do
   let (pre, word, afterEq) = splitLongWord str
   guard (pre == "--")
   return (word, afterEq)
-  
+
 
 nextWord :: ParseSt -> Maybe (String, ParseSt)
 nextWord st = case remaining st of
@@ -496,7 +496,7 @@ approxLongOptError ::
 approxLongOptError set st = st { errors = newE : errors st } where
   newE = Expected ex
   ex = "a long option: " ++ longs
-  longs = concat . L.intersperse ", " $ opts
+  longs = intercalate ", " opts
   opts = fmap unLongOpt . Set.toList $ set
 
 -- | Examines the next word. If it matches a Text in the set
@@ -517,7 +517,7 @@ approxLongOpt ts = Parser $ \s ->
     if Set.member opt ts
       then return ((word, opt, afterEq), s')
       else do
-      let p t = word `isPrefixOf` (unLongOpt t)
+      let p t = word `isPrefixOf` unLongOpt t
           matches = Set.filter p ts
       case Set.toList matches of
         [] -> Nothing
@@ -584,7 +584,7 @@ try a = Parser $ \s ->
     Good g -> (Good g, s')
     Bad -> (Bad, s'') where
       s'' = s { errors = errors s' }
-      
+
 
 -- | Returns the next string on the command line as long as there are
 -- no pendings. Be careful - this will return the next string even if
@@ -726,7 +726,7 @@ parseRepeat st1 f =
         let (ls, finalGoodSt, finalBadSt) = parseRepeat st' f
         in (a : ls, finalGoodSt, finalBadSt)
     (Bad, st') -> ([], st1, st')
-    
+
 
 -- | Succeeds if there is no more input left.
 end :: Parser ()

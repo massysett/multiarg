@@ -6,21 +6,21 @@ module System.Console.MultiArg.Combinator (
   -- * Parser combinators
   notFollowedBy,
   (<?>),
-  
+
   -- * Combined long and short option parser
   OptSpec(OptSpec, longOpts, shortOpts, argSpec),
   ArgSpec(NoArg, OptionalArg, OneArg, TwoArg,
           ThreeArg, VariableArg, ChoiceArg),
   parseOption,
-  
+
   -- * Other words
   matchApproxWord ) where
-  
-import Data.List (isPrefixOf, intersperse, nubBy)
+
+import Data.List (isPrefixOf, intersperse, nubBy, intercalate)
 import Data.Set ( Set )
 import qualified Data.Set as Set
-import Control.Applicative ((<$>), (<*>), optional, (<$),
-                            (*>))
+import Control.Applicative
+       ((<$>), (<*>), optional, (<$), (*>), (<|>), many)
 
 import System.Console.MultiArg.Prim
   ( Parser, throw, try, approxLongOpt,
@@ -30,9 +30,9 @@ import System.Console.MultiArg.Prim
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt, unLongOpt,
     makeLongOpt, makeShortOpt, unShortOpt )
-import Control.Applicative ((<|>), many)
 import qualified Data.Map as M
 import Data.Map ((!))
+import Data.Maybe (fromMaybe)
 import Data.Monoid ( mconcat )
 
 
@@ -53,7 +53,7 @@ notFollowedBy p =
 -- all previous errors, replacing them with a single error of type
 -- Replaced containing the string given.
 (<?>) :: Parser a -> String -> Parser a
-(<?>) l e = l <??> (const [Replaced e])
+(<?>) l e = l <??> const [Replaced e]
 
 infix 0 <?>
 
@@ -68,7 +68,7 @@ matchApproxWord s = try $ do
       matches = Set.filter p s
       err = throw $ Expected
             ("word matching one of: "
-             ++ (concat . intersperse ", " $ Set.toList s))
+             ++ (intercalate ", " $ Set.toList s))
   case Set.toList matches of
     [] -> err
     (x:[]) -> return (a, x)
@@ -76,14 +76,14 @@ matchApproxWord s = try $ do
 
 
 unsafeShortOpt :: Char -> ShortOpt
-unsafeShortOpt c = case makeShortOpt c of
-  Nothing -> error $ "invalid short option: " ++ [c]
-  Just o -> o
+unsafeShortOpt c =
+  fromMaybe (error $ "invalid short option: " ++ [c])
+            (makeShortOpt c)
 
 unsafeLongOpt :: String -> LongOpt
-unsafeLongOpt c = case makeLongOpt c of
-  Nothing -> error $ "invalid long option: " ++ c
-  Just o -> o
+unsafeLongOpt c =
+  fromMaybe (error $ "invalid long option: " ++ c)
+            (makeLongOpt c)
 
 
 -- |Specifies options for the 'parseOption' function. Each OptSpec
@@ -99,11 +99,11 @@ data OptSpec a = OptSpec {
   -- your long option does not meet these conditions, a runtime error
   -- will occur.
 
-          
+
   , shortOpts :: [Char]
     -- ^ Each Char is a single short option, such as @v@. The
     -- character cannot be a dash; if it is, a runtime error will occur.
-    
+
   , argSpec :: ArgSpec a
     -- ^ What to do each time one of the given long options or
     -- short options appears on the command line.
@@ -142,11 +142,11 @@ data ArgSpec a =
     -- argument, @-a -b@ will be parsed with @-b@ being an argument to
     -- option @a@, even though @-b@ starts with a hyphen and therefore
     -- \"looks like\" an option.
-    
+
   | TwoArg (String -> String -> a)
     -- ^ This option takes two arguments. Parsed similarly to
     -- 'OneArg'.
-    
+
   | ThreeArg (String -> String -> String -> a)
     -- ^ This option takes three arguments. Parsed similarly to
     -- 'OneArg'.
@@ -161,7 +161,7 @@ data ArgSpec a =
     -- @-a@ as the last option on the command line, then the only way
     -- to indicate the end of arguments for @a@ and the beginning of
     -- positional argments is with a stopper.
-    
+
   | ChoiceArg [(String, a)]
     -- ^ This option takes a single argument, which must match one of
     -- the strings given in the list. The user may supply the shortest
@@ -170,7 +170,7 @@ data ArgSpec a =
     -- ChoiceArg could be useful if you were parsing the @--color@
     -- option to GNU grep, which requires the user to supply one of
     -- three arguments: @always@, @never@, or @auto@.
-    
+
 
 instance Functor ArgSpec where
   fmap f a = case a of
@@ -213,10 +213,10 @@ parseOption os =
   in case mconcat ([shortOpt] <*> os) of
     Nothing -> longs
     Just shorts -> longs <|> shorts
-  
+
 longOptParser :: [OptSpec a] -> Parser a
 longOptParser os = longOpt (longOptSet os) (longOptMap os)
-      
+
 
 longOptSet :: [OptSpec a] -> Set LongOpt
 longOptSet = Set.fromList . concatMap toOpts where
@@ -286,7 +286,7 @@ shortVariableArg f = do
   case maybeSameWordArg of
     Nothing -> return (f args)
     Just arg1 -> return (f (arg1:args))
-  
+
 
 shortOneArg :: (String -> a) -> Parser a
 shortOneArg f = f <$> firstShortArg
