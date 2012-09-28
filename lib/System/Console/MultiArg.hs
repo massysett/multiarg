@@ -19,7 +19,7 @@ module System.Console.MultiArg (
   -- vocabularies, from simple to complex.
 
   -- * Terminology
-  
+
   -- | Some terms are used throughout multiarg:
   --
   -- [@word@] When you run your program from the Unix shell prompt,
@@ -96,7 +96,7 @@ module System.Console.MultiArg (
   -- can parse @l@ as a short option. This would result in a
   -- \"pending\" of @20@. Then, the next parser can treat @20@ as an
   -- option argument. After that parse there will be no pendings.
-  
+
   -- * Getting started
 
   -- |If your needs are simple to moderately complicated just look at the
@@ -145,6 +145,17 @@ module System.Console.MultiArg (
   --
   -- multiarg can be complicated, although I'd like to believe this is
   -- because it addresses a complicated problem in a flexible way.
+
+  -- * Projects usings multiarg
+
+  -- | * Penny, an extensible double-entry accounting
+  -- system. <http://hackage.haskell.org/package/penny-lib> The code
+  -- using multiarg is woven throughout the system; for example, see
+  -- the Penny.Liberty module.
+  --
+  -- * multiarg was originally written for Pantry, which I have yet to
+  -- polish for release, but which is available on Github at
+  -- <https://github.com/massysett/Pantry>.
 
   module System.Console.MultiArg.SimpleParser ) where
 
