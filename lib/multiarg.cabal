@@ -1,5 +1,5 @@
 Name: multiarg
-Version: 0.5.0.0
+Version: 0.6.0.0
 Cabal-version: >=1.8
 Build-Type: Simple
 License: MIT
@@ -41,7 +41,7 @@ Library
         base ==4.*,
         explicit-exception ==0.1.*,
         containers ==0.4.*
-        
+
     -- See documentation in System.Console.MultiArg.GetArgs for details
     if flag(newbase)
         Build-depends:

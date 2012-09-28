@@ -30,3 +30,10 @@ Changes since release 0.2.0.0:
   complicated.
 
 * Reworked included combinators in Combinator module.
+
+Release 0.6.0.0, September 28, 2012
+Changes since release 0.4.0.0:
+
+* Add Functor instances for OptSpec, ArgSpec
+
+* Add ThreeArg and ChoiceArg ArgSpecs
