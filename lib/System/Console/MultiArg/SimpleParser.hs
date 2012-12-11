@@ -1,3 +1,4 @@
+{-# LANGUAGE ExistentialQuantification #-}
 -- | A simple command line parser that can parse options that take an
 -- optional argument, one or two arguments, or a variable number of
 -- arguments. For sample code that uses this parser, see
@@ -99,8 +100,11 @@ parseIntersperse optParser p =
   in catMaybes <$> P.manyTill parser P.end
 
 -- | Provides information on each mode that you wish to parse.
-data Mode a = Mode
-  { mName :: String
+data Mode a i = forall b. Mode
+  { mId :: i
+    -- ^ How to identify this Mode.
+
+  , mName :: String
     -- ^ How the user identifies the mode on the command line. For
     -- example, with @git@ this would be @commit@, @pull@, etc.
 
@@ -108,12 +112,24 @@ data Mode a = Mode
     -- ^ Each mode may have options and positional arguments; may
     -- these be interspersed?
 
-  , mOpts :: [C.OptSpec a]
+  , mOpts :: [C.OptSpec b]
     -- ^ Options for this mode
 
-  , mPosArgs :: String -> a
+  , mPosArgs :: String -> b
     -- ^ How to parse positional arguments for this mode
+
+  , mProcess :: [b] -> a
+    -- ^ Processes the options after they have been parsed.
+  
   }
+
+processModeArgs :: Mode a i -> P.Parser a
+processModeArgs (Mode _ _ i os pa p) = do
+  let prsr = case i of
+        Intersperse -> parseIntersperse
+        StopOptions -> parseStopOpts
+  rs <- prsr (C.parseOption os) pa <* P.end
+  return $ p rs
 
 -- | Parses a command line that may feature options followed by a
 -- mode followed by more options and then followed by positional
@@ -132,7 +148,7 @@ modes
      -- If you indicate a failure here, parsing of the command line
      -- will stop and this error message will be returned.
 
-  -> (b -> Either (String -> c) [Mode d])
+  -> (b -> Either (String -> c) [Mode d i])
      -- ^ This function determines whether modes will be parsed and,
      -- if so, which ones. The function is applied to the result of
      -- the pre-processing of the global options, so which modes are
@@ -146,7 +162,7 @@ modes
   -> [String]
      -- ^ The command line to parse (presumably from 'getArgs')
 
-  -> Ex.Exceptional P.Error (b, Either [c] (String, [d]))
+  -> Ex.Exceptional P.Error (b, Either [c] (i, d))
      -- ^ Returns an Exception if an error was encountered when
      -- parsing the command line (including if the global options
      -- procesor returned an Exception.) Otherwise, returns a
@@ -154,8 +170,9 @@ modes
      -- global options processor. The second element of the pair is an
      -- Either. It is Left if no modes were parsed, with a list of the
      -- positional arguments. It is a Right if modes were parsed, with
-     -- a pair, where the String is the mode name parsed, and the list
-     -- is the result of parsing the arguments to the mode.
+     -- a pair, where the first element identifies the mode parsed,
+     -- and the second element is the result of parsing the arguments
+     -- to the mode.
 
 modes globals lsToB getCmds ss = P.parse ss $ do
   gs <- many $ C.parseOption globals
@@ -171,9 +188,5 @@ modes globals lsToB getCmds ss = P.parse ss $ do
       let cmdWords = Set.fromList . map mName $ cds
       (_, w) <- C.matchApproxWord cmdWords
       let cmd = fromJust . find (\c -> mName c == w) $ cds
-          prsr = case mIntersperse cmd of
-            Intersperse -> parseIntersperse
-            StopOptions -> parseStopOpts
-      rs <- prsr (C.parseOption (mOpts cmd))
-            (mPosArgs cmd) <* P.end
-      return (b, Right (w, rs))
+      r <- processModeArgs cmd
+      return (b, Right (mId cmd, r))
