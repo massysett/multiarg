@@ -5,7 +5,6 @@
 module System.Console.MultiArg.Combinator (
   -- * Parser combinators
   notFollowedBy,
-  (<?>),
 
   -- * Combined long and short option parser
   OptSpec(OptSpec, longOpts, shortOpts, argSpec),
@@ -22,12 +21,10 @@ import qualified Data.Set as Set
 import Control.Applicative
        ((<$>), (<*>), optional, (<$), (*>), (<|>), many)
 
-import qualified Control.Monad.Exception.Synchronous as Ex
 import System.Console.MultiArg.Prim
-  ( Parser, throw, try, approxLongOpt,
+  ( Parser, try, approxLongOpt,
     nextArg, pendingShortOptArg, nonOptionPosArg,
-    pendingShortOpt, nonPendingShortOpt, nextArg,
-    Message(Expected, Replaced), (<??>))
+    pendingShortOpt, nonPendingShortOpt, nextArg)
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt, unLongOpt,
     makeLongOpt, makeShortOpt, unShortOpt )
@@ -48,16 +45,6 @@ notFollowedBy p =
          <|> return ())
 
 
--- | Runs the parser given. If it succeeds, then returns the result of
--- the parser. If it fails and consumes input, returns the result of
--- the parser. If it fails without consuming any input, then removes
--- all previous errors, replacing them with a single error of type
--- Replaced containing the string given.
-(<?>) :: Parser a -> String -> Parser a
-(<?>) l e = l <??> const [Replaced e]
-
-infix 0 <?>
-
 -- | Examines the possible words in Set. If there are no pendings,
 -- then get the next word and see if it matches one of the words in
 -- Set. If so, returns the word actually parsed and the matching word
@@ -67,9 +54,8 @@ matchApproxWord s = try $ do
   a <- nextArg
   let p t = a `isPrefixOf` t
       matches = Set.filter p s
-      err = throw $ Expected
-            ("word matching one of: "
-             ++ (intercalate ", " $ Set.toList s))
+      err = fail $ "word matching one of: "
+             ++ (intercalate ", " $ Set.toList s)
   case Set.toList matches of
     [] -> err
     (x:[]) -> return (a, x)
@@ -275,10 +261,16 @@ shortOpt o = mconcat parsers where
 -- | Parses a short option without an argument, either pending or
 -- non-pending. Fails with a single error message rather than two.
 nextShort :: ShortOpt -> Parser ()
-nextShort o = p <??> e where
-  p = pendingShortOpt o <|> nonPendingShortOpt o
-  err = Expected ("short option: " ++ [unShortOpt o])
-  e ls = err : (drop 2 ls)
+nextShort o = do
+  r1 <- optional $ pendingShortOpt o
+  case r1 of
+    Just () -> return ()
+    Nothing -> do
+      r2 <- optional $ nonPendingShortOpt o
+      case r2 of
+        Just () -> return ()
+        Nothing -> fail $ "short option: -" ++ [unShortOpt o]
+
 
 shortVariableArg :: ([String] -> a) -> Parser a
 shortVariableArg f = do

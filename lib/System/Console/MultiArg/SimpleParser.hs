@@ -6,24 +6,12 @@ module System.Console.MultiArg.SimpleParser (
   -- * Interspersion control
   Intersperse (Intersperse, StopOptions)
 
-  -- * Option specifications
-  , C.OptSpec (OptSpec, longOpts, shortOpts, argSpec)
-  , C.ArgSpec (NoArg, OptionalArg, OneArg, TwoArg, VariableArg)
-
-    -- * Exceptions
-  , Ex.Exceptional (Exception, Success)
-  , P.Error (Error)
-  , P.Message (Expected, StrMsg, Replaced, UnknownError)
-
-    -- * Get command line arguments
-  , G.getArgs
-
     -- * The parser
-  , parse
+  , simple
 
-    -- * Parsing multi-command command lines
-  , Command(..)
-  , commands
+    -- * Parsing multi-mode command lines
+  , Mode(..)
+  , modes
   ) where
 
 import qualified System.Console.MultiArg.Prim as P
@@ -57,7 +45,7 @@ data Intersperse =
     -- as a positional argument rather than as an option.
 
 -- | Parse a command line.
-parse ::
+simple ::
   Intersperse
   -- ^ What to do after encountering the first positional argument
 
@@ -78,7 +66,7 @@ parse ::
   -- be parsing command lines that have non-ASCII strings.
 
   -> Ex.Exceptional P.Error [a]
-parse i os p as =
+simple i os p as =
   let optParser = C.parseOption os
       parser = case i of
         Intersperse -> parseIntersperse optParser p
@@ -111,35 +99,66 @@ parseIntersperse optParser p =
       parser = po <|> ps <|> pa
   in catMaybes <$> P.manyTill parser P.end
 
--- | Provides information on each command that you wish to parse.
-data Command a = Command
-  { cmdName :: String
-    -- ^ How the user identifies the command on the command line. For
-    -- example, with @darcs@ this would be @get@, @send@, etc.
+-- | Provides information on each mode that you wish to parse.
+data Mode a = Mode
+  { mName :: String
+    -- ^ How the user identifies the mode on the command line. For
+    -- example, with @git@ this would be @commit@, @pull@, etc.
 
-  , cmdIntersperse :: Intersperse
-    -- ^ Each command may have options and positional arguments; may
+  , mIntersperse :: Intersperse
+    -- ^ Each mode may have options and positional arguments; may
     -- these be interspersed?
 
-  , cmdOpts :: [C.OptSpec a]
-    -- ^ Options for this command
+  , mOpts :: [C.OptSpec a]
+    -- ^ Options for this mode
 
-  , cmdPosArgs :: String -> a
-    -- ^ How to parse positional arguments for this command
+  , mPosArgs :: String -> a
+    -- ^ How to parse positional arguments for this mode
   }
 
 -- | Parses a command line that may feature options followed by a
--- command followed by more options and then followed by positional
+-- mode followed by more options and then followed by positional
 -- arguments.
-commands
+modes
   :: [C.OptSpec a]
      -- ^ Global options. These come after the program name but before
-     -- the command name.
+     -- the mode name.
+
   -> ([a] -> Ex.Exceptional String b)
-  -> (b -> Either (String -> c) [Command d])
+     -- ^ This function is applied to all the global options after
+     -- they are parsed. To indicate a failure, return an Exception
+     -- String; otherwise, return a successful value. This allows you
+     -- to process the global options before the mode is parsed. (If
+     -- you don't need to do any preprocessing, pass @return@ here.)
+     -- If you indicate a failure here, parsing of the command line
+     -- will stop and this error message will be returned.
+
+  -> (b -> Either (String -> c) [Mode d])
+     -- ^ This function determines whether modes will be parsed and,
+     -- if so, which ones. The function is applied to the result of
+     -- the pre-processing of the global options, so which modes are
+     -- parsed and the behavior of those modes can vary depending on
+     -- the global options. Return a Left to indicate that you do not
+     -- want to parse modes at all. For instance, if the user passed a
+     -- @--help@ option, you may not want to look for a mode after
+     -- that. Otherwise, to parse modes, return a Right with a list of
+     -- the modes.
+
   -> [String]
+     -- ^ The command line to parse (presumably from 'getArgs')
+
   -> Ex.Exceptional P.Error (b, Either [c] (String, [d]))
-commands globals lsToB getCmds ss = P.parse ss $ do
+     -- ^ Returns an Exception if an error was encountered when
+     -- parsing the command line (including if the global options
+     -- procesor returned an Exception.) Otherwise, returns a
+     -- pair. The first element of the pair is the result of the
+     -- global options processor. The second element of the pair is an
+     -- Either. It is Left if no modes were parsed, with a list of the
+     -- positional arguments. It is a Right if modes were parsed, with
+     -- a pair, where the String is the mode name parsed, and the list
+     -- is the result of parsing the arguments to the mode.
+
+modes globals lsToB getCmds ss = P.parse ss $ do
   gs <- many $ C.parseOption globals
   b <- case lsToB gs of
     Ex.Exception e -> fail e
@@ -150,12 +169,12 @@ commands globals lsToB getCmds ss = P.parse ss $ do
       posArgs <- (fmap (fmap fPa) $ many P.nextArg) <* P.end
       return (b, Left posArgs)
     Right cds -> do
-      let cmdWords = Set.fromList . map cmdName $ cds
+      let cmdWords = Set.fromList . map mName $ cds
       (_, w) <- C.matchApproxWord cmdWords
-      let cmd = fromJust . find (\c -> cmdName c == w) $ cds
-          prsr = case cmdIntersperse cmd of
+      let cmd = fromJust . find (\c -> mName c == w) $ cds
+          prsr = case mIntersperse cmd of
             Intersperse -> parseIntersperse
             StopOptions -> parseStopOpts
-      rs <- prsr (C.parseOption (cmdOpts cmd))
-            (cmdPosArgs cmd) <* P.end
+      rs <- prsr (C.parseOption (mOpts cmd))
+            (mPosArgs cmd) <* P.end
       return (b, Right (w, rs))

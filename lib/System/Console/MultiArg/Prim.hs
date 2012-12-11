@@ -27,10 +27,9 @@ module System.Console.MultiArg.Prim (
   manyTill,
 
   -- ** Failure and errors
-  throw,
   throwString,
   genericThrow,
-  (<??>),
+  (<?>),
   try,
 
   -- * Parsers
@@ -56,9 +55,9 @@ module System.Console.MultiArg.Prim (
   end,
 
   -- * Errors
-  Message(Expected, StrMsg, Replaced, UnknownError),
+  Message,
+  Location,
   Error(Error),
-  Location
 
   ) where
 
@@ -82,6 +81,9 @@ import Data.List (isPrefixOf, intercalate)
 
 type Location = String
 
+-- | Error messages.
+type Message = String
+
 -- | An Error contains a list of Messages and a String indicating
 -- where the error happened.
 data Error = Error [Message] Location deriving Show
@@ -98,22 +100,6 @@ location st = pending ++ next ++ stop where
     x:_ -> "next word: " ++ x
   stop = if sawStopper st then " (stopper already seen)" else ""
 
--- | Error messages.
-data Message =
-  Expected String
-  -- ^ The parser expected to see one thing, but it actually saw
-  -- something else. The string indicates what was expected.
-  | StrMsg String
-    -- ^ The 'fromString' function was applied.
-
-  | Replaced String
-    -- ^ A previous list of error messages was replaced with this error message.
-
-  | UnknownError
-    -- ^ Any other error; used by 'genericThrow'.
-
-  deriving Show
-
 -- | Carries the internal state of the parser. The counter is a simple
 -- way to determine whether the remaining list one ParseSt has been
 -- modified from another. When parsers modify remaining, they
@@ -125,8 +111,7 @@ data ParseSt = ParseSt { pendingShort :: String
                        , errors :: [Message]
                        } deriving Show
 
--- | Load up the ParseSt with an initial user state and a list of
--- commmand line arguments.
+-- | Load up the ParseSt with the list of commmand line arguments.
 defaultState :: [String] -> ParseSt
 defaultState ts = ParseSt { pendingShort = ""
                           , remaining = ts
@@ -200,7 +185,7 @@ parse ts p =
   in case result of
     Good g -> Success g
     Bad ->
-      let e = Error (errors st') (location st')
+      let e = Error (reverse . errors $ st') (location st')
       in Exception e
 
 
@@ -251,8 +236,7 @@ good a = Parser $ \s -> (Good a, s)
 -- provides the implementation for 'Control.Monad.Monad.fail'.
 throwString :: String -> Parser a
 throwString e = Parser $ \s ->
-  let err = StrMsg e
-      s' = s { errors = err : errors s }
+  let s' = s { errors = e : errors s }
   in (Bad, s')
 
 
@@ -292,13 +276,7 @@ apply fa a = Parser $ \s ->
 -- | Fail with an unhelpful error message. Usually throw is more
 -- useful, but this is handy to implement some typeclass instances.
 genericThrow :: Parser a
-genericThrow = throw UnknownError
-
--- | throw e always fails without consuming any input and returns a
--- failed parser with error state e.
-throw :: Message -> Parser a
-throw e = Parser $ \s ->
-  (Bad, s { errors = e : errors s })
+genericThrow = throwString "unknown error"
 
 noConsumed :: ParseSt -> ParseSt -> Bool
 noConsumed old new = counter old >= counter new
@@ -328,21 +306,23 @@ choice a b = Parser $ \sOld ->
 
 
 -- | Runs the parser given. If it fails /without consuming any input/,
--- then applies the given function to the list of messages and replaces
--- the list of messages with the list returned by the
--- function. Otherwise, returns the result of the parser.
-(<??>) :: Parser a -> ([Message] -> [Message]) -> Parser a
-(<??>) l f = Parser $ \s ->
-  let (r, s') = runParser l s
+-- replaces its Message with the one given and returns the result of
+-- the parser. Otherwise, returns the result of the parser unchanged.
+(<?>) :: Parser a -> String -> Parser a
+(<?>) p m = Parser $ \s ->
+  let (r, s') = runParser p s
   in case r of
     Good g -> (Good g, s')
     Bad ->
       if noConsumed s s'
-      then let s'' = s' { errors = f $ errors s' }
+      then let e' = case errors s' of
+                      [] -> [m]
+                      _:xs -> m : xs
+               s'' = s' { errors = e' }
            in (Bad, s'')
       else (Bad, s')
 
-infix 0 <??>
+infix 0 <?>
 
 increment :: ParseSt -> ParseSt
 increment old = old { counter = succ . counter $ old }
@@ -356,7 +336,7 @@ increment old = old { counter = succ . counter $ old }
 
 pendingShortOpt :: ShortOpt -> Parser ()
 pendingShortOpt so = Parser $ \s ->
-  let err = Expected ("pending short option: " ++ [unShortOpt so])
+  let err = "pending short option: -" ++ [unShortOpt so]
       es = (Bad, s { errors = err : errors s })
       gd newSt = (Good (), newSt)
   in maybe es gd $ do
@@ -392,8 +372,7 @@ pendingShortOpt so = Parser $ \s ->
 -- from remaining arguments to be parsed.
 nonPendingShortOpt :: ShortOpt -> Parser ()
 nonPendingShortOpt so = Parser $ \s ->
-  let err = Expected (msg ++ [unShortOpt so])
-      msg = "non pending short option: "
+  let err = "non pending short option: -" ++ [unShortOpt so]
       errRet = (Bad, s { errors = err : errors s })
       gd n = (Good (), n)
   in maybe errRet gd $ do
@@ -442,8 +421,8 @@ nonPendingShortOpt so = Parser $ \s ->
 exactLongOpt :: LongOpt -> Parser (Maybe String)
 exactLongOpt lo = Parser $ \s ->
   let ert = (Bad, err)
-      err = s { errors = Expected msg : errors s } where
-        msg = "long option: " ++ unLongOpt lo
+      err = s { errors = msg : errors s } where
+        msg = "long option: --" ++ unLongOpt lo
       gd (g, n) = (Good g, n)
   in maybe ert gd $ do
     guard (noPendingShorts s)
@@ -494,11 +473,14 @@ approxLongOptError ::
   Set LongOpt
   -> ParseSt
   -> ParseSt
-approxLongOptError set st = st { errors = newE : errors st } where
-  newE = Expected ex
+approxLongOptError set st = st { errors = ex : errors st } where
   ex = "a long option: " ++ longs
-  longs = intercalate ", " opts
-  opts = fmap unLongOpt . Set.toList $ set
+  longs = intercalate ", "
+          . map ("--" ++)
+          . map unLongOpt
+          . Set.toList
+          $ set
+
 
 -- | Examines the next word. If it matches a Text in the set
 -- unambiguously, returns a tuple of the word actually found and the
@@ -541,7 +523,7 @@ approxLongOpt ts = Parser $ \s ->
 pendingShortOptArg :: Parser String
 pendingShortOptArg = Parser $ \s ->
   let ert = (Bad, err)
-      err = s { errors = Expected msg : errors s } where
+      err = s { errors = msg : errors s } where
         msg = "pending short option argument"
       gd (g, newSt) = (Good g, newSt)
   in maybe ert gd $ do
@@ -557,8 +539,8 @@ pendingShortOptArg = Parser $ \s ->
 -- state of the parser to reflect that a stopper has been seen.
 stopper :: Parser ()
 stopper = Parser $ \s ->
-  let err = s { errors = Expected msg : errors s } where
-        msg = "stopper"
+  let err = s { errors = msg : errors s } where
+        msg = "stopper, \"--\""
       ert = (Bad, err)
       gd (g, newSt) = (Good g, newSt)
   in maybe ert gd $ do
@@ -595,7 +577,7 @@ try a = Parser $ \s ->
 nextArg :: Parser String
 nextArg = Parser $ \s ->
   let ert = (Bad, err)
-      err = s { errors = Expected msg : errors s } where
+      err = s { errors = msg : errors s } where
         msg = "next argument"
       gd (g, newSt) = (Good g, newSt)
   in maybe ert gd $ do
@@ -610,7 +592,7 @@ nextArg = Parser $ \s ->
 nextArgIs :: String -> Parser ()
 nextArgIs str = Parser $ \s ->
   let ert = (Bad, err)
-      err = s { errors = Expected msg : errors s }
+      err = s { errors = msg : errors s }
         where
           msg = "next word: " ++ str
       gd newSt = (Good (), newSt)
@@ -633,7 +615,7 @@ nextArgIs str = Parser $ \s ->
 nonOptionPosArg :: Parser String
 nonOptionPosArg = Parser $ \s ->
   let ert = (Bad, err)
-      err = s { errors = Expected msg : errors s } where
+      err = s { errors = msg : errors s } where
         msg = "non option positional argument"
       gd (g, newSt) = (Good g, newSt)
   in maybe ert gd $ do
@@ -751,7 +733,7 @@ parseRepeat st1 f =
 end :: Parser ()
 end = Parser $ \s ->
   let ert = (Bad, err)
-      err = s { errors = Expected msg : errors s } where
+      err = s { errors = msg : errors s } where
         msg = "end of input"
       gd (g, newSt) = (Good g, newSt)
   in maybe ert gd $ do

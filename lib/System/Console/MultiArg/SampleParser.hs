@@ -16,12 +16,7 @@
 -- The code in the module is the sample code; the sample code is not
 -- in the Haddock documentation! If you're reading this in Haddock,
 -- you will want to also take a look at the actual source code.
-module System.Console.MultiArg.SampleParser (
-  Flag(..)
-  , specs
-  , P.Intersperse(..)
-  , sampleMain
-  ) where
+module System.Console.MultiArg.SampleParser where
 
 import System.Console.MultiArg.SimpleParser as P
 
@@ -59,5 +54,5 @@ specs =
 sampleMain :: P.Intersperse -> IO ()
 sampleMain i = do
   as <- P.getArgs
-  let r = P.parse i specs Filename as
+  let r = P.simple i specs Filename as
   print r

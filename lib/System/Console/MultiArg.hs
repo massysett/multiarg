@@ -102,27 +102,26 @@ module System.Console.MultiArg (
   -- |If your needs are simple to moderately complicated just look at the
   -- "System.Console.MultiArg.SimpleParser" module, which uses the
   -- underlying combinators to build a simple parser for you. That
-  -- module is already exported from this module for easy usage. For
-  -- maximum flexibility you will want to start with the
-  -- "System.Console.MultiArg.Prim" module.
+  -- module is already exported from this module for easy usage.
   --
-  -- Using the parsers and combinators in
-  -- "System.Console.MultiArg.Prim", you can easily build parsers that
-  -- are quite complicated. The parsers can check for errors along the
-  -- way, simplifying the sometimes complex task of ensuring that data
-  -- a user supplied on the command line is good. You can easily build
-  -- parsers for programs that take no options, take dozens of
-  -- options, require that options be given in a particular order,
-  -- require that some options be given, or bar some combinations of
-  -- options. You might also require particular positional
-  -- arguments. You can also easily parse command lines for programs
-  -- that have multiple \"modes\", like @git@ or @darcs@. If you're
-  -- doing this, of course first start by reading the documentation
-  -- for "System.Console.MultiArg.Prim" and
-  -- "System.Console.MultiArg.Combinator". You will also want to look
-  -- at the source code for "System.Console.MultiArg.Combinator" and
-  -- "System.Console.Multiarg.SimpleParser", as these show some ways
-  -- to use the primitive parsers and combinators.
+  -- "System.Console.MultiArg.SimpleParser" also has a parser that can
+  -- handle multi-mode commands (examples include @git@, @darcs@, and
+  -- @cvs@.)
+  --
+  -- For maximum flexibility you will want to start with the
+  -- "System.Console.MultiArg.Prim" module. Using those parsers you
+  -- can easily build parsers that are quite complicated. The parsers
+  -- can check for errors along the way, simplifying the sometimes
+  -- complex task of ensuring that data a user supplied on the command
+  -- line is good. You can easily build parsers for programs that take
+  -- no options, take dozens of options, require that options be given
+  -- in a particular order, require that some options be given, or bar
+  -- some combinations of options. You might also require particular
+  -- positional arguments. Other helpful functions are in
+  -- "System.Console.MultiArg.Combinator". You will also want to
+  -- examine the source code for "System.Console.MultiArg.Combinator"
+  -- and "System.Console.MultiArg.SimpleParser" as these show some
+  -- ways to use the primitive parsers and combinators.
 
   -- * Non-features and shortcomings
   --
@@ -152,11 +151,19 @@ module System.Console.MultiArg (
   -- system. <http://hackage.haskell.org/package/penny-lib> The code
   -- using multiarg is woven throughout the system; for example, see
   -- the Penny.Liberty module.
-  --
-  -- * multiarg was originally written for Pantry, which I have yet to
-  -- polish for release, but which is available on Github at
-  -- <https://github.com/massysett/Pantry>.
 
-  module System.Console.MultiArg.SimpleParser ) where
 
+    module System.Console.MultiArg.Combinator
+  , module System.Console.MultiArg.GetArgs
+  , module System.Console.MultiArg.Option
+  , module System.Console.MultiArg.Prim
+  , module System.Console.MultiArg.SimpleParser
+  , module Control.Monad.Exception.Synchronous
+  ) where
+
+import System.Console.MultiArg.Combinator
+import System.Console.MultiArg.GetArgs
+import System.Console.MultiArg.Option
+import System.Console.MultiArg.Prim
 import System.Console.MultiArg.SimpleParser
+import Control.Monad.Exception.Synchronous

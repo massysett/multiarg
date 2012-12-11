@@ -37,3 +37,30 @@ Changes since release 0.4.0.0:
 * Add Functor instances for OptSpec, ArgSpec
 
 * Add ThreeArg and ChoiceArg ArgSpecs
+
+Release 0.8.0.0, [DATE]
+Changes since release 0.6.0.0:
+
+* Added a multi-mode parser to SimpleParser
+
+* All modules (except SampleParser) are now re-exported from
+  System.Console.MultiArg. Therefore one import will bring in all of
+  MultiArg. However, this introduced a naming conflict, because
+  SimpleParser and Prim both had functions named "parse". Therefore I
+  renamed SimpleParser.parse to "simple".
+
+* Removed the <??> combinator from Prim and replaced it with
+  <?>. Removed <?> from Combinator. The new <?> behaves as one would
+  expect from Parsec.
+
+* Simplified errors. There is now just one type of error message, and
+  that is a string. Reversed error messages when Prim.parse returns
+  (this way they are in the order the user would expect.)
+
+* Client code written for 0.6.0.0 will probably break with this
+  release, mostly because of changes to the export lists.  Combinator
+  no longer re-exports from other modules, because now the expectation
+  is that if you want to import everything you just import
+  System.Console.MultiArg. So fixing that is just a matter of changing
+  imports in client code. Other breakage will be limited to error
+  handling code.
