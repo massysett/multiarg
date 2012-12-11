@@ -49,6 +49,7 @@ module System.Console.MultiArg.Prim (
 
   -- ** Positional (non-option) arguments
   nextArg,
+  nextArgIs,
   nonOptionPosArg,
 
   -- ** Miscellaneous
@@ -601,6 +602,24 @@ nextArg = Parser $ \s ->
     guard (noPendingShorts s)
     nextWord s
 
+
+-- | Parses the next word on the command line, but only if it exactly
+-- matches the word given. Otherwise, fails without consuming any
+-- input. Also fails without consuming any input if there are pending
+-- short options or if a stopper has already been parsed.
+nextArgIs :: String -> Parser ()
+nextArgIs str = Parser $ \s ->
+  let ert = (Bad, err)
+      err = s { errors = Expected msg : errors s }
+        where
+          msg = "next word: " ++ str
+      gd newSt = (Good (), newSt)
+  in maybe ert gd $ do
+    guard (noPendingShorts s)
+    guard (noStopper s)
+    (a, s') <- nextWord s
+    guard (a == str)
+    return s'
 
 -- | If there are pending short options, fails without consuming any input.
 --

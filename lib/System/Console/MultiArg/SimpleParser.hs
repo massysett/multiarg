@@ -103,3 +103,17 @@ parseIntersperse optParser p =
       ps = Nothing <$ P.stopper
       parser = po <|> ps <|> pa
   in catMaybes <$> P.manyTill parser P.end
+
+data Command a = Command
+  { cmdName :: String
+  , cmdIntersperse :: Intersperse
+  , cmdOpts :: [OptSpec a]
+  , cmdPosArgs :: String -> a
+  }
+
+commands
+  :: [OptSpec a]
+  -> ([a] -> Ex.Exceptional String b)
+  -> (b -> Either (String -> c) [Command d])
+  -> Ex.Exceptional P.Error (b, Either [c] (String, [d]))
+commands = undefined

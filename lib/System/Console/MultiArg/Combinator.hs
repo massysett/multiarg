@@ -22,6 +22,7 @@ import qualified Data.Set as Set
 import Control.Applicative
        ((<$>), (<*>), optional, (<$), (*>), (<|>), many)
 
+import qualified Control.Monad.Exception.Synchronous as Ex
 import System.Console.MultiArg.Prim
   ( Parser, throw, try, approxLongOpt,
     nextArg, pendingShortOptArg, nonOptionPosArg,
