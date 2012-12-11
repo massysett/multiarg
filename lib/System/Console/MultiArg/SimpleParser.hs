@@ -15,7 +15,6 @@ module System.Console.MultiArg.SimpleParser (
   ) where
 
 import qualified System.Console.MultiArg.Prim as P
-import qualified System.Console.MultiArg.GetArgs as G
 import qualified System.Console.MultiArg.Combinator as C
 import qualified Control.Monad.Exception.Synchronous as Ex
 import Control.Applicative ( many, (<|>), optional,
