@@ -18,7 +18,9 @@
 -- you will want to also take a look at the actual source code.
 module System.Console.MultiArg.SampleParser where
 
-import System.Console.MultiArg.SimpleParser as P
+import qualified System.Console.MultiArg.Combinator as C
+import System.Console.MultiArg.GetArgs (getArgs)
+import qualified System.Console.MultiArg.SimpleParser as P
 
 data Flag =
   Bytes String
@@ -35,24 +37,24 @@ data Flag =
   | Filename String
   deriving Show
 
-specs :: [P.OptSpec Flag]
+specs :: [C.OptSpec Flag]
 
 specs =
-  [ P.OptSpec ["bytes"]                     ['c']     (P.OneArg Bytes)
-  , P.OptSpec ["follow"]                    ['f']     (P.OptionalArg Follow)
-  , P.OptSpec ["follow-retry"]              ['F']     (P.NoArg Retry)
-  , P.OptSpec ["lines"]                     ['n']     (P.OneArg Lines)
-  , P.OptSpec ["max-unchanged-stats"]       []        (P.OneArg Stats)
-  , P.OptSpec ["pid"]                       []        (P.OneArg Pid)
-  , P.OptSpec ["quiet"]                     ['q']     (P.NoArg Quiet)
-  , P.OptSpec ["sleep-interval"]            ['s']     (P.OneArg Sleep)
-  , P.OptSpec ["verbose"]                   ['v']     (P.NoArg Verbose)
-  , P.OptSpec ["help"]                      []        (P.NoArg Help)
-  , P.OptSpec ["version"]                   []        (P.NoArg Version)
+  [ C.OptSpec ["bytes"]                     ['c']     (C.OneArg Bytes)
+  , C.OptSpec ["follow"]                    ['f']     (C.OptionalArg Follow)
+  , C.OptSpec ["follow-retry"]              ['F']     (C.NoArg Retry)
+  , C.OptSpec ["lines"]                     ['n']     (C.OneArg Lines)
+  , C.OptSpec ["max-unchanged-stats"]       []        (C.OneArg Stats)
+  , C.OptSpec ["pid"]                       []        (C.OneArg Pid)
+  , C.OptSpec ["quiet"]                     ['q']     (C.NoArg Quiet)
+  , C.OptSpec ["sleep-interval"]            ['s']     (C.OneArg Sleep)
+  , C.OptSpec ["verbose"]                   ['v']     (C.NoArg Verbose)
+  , C.OptSpec ["help"]                      []        (C.NoArg Help)
+  , C.OptSpec ["version"]                   []        (C.NoArg Version)
   ]
 
 sampleMain :: P.Intersperse -> IO ()
 sampleMain i = do
-  as <- P.getArgs
+  as <- getArgs
   let r = P.simple i specs Filename as
   print r
