@@ -100,8 +100,8 @@ parseIntersperse optParser p =
   in catMaybes <$> P.manyTill parser P.end
 
 -- | Provides information on each mode that you wish to parse.
-data Mode a i = forall b. Mode
-  { mId :: i
+data Mode iden result = forall b. Mode
+  { mId :: iden
     -- ^ How to identify this Mode.
 
   , mName :: String
@@ -118,12 +118,12 @@ data Mode a i = forall b. Mode
   , mPosArgs :: String -> b
     -- ^ How to parse positional arguments for this mode
 
-  , mProcess :: [b] -> a
+  , mProcess :: [b] -> result
     -- ^ Processes the options after they have been parsed.
   
   }
 
-processModeArgs :: Mode a i -> P.Parser a
+processModeArgs :: Mode iden result -> P.Parser result
 processModeArgs (Mode _ _ i os pa p) = do
   let prsr = case i of
         Intersperse -> parseIntersperse
@@ -148,7 +148,7 @@ modes
      -- If you indicate a failure here, parsing of the command line
      -- will stop and this error message will be returned.
 
-  -> (b -> Either (String -> c) [Mode d i])
+  -> (b -> Either (String -> c) [Mode iden result])
      -- ^ This function determines whether modes will be parsed and,
      -- if so, which ones. The function is applied to the result of
      -- the pre-processing of the global options, so which modes are
@@ -162,7 +162,7 @@ modes
   -> [String]
      -- ^ The command line to parse (presumably from 'getArgs')
 
-  -> Ex.Exceptional P.Error (b, Either [c] (i, d))
+  -> Ex.Exceptional P.Error (b, Either [c] (iden, result))
      -- ^ Returns an Exception if an error was encountered when
      -- parsing the command line (including if the global options
      -- procesor returned an Exception.) Otherwise, returns a
