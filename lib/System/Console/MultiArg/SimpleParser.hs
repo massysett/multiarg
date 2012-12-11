@@ -20,6 +20,10 @@ module System.Console.MultiArg.SimpleParser (
 
     -- * The parser
   , parse
+
+    -- * Parsing multi-command command lines
+  , Command(..)
+  , commands
   ) where
 
 import qualified System.Console.MultiArg.Prim as P
@@ -28,7 +32,10 @@ import qualified System.Console.MultiArg.Combinator as C
 import qualified Control.Monad.Exception.Synchronous as Ex
 import Control.Applicative ( many, (<|>), optional,
                              (<$), (<*>), (<*), (<$>))
-import Data.Maybe (catMaybes)
+import Data.List (find)
+import Data.Maybe (catMaybes, fromJust)
+import qualified Data.Set as Set
+
 
 -- | What to do after encountering the first non-option,
 -- non-option-argument word on the command line? In either case, no
@@ -104,16 +111,51 @@ parseIntersperse optParser p =
       parser = po <|> ps <|> pa
   in catMaybes <$> P.manyTill parser P.end
 
+-- | Provides information on each command that you wish to parse.
 data Command a = Command
   { cmdName :: String
+    -- ^ How the user identifies the command on the command line. For
+    -- example, with @darcs@ this would be @get@, @send@, etc.
+
   , cmdIntersperse :: Intersperse
-  , cmdOpts :: [OptSpec a]
+    -- ^ Each command may have options and positional arguments; may
+    -- these be interspersed?
+
+  , cmdOpts :: [C.OptSpec a]
+    -- ^ Options for this command
+
   , cmdPosArgs :: String -> a
+    -- ^ How to parse positional arguments for this command
   }
 
+-- | Parses a command line that may feature options followed by a
+-- command followed by more options and then followed by positional
+-- arguments.
 commands
-  :: [OptSpec a]
+  :: [C.OptSpec a]
+     -- ^ Global options. These come after the program name but before
+     -- the command name.
   -> ([a] -> Ex.Exceptional String b)
   -> (b -> Either (String -> c) [Command d])
+  -> [String]
   -> Ex.Exceptional P.Error (b, Either [c] (String, [d]))
-commands = undefined
+commands globals lsToB getCmds ss = P.parse ss $ do
+  gs <- many $ C.parseOption globals
+  b <- case lsToB gs of
+    Ex.Exception e -> fail e
+    Ex.Success g -> return g
+  let cmds = getCmds b
+  case cmds of
+    Left fPa -> do
+      posArgs <- (fmap (fmap fPa) $ many P.nextArg) <* P.end
+      return (b, Left posArgs)
+    Right cds -> do
+      let cmdWords = Set.fromList . map cmdName $ cds
+      (_, w) <- C.matchApproxWord cmdWords
+      let cmd = fromJust . find (\c -> cmdName c == w) $ cds
+          prsr = case cmdIntersperse cmd of
+            Intersperse -> parseIntersperse
+            StopOptions -> parseStopOpts
+      rs <- prsr (C.parseOption (cmdOpts cmd))
+            (cmdPosArgs cmd) <* P.end
+      return (b, Right (w, rs))
