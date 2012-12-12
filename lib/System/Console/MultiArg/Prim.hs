@@ -55,7 +55,7 @@ module System.Console.MultiArg.Prim (
   end,
 
   -- * Errors
-  Message,
+  Message(..),
   Location,
   Error(Error),
 
@@ -82,7 +82,18 @@ import Data.List (isPrefixOf, intercalate)
 type Location = String
 
 -- | Error messages.
-type Message = String
+data Message =
+  Expecting String
+  -- ^ Indicates what the parser was expecting to see. Affected by the
+  -- '<?>' combinator.
+
+  | Other String
+  -- ^ Indicates other errors. From the 'throwString' parser.
+
+  | Unknown
+  -- ^ Unknown errors, from 'genericThrow'.
+  deriving (Eq, Show)
+
 
 -- | An Error contains a list of Messages and a String indicating
 -- where the error happened.
@@ -236,7 +247,7 @@ good a = Parser $ \s -> (Good a, s)
 -- provides the implementation for 'Control.Monad.Monad.fail'.
 throwString :: String -> Parser a
 throwString e = Parser $ \s ->
-  let s' = s { errors = e : errors s }
+  let s' = s { errors = Other e : errors s }
   in (Bad, s')
 
 
@@ -276,7 +287,8 @@ apply fa a = Parser $ \s ->
 -- | Fail with an unhelpful error message. Usually throw is more
 -- useful, but this is handy to implement some typeclass instances.
 genericThrow :: Parser a
-genericThrow = throwString "unknown error"
+genericThrow = Parser $ \s ->
+  (Bad, s { errors = Unknown : errors s })
 
 noConsumed :: ParseSt -> ParseSt -> Bool
 noConsumed old new = counter old >= counter new
@@ -316,8 +328,8 @@ choice a b = Parser $ \sOld ->
     Bad ->
       if noConsumed s s'
       then let e' = case errors s' of
-                      [] -> [m]
-                      _:xs -> m : xs
+                      [] -> [Expecting m]
+                      _:xs -> Expecting m : xs
                s'' = s' { errors = e' }
            in (Bad, s'')
       else (Bad, s')
@@ -336,7 +348,7 @@ increment old = old { counter = succ . counter $ old }
 
 pendingShortOpt :: ShortOpt -> Parser ()
 pendingShortOpt so = Parser $ \s ->
-  let err = "pending short option: -" ++ [unShortOpt so]
+  let err = Expecting $ "pending short option: -" ++ [unShortOpt so]
       es = (Bad, s { errors = err : errors s })
       gd newSt = (Good (), newSt)
   in maybe es gd $ do
@@ -372,7 +384,8 @@ pendingShortOpt so = Parser $ \s ->
 -- from remaining arguments to be parsed.
 nonPendingShortOpt :: ShortOpt -> Parser ()
 nonPendingShortOpt so = Parser $ \s ->
-  let err = "non pending short option: -" ++ [unShortOpt so]
+  let err = Expecting
+            $ "non pending short option: -" ++ [unShortOpt so]
       errRet = (Bad, s { errors = err : errors s })
       gd n = (Good (), n)
   in maybe errRet gd $ do
@@ -422,7 +435,7 @@ exactLongOpt :: LongOpt -> Parser (Maybe String)
 exactLongOpt lo = Parser $ \s ->
   let ert = (Bad, err)
       err = s { errors = msg : errors s } where
-        msg = "long option: --" ++ unLongOpt lo
+        msg = Expecting $ "long option: --" ++ unLongOpt lo
       gd (g, n) = (Good g, n)
   in maybe ert gd $ do
     guard (noPendingShorts s)
@@ -474,7 +487,7 @@ approxLongOptError ::
   -> ParseSt
   -> ParseSt
 approxLongOptError set st = st { errors = ex : errors st } where
-  ex = "a long option: " ++ longs
+  ex = Expecting $ "a long option: " ++ longs
   longs = intercalate ", "
           . map ("--" ++)
           . map unLongOpt
@@ -524,7 +537,7 @@ pendingShortOptArg :: Parser String
 pendingShortOptArg = Parser $ \s ->
   let ert = (Bad, err)
       err = s { errors = msg : errors s } where
-        msg = "pending short option argument"
+        msg = Expecting "pending short option argument"
       gd (g, newSt) = (Good g, newSt)
   in maybe ert gd $ do
     guard (noStopper s)
@@ -540,7 +553,7 @@ pendingShortOptArg = Parser $ \s ->
 stopper :: Parser ()
 stopper = Parser $ \s ->
   let err = s { errors = msg : errors s } where
-        msg = "stopper, \"--\""
+        msg = Expecting "stopper, \"--\""
       ert = (Bad, err)
       gd (g, newSt) = (Good g, newSt)
   in maybe ert gd $ do
@@ -578,7 +591,7 @@ nextArg :: Parser String
 nextArg = Parser $ \s ->
   let ert = (Bad, err)
       err = s { errors = msg : errors s } where
-        msg = "next argument"
+        msg = Expecting "next argument"
       gd (g, newSt) = (Good g, newSt)
   in maybe ert gd $ do
     guard (noPendingShorts s)
@@ -594,7 +607,7 @@ nextArgIs str = Parser $ \s ->
   let ert = (Bad, err)
       err = s { errors = msg : errors s }
         where
-          msg = "next word: " ++ str
+          msg = Expecting $ "next word: " ++ str
       gd newSt = (Good (), newSt)
   in maybe ert gd $ do
     guard (noPendingShorts s)
@@ -616,7 +629,7 @@ nonOptionPosArg :: Parser String
 nonOptionPosArg = Parser $ \s ->
   let ert = (Bad, err)
       err = s { errors = msg : errors s } where
-        msg = "non option positional argument"
+        msg = Expecting "non option positional argument"
       gd (g, newSt) = (Good g, newSt)
   in maybe ert gd $ do
     guard (noPendingShorts s)
@@ -734,7 +747,7 @@ end :: Parser ()
 end = Parser $ \s ->
   let ert = (Bad, err)
       err = s { errors = msg : errors s } where
-        msg = "end of input"
+        msg = Expecting "end of input"
       gd (g, newSt) = (Good g, newSt)
   in maybe ert gd $ do
     guard (noPendingShorts s)

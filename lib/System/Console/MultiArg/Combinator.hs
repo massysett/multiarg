@@ -13,7 +13,11 @@ module System.Console.MultiArg.Combinator (
   parseOption,
 
   -- * Other words
-  matchApproxWord ) where
+  matchApproxWord,
+
+  -- * Formatting errors
+  formatError
+  ) where
 
 import Data.List (isPrefixOf, intersperse, nubBy, intercalate)
 import Data.Set ( Set )
@@ -24,13 +28,14 @@ import Control.Applicative
 import System.Console.MultiArg.Prim
   ( Parser, try, approxLongOpt,
     nextArg, pendingShortOptArg, nonOptionPosArg,
-    pendingShortOpt, nonPendingShortOpt, nextArg)
+    pendingShortOpt, nonPendingShortOpt, nextArg, (<?>),
+    Error(..), Message(..))
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt, unLongOpt,
     makeLongOpt, makeShortOpt, unShortOpt )
 import qualified Data.Map as M
 import Data.Map ((!))
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Monoid ( mconcat )
 
 
@@ -261,15 +266,13 @@ shortOpt o = mconcat parsers where
 -- | Parses a short option without an argument, either pending or
 -- non-pending. Fails with a single error message rather than two.
 nextShort :: ShortOpt -> Parser ()
-nextShort o = do
-  r1 <- optional $ pendingShortOpt o
-  case r1 of
-    Just () -> return ()
-    Nothing -> do
-      r2 <- optional $ nonPendingShortOpt o
-      case r2 of
+nextShort o = p <?> ("short option: -" ++ [unShortOpt o])
+  where
+    p = do
+      r1 <- optional $ pendingShortOpt o
+      case r1 of
         Just () -> return ()
-        Nothing -> fail $ "short option: -" ++ [unShortOpt o]
+        Nothing -> nonPendingShortOpt o
 
 
 shortVariableArg :: ([String] -> a) -> Parser a
@@ -332,4 +335,28 @@ matchAbbrev ls s =
         (_, a):[] -> return a
         _ -> Nothing
 
+-- | Formats error messages for nice display.
+formatError
+  :: String
+  -- ^ Pass the name of your program here. Displayed at the beginning
+  -- of the error message.
 
+  -> Error
+  -> String
+formatError p (Error ls loc) =
+  p ++ ": error: could not parse command line.\n"
+  ++ "Error at: " ++ loc ++ "\n"
+  ++ expError
+  ++ othError
+  ++ unk
+  where
+    toExp m = case m of { Expecting s -> Just s; _ -> Nothing }
+    expc = unlines . mapMaybe toExp $ ls
+    expError = if null expc then "" else "Expecting:\n" ++ expc
+    toOther m = case m of { Other s -> Just s; _ -> Nothing }
+    oth = unlines . mapMaybe toOther $ ls
+    othError = if null oth
+               then ""
+               else "Other errors:\n" ++ oth
+    unk = if any (== Unknown) ls then "Unknown error\n" else ""
+    
