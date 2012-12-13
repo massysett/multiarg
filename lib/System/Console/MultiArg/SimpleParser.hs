@@ -20,7 +20,7 @@ import qualified System.Console.MultiArg.Combinator as C
 import qualified Control.Monad.Exception.Synchronous as Ex
 import Control.Applicative ( many, (<|>), optional,
                              (<$), (<*>), (<*), (<$>))
-import Data.List (find)
+import Data.List (find, isPrefixOf)
 import Data.Maybe (catMaybes, fromJust)
 import qualified Data.Set as Set
 
@@ -175,7 +175,7 @@ modes
      -- to the mode.
 
 modes globals lsToB getCmds ss = P.parse ss $ do
-  gs <- many $ C.parseOption globals
+  gs <- P.manyTill (C.parseOption globals) endOrNonOpt
   b <- case lsToB gs of
     Ex.Exception e -> fail e
     Ex.Success g -> return g
@@ -186,7 +186,23 @@ modes globals lsToB getCmds ss = P.parse ss $ do
       return (b, Left posArgs)
     Right cds -> do
       let cmdWords = Set.fromList . map mName $ cds
-      (_, w) <- C.matchApproxWord cmdWords
+      (_, w) <- P.matchApproxWord cmdWords
       let cmd = fromJust . find (\c -> mName c == w) $ cds
       r <- processModeArgs cmd
       return (b, Right (mId cmd, r))
+
+-- | Looks ahead at next word in input. If the next word is a
+-- non-option-looking word (that is, it does not start with a dash),
+-- succeeds without consuming any input. Otherwise, fails without
+-- consuming any input.
+nextIsNonOpt :: P.Parser ()
+nextIsNonOpt = do
+  n <- P.lookAhead P.nextArg
+  if "-" `isPrefixOf` n
+    then fail "next word is an option"
+    else return ()
+
+-- | Looks at the next word. Succeeds if it is a non-option, or if we
+-- are at the end of input. Fails otherwise.
+endOrNonOpt :: P.Parser ()
+endOrNonOpt = P.end <|> nextIsNonOpt

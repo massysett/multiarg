@@ -12,14 +12,11 @@ module System.Console.MultiArg.Combinator (
           ThreeArg, VariableArg, ChoiceArg),
   parseOption,
 
-  -- * Other words
-  matchApproxWord,
-
   -- * Formatting errors
   formatError
   ) where
 
-import Data.List (isPrefixOf, intersperse, nubBy, intercalate)
+import Data.List (isPrefixOf, intersperse, nubBy)
 import Data.Set ( Set )
 import qualified Data.Set as Set
 import Control.Applicative
@@ -48,23 +45,6 @@ notFollowedBy :: Parser a -> Parser ()
 notFollowedBy p =
   () <$ ((try p >> fail "notFollowedBy failed")
          <|> return ())
-
-
--- | Examines the possible words in Set. If there are no pendings,
--- then get the next word and see if it matches one of the words in
--- Set. If so, returns the word actually parsed and the matching word
--- from Set. If there is no match, fails without consuming any input.
-matchApproxWord :: Set String -> Parser (String, String)
-matchApproxWord s = try $ do
-  a <- nextArg
-  let p t = a `isPrefixOf` t
-      matches = Set.filter p s
-      err = fail $ "word matching one of: "
-             ++ (intercalate ", " $ Set.toList s)
-  case Set.toList matches of
-    [] -> err
-    (x:[]) -> return (a, x)
-    _ -> err
 
 
 unsafeShortOpt :: Char -> ShortOpt
