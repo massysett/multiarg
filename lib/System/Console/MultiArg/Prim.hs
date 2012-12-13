@@ -50,6 +50,7 @@ module System.Console.MultiArg.Prim (
   nextArg,
   nextArgIs,
   nonOptionPosArg,
+  matchApproxWord,
 
   -- ** Miscellaneous
   end,
@@ -72,6 +73,7 @@ import Control.Applicative ( Applicative, Alternative )
 import qualified Control.Applicative
 import Control.Monad.Exception.Synchronous
   (Exceptional(Success, Exception))
+import qualified Control.Monad.Exception.Synchronous as Ex
 import qualified Data.Set as Set
 import Data.Set ( Set )
 import Control.Monad ( when, MonadPlus(mzero, mplus), guard )
@@ -755,3 +757,26 @@ end = Parser $ \s ->
     guard (noPendingShorts s)
     guard (null . remaining $ s)
     return ((), s)
+
+-- | Examines the possible words in Set. If there are no pendings,
+-- then get the next word and see if it matches one of the words in
+-- Set. If so, returns the word actually parsed and the matching word
+-- from Set. If there is no match, fails without consuming any input.
+matchApproxWord :: Set String -> Parser (String, String)
+matchApproxWord set = Parser $ \s ->
+  let ert rsn = (Bad, err rsn)
+      err rsn = s { errors = Expecting (msg rsn) : errors s }
+      msg rsn = "word matching one of: "
+                ++ (intercalate "," $ Set.toList set)
+                ++ ". " ++ rsn
+      gd (g, newSt) = (Good g, newSt)
+  in Ex.switch ert gd $ do
+      Ex.assert "Pending short option found." (noPendingShorts s)
+      (x, s') <- Ex.fromMaybe "No more words found." $ nextWord s
+      let matches = Set.filter p set
+          p t = x `isPrefixOf` t
+      case Set.toList matches of
+        [] -> Ex.throw "No matches found."
+        r:[] -> return ((x, r), s')
+        xs -> Ex.throw $ "Multiple matches found: "
+                         ++ (intercalate ", " xs)
