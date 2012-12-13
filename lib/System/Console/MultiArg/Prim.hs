@@ -329,7 +329,9 @@ choice a b = Parser $ \sOld ->
       if noConsumed s s'
       then let e' = case errors s' of
                       [] -> [Expecting m]
-                      _:xs -> Expecting m : xs
+                      e:xs -> case e of
+                        Expecting _ -> Expecting m : xs
+                        o -> Expecting m : o : xs
                s'' = s' { errors = e' }
            in (Bad, s'')
       else (Bad, s')
