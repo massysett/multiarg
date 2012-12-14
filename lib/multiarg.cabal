@@ -38,9 +38,9 @@ source-repository head
 
 Library
     Build-depends:
-        base ==4.*,
         explicit-exception ==0.1.*,
-        containers ==0.4.*
+        containers ==0.4.*,
+        transformers ==0.3.*
 
     -- See documentation in System.Console.MultiArg.GetArgs for details
     if flag(newbase)

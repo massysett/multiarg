@@ -4,9 +4,7 @@
 -- will want to look at "System.Console.MultiArg.SimpleParser" or
 -- "System.Console.MultiArg.Combinator", which do a lot of grunt work
 -- for you.
-module System.Console.MultiArg.Prim where
-
-{-
+module System.Console.MultiArg.Prim (
     -- * Parser types
   Parser,
 
@@ -17,19 +15,18 @@ module System.Console.MultiArg.Prim where
   parse,
 
   -- * Higher-level parser combinators
-  parserMap,
   good,
-  apply,
   choice,
-  combine,
+  bind,
   lookAhead,
 
   -- ** Running parsers multiple times
   several,
-  manyTill,
+  several1,
+  --manyTill,
 
   -- ** Failure and errors
-  throwString,
+  throw,
   genericThrow,
   (<?>),
   try,
@@ -49,8 +46,8 @@ module System.Console.MultiArg.Prim where
   resetStopper,
 
   -- ** Positional (non-option) arguments
-  nextArg,
-  nextArgIs,
+  nextWord,
+  nextWordIs,
   nonOptionPosArg,
   matchApproxWord,
 
@@ -58,13 +55,13 @@ module System.Console.MultiArg.Prim where
   end,
 
   -- * Errors
-  Message(..),
-  Location,
+  Description(..),
   Error(Error),
+  InputDesc
 
   ) where
 
--}
+
 import System.Console.MultiArg.Option
   (ShortOpt,
     unShortOpt,
@@ -73,9 +70,10 @@ import System.Console.MultiArg.Option
     makeLongOpt )
 import Control.Applicative ( Applicative, Alternative )
 import qualified Control.Applicative as A
-import Control.Monad.Exception.Synchronous
-  (Exceptional(Success, Exception))
 import qualified Control.Monad.Exception.Synchronous as Ex
+import qualified Control.Monad.Trans.State as St
+import Control.Monad.Trans.Class (lift)
+import qualified Data.Either as Ei
 import qualified Data.Set as Set
 import Data.Set ( Set )
 import qualified Control.Monad
@@ -126,7 +124,6 @@ type SawStopper = Bool
 data State = State PendingShort Remaining SawStopper
 
 type InputDesc = String
-type Expected = [String]
 data Description = Unknown | General String | Expected String
 data Error = Error InputDesc [Description]
 
@@ -222,32 +219,66 @@ choice p q = Parser $ \s ->
     merge (Error loc exp1) (Error _ exp2) =
       Error loc (exp1 ++ exp2)
 
-several :: Parser a -> Parser [a]
-several p = several1 p `choice` return []
-
-{-
 several1 :: Parser a -> Parser [a]
 several1 p = do
-  x <- p
-  xs <- (several1 p `choice` return [])
-  return (x:xs)
--}
+  r1 <- p
+  rs <- several p
+  return $ r1:rs
 
-several1 :: Parser a -> Parser [a]
-several1 p = Parser $ \st -> go st
-  where
-    go s = case runParser p s of
-      Empty r -> case r of
-        Ok _ -> error $ "several1 applied to parser that succeeds"
-                       ++ " without consuming any input"
-        Fail e -> Empty (Ok [] s e)
-      Consumed r -> case r of
-        Fail e -> Consumed (Fail e)
-        Ok x s' e ->
-          let rest = go s'
-          in case rest of
-            
+several :: Parser a -> Parser [a]
+several p = Parser $ \s ->
+  let (ex, s') = flip St.runState s
+                 . Ex.runExceptionalT . runSeveral $ p
+  in case ex of
+    Ex.Exception e -> Consumed (Fail e)
+    Ex.Success ls ->
+      let (r, eLastLs) = Ei.partitionEithers ls
+          eLast = case eLastLs of
+                    x:[] -> x
+                    _ -> error "multiarg: several failed"
+      in Consumed (Ok r s' eLast)
 
+
+-- | runSeveral runs a parser zero or more times.
+--
+-- A simpler implementation would be this:
+--
+-- > several p = several1 p `choice` return []
+--
+-- The problem with that implementation is that it will lock into an
+-- infinite loop if the parser p succeeds without consuming any
+-- input. This implementation will apply @error@ in such an event.
+--
+-- There are four different values that a parser can return. Here is
+-- what this function does for each of those values:
+--
+-- * Consumed - OK - run runSeveral again
+-- * Consumed - Fail - throw with the Error message
+-- * Empty - OK - apply error
+-- * Empty - Fail - return an empty list
+--
+-- The return type is a list of Eithers. The init of the list is all
+-- Left with the return value. The last of the list is a Right with
+-- the final error message.
+runSeveral
+  :: Parser a
+  -> Ex.ExceptionalT Error (St.State State) [Either a Error]
+runSeveral p = do
+  st <- lift St.get
+  case runParser p st of
+    Consumed r -> case r of
+      Ok x st' _ -> do
+        lift $ St.put st'
+        rs <- runSeveral p
+        return $ (Left x):rs
+      Fail e -> Ex.throwT e
+    Empty r -> case r of
+      Ok _ _ _ ->
+        error $ "multiarg: runSeveral: many, some, "
+                ++ "several1, or several applied to parser that "
+                ++ "succeeds without consuming any input. "
+                ++ "Execution halted to prevent an infinite loop."
+      Fail e -> return [Right e]
     
 
 -- | Runs the parser given. If it fails without consuming any input,
@@ -330,8 +361,8 @@ lookAhead p = Parser $ \s ->
       e -> Consumed e
     e -> e
 
-nextWord :: Remaining -> Maybe (String, Remaining)
-nextWord rm = case rm of
+nextW :: Remaining -> Maybe (String, Remaining)
+nextW rm = case rm of
   [] -> Nothing
   x:xs -> Just (x, xs)
 
@@ -368,7 +399,7 @@ nonPendingShortOpt so = Parser $ \s@(State ps rm stop) ->
   in maybe errRet gd $ do
     guard $ null ps
     guard $ not stop
-    (a, rm') <- nextWord rm
+    (a, rm') <- nextW rm
     (maybeDash, word) <- case a of
       [] -> mzero
       x:xs -> return (x, xs)
@@ -418,7 +449,7 @@ exactLongOpt lo = Parser $ \s@(State ps rm sp) ->
   in maybe err gd $ do
     guard $ null ps
     guard $ not sp
-    (x, rm') <- nextWord rm
+    (x, rm') <- nextW rm
     (word, afterEq) <- getLongOption x
     guard (word == unLongOpt lo)
     return (afterEq, rm')
@@ -466,7 +497,7 @@ approxLongOpt ts = Parser $ \s@(State ps rm stop) ->
   in Ex.switch ert gd $ do
     Ex.assert allOpts $ null ps
     Ex.assert allOpts $ not stop
-    (x, rm') <- Ex.fromMaybe allOpts $ nextWord rm
+    (x, rm') <- Ex.fromMaybe allOpts $ nextW rm
     (word, afterEq) <- Ex.fromMaybe allOpts $ getLongOption x
     opt <- Ex.fromMaybe allOpts $ makeLongOpt word
     if Set.member opt ts
@@ -517,7 +548,7 @@ stopper = Parser $ \s@(State ps rm sp) ->
   in maybe ert gd $ do
      guard $ not sp
      guard . not . null $ ps
-     (x, rm') <- nextWord rm
+     (x, rm') <- nextW rm
      guard $ x == "--"
      return rm'
 
@@ -540,40 +571,40 @@ try a = Parser $ \s ->
     o -> o
 
 
-{-
 -- | Returns the next string on the command line as long as there are
--- no pendings. Be careful - this will return the next string even if
--- it looks like an option (that is, it starts with a dash.) Consider
--- whether you should be using nonOptionPosArg instead. However this
--- can be useful when parsing command line options after a stopper.
-nextArg :: Parser String
-nextArg = Parser $ \s ->
-  let ert = (Bad, err)
-      err = s { errors = msg : errors s } where
-        msg = Expecting "next argument"
-      gd (g, newSt) = (Good g, newSt)
+-- no pendings. Succeeds even if a stopper is present. Be careful -
+-- this will return the next string even if it looks like an option
+-- (that is, it starts with a dash.) Consider whether you should be
+-- using nonOptionPosArg instead. However this can be useful when
+-- parsing command line options after a stopper.
+nextWord :: Parser String
+nextWord = Parser $ \s@(State ps rm sp) ->
+  let err = Error (descLocation s) [dsc]
+      dsc = Expected "next word"
+      ert = Empty (Fail err)
+      gd (str, rm'') = Consumed $ Ok str (State ps rm'' sp) err
   in maybe ert gd $ do
-    guard (noPendingShorts s)
-    nextWord s
-
+      guard $ null ps
+      nextW rm
+      
 
 -- | Parses the next word on the command line, but only if it exactly
 -- matches the word given. Otherwise, fails without consuming any
 -- input. Also fails without consuming any input if there are pending
--- short options or if a stopper has already been parsed.
-nextArgIs :: String -> Parser ()
-nextArgIs str = Parser $ \s ->
-  let ert = (Bad, err)
-      err = s { errors = msg : errors s }
-        where
-          msg = Expecting $ "next word: " ++ str
-      gd newSt = (Good (), newSt)
+-- short options or if a stopper has already been parsed. Does not pay
+-- any attention to whether a stopper is present.
+nextWordIs :: String -> Parser ()
+nextWordIs str = Parser $ \s@(State ps rm sp) ->
+  let err = Error (descLocation s) [dsc]
+      dsc = Expected $ "next argument \"" ++ str ++ "\""
+      ert = Empty $ Fail err
+      gd rm'' = Consumed $ Ok () (State ps rm'' sp) err
   in maybe ert gd $ do
-    guard (noPendingShorts s)
-    guard (noStopper s)
-    (a, s') <- nextWord s
-    guard (a == str)
-    return s'
+      guard $ null ps
+      (a, rm') <- nextW rm
+      guard (a == str)
+      return rm'
+
 
 -- | If there are pending short options, fails without consuming any input.
 --
@@ -585,58 +616,84 @@ nextArgIs str = Parser $ \s ->
 -- Otherwise, if a stopper has already been parsed, then returns the
 -- next word, regardless of whether it begins with a dash or not.
 nonOptionPosArg :: Parser String
-nonOptionPosArg = Parser $ \s ->
-  let ert = (Bad, err)
-      err = s { errors = msg : errors s } where
-        msg = Expecting "non option positional argument"
-      gd (g, newSt) = (Good g, newSt)
+nonOptionPosArg = Parser $ \s@(State ps rm sp) ->
+  let err = Error (descLocation s) [dsc]
+      dsc = Expected "non option positional argument"
+      ert = Empty $ Fail err
+      gd (str, rm'') = Consumed $ Ok str (State ps rm'' sp) err
   in maybe ert gd $ do
-    guard (noPendingShorts s)
-    (x, s') <- nextWord s
-    result <-
-      if sawStopper s
-      then return x
-      else case x of
-        [] -> return x
-        '-':[] -> return "-"
-        f:_ -> if f == '-'
-               then Nothing
-               else return x
-    return (result, s')
+    guard $ null ps
+    (x, rm') <- nextW rm
+    result <- if sp
+              then return x
+              else case x of
+                [] -> return x
+                '-':[] -> return "-"
+                f:_ -> if f == '-' then mzero else return x
+    return (result, rm')
 
 
 -- | Succeeds if there is no more input left.
 end :: Parser ()
-end = Parser $ \s ->
-  let ert = (Bad, err)
-      err = s { errors = msg : errors s } where
-        msg = Expecting "end of input"
-      gd (g, newSt) = (Good g, newSt)
-  in maybe ert gd $ do
-    guard (noPendingShorts s)
-    guard (null . remaining $ s)
-    return ((), s)
+end = Parser $ \s@(State ps rm _) ->
+  let err = Error (descLocation s) [dsc]
+      dsc = Expected "end of input"
+      ert = Empty $ Fail err
+      gd = Empty $ Ok () s err
+  in if null ps && null rm then gd else ert
+
 
 -- | Examines the possible words in Set. If there are no pendings,
 -- then get the next word and see if it matches one of the words in
 -- Set. If so, returns the word actually parsed and the matching word
--- from Set. If there is no match, fails without consuming any input.
+-- from Set. If there is no match, fails without consuming any
+-- input. Pays no attention to whether a stopper has been seen.
 matchApproxWord :: Set String -> Parser (String, String)
-matchApproxWord set = Parser $ \s ->
-  let ert rsn = (Bad, err rsn)
-      err rsn = s { errors = Expecting (msg rsn) : errors s }
-      msg rsn = "word matching one of: "
-                ++ (intercalate "," $ Set.toList set)
-                ++ ". " ++ rsn
-      gd (g, newSt) = (Good g, newSt)
+matchApproxWord set = Parser $ \s@(State ps rm sp) ->
+  let err = Error (descLocation s) . lsDsc
+      lsDsc = map (Expected . ("next word: " ++))
+      ert = Empty . Fail . err
+      gd (act, mtch, rm'') =
+        Consumed $ Ok (act, mtch) (State ps rm'' sp) (err allWords)
+      allWords = Set.toList set
   in Ex.switch ert gd $ do
-      Ex.assert "Pending short option found." (noPendingShorts s)
-      (x, s') <- Ex.fromMaybe "No more words found." $ nextWord s
+      Ex.assert allWords $ null ps
+      (x, rm') <- Ex.fromMaybe allWords $ nextW rm
       let matches = Set.filter p set
           p t = x `isPrefixOf` t
       case Set.toList matches of
-        [] -> Ex.throw "No matches found."
-        r:[] -> return ((x, r), s')
-        xs -> Ex.throw $ "Multiple matches found: "
-                         ++ (intercalate ", " xs)
--}
+        [] -> Ex.throw allWords
+        r:[] -> return (x, r, rm')
+        xs -> Ex.throw xs
+      
+-- | @manyTill p end@ runs parser p zero or more times until parser
+-- @end@ succeeds. If @end@ succeeds and consumes input, that input is
+-- also consumed. in the result of @manyTill@. If that is a problem,
+-- wrap it in @lookAhead@. Also, if @end@ fails and consumes input,
+-- @manyTill@ fails and consumes input. If that is a problem, wrap
+-- @end@ in @try@.
+manyTill :: Parser a -> Parser end -> Parser [a]
+manyTill = undefined
+
+-- | Carries out the recursive parse for manyTill.
+--
+-- First runs the end parser. Takes the following actions:
+--
+-- * Consumed-OK - Done, returns error from the successful end parse.
+-- * Consumed-Fail - Throw the error
+-- * Empty-OK - Done, return error from successful end parse.
+-- * Empty-Fail - runs the inner parser
+--
+-- If necessary runs the inner parser. Takes the following actions:
+--
+-- * Consumed-OK - OK, add this result to the list and run the end
+-- parser again
+--
+-- * Consumed-Fail - throw the error
+-- * Empty-OK - Apply error
+-- * Empty-Fail - throw the error
+runManyTill
+  :: Parser a
+  -> Parser end
+  -> Ex.ExceptionalT Error (St.State State) [Either a Error]
+runManyTill p e = do
