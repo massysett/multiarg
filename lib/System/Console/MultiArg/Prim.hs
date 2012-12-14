@@ -225,11 +225,30 @@ choice p q = Parser $ \s ->
 several :: Parser a -> Parser [a]
 several p = several1 p `choice` return []
 
+{-
 several1 :: Parser a -> Parser [a]
 several1 p = do
   x <- p
   xs <- (several1 p `choice` return [])
   return (x:xs)
+-}
+
+several1 :: Parser a -> Parser [a]
+several1 p = Parser $ \st -> go st
+  where
+    go s = case runParser p s of
+      Empty r -> case r of
+        Ok _ -> error $ "several1 applied to parser that succeeds"
+                       ++ " without consuming any input"
+        Fail e -> Empty (Ok [] s e)
+      Consumed r -> case r of
+        Fail e -> Consumed (Fail e)
+        Ok x s' e ->
+          let rest = go s'
+          in case rest of
+            
+
+    
 
 -- | Runs the parser given. If it fails without consuming any input,
 -- replaces all Expected messages with the one given. Otherwise,
@@ -517,7 +536,7 @@ try a = Parser $ \s ->
   case runParser a s of
     Consumed r -> case r of
       Fail e -> Empty (Fail e)
-      Ok x s' e -> Consumed (Ok x s' e)
+      o -> Consumed o
     o -> o
 
 
