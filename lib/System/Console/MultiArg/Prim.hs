@@ -83,7 +83,7 @@ import Control.Monad ( when, MonadPlus(mzero, mplus), guard, liftM )
 import Data.Maybe (mapMaybe)
 import Data.Monoid ( Monoid ( mempty, mappend ) )
 import qualified Data.List as L
-import Data.List (isPrefixOf, intercalate)
+import Data.List (isPrefixOf)
 
 -- | Parsers. Internally the parser tracks what input remains to be
 -- parsed, whether there are any pending short options, and whether a
@@ -460,9 +460,6 @@ approxLongOpt ts = Parser $ \s@(State ps rm stop) ->
         (m:[]) -> return (word, m, afterEq, rm')
         ls -> Ex.throw ls
 
-{-
-
-
 
 -- | Parses only pending short option arguments. For example, for the
 -- @tail@ command, if you enter the option @-c25@, then after parsing
@@ -478,54 +475,53 @@ approxLongOpt ts = Parser $ \s@(State ps rm stop) ->
 -- On success, returns the String of the pending short option argument
 -- (this String will never be empty).
 pendingShortOptArg :: Parser String
-pendingShortOptArg = Parser $ \s ->
-  let ert = (Bad, err)
-      err = s { errors = msg : errors s } where
-        msg = Expecting "pending short option argument"
-      gd (g, newSt) = (Good g, newSt)
+pendingShortOptArg = Parser $ \st@(State ps rm sp) ->
+  let msg = [Expected "pending short option argument"]
+      err = Error (descLocation st) msg
+      ert = Empty (Fail err)
+      gd str = Consumed (Ok str (State "" rm sp) err)
   in maybe ert gd $ do
-    guard (noStopper s)
-    case pendingShort s of
-      [] -> Nothing
-      xs ->
-        let newSt = increment s { pendingShort = "" }
-        in return (xs, newSt)
+     guard $ not sp
+     case ps of
+      [] -> mzero
+      xs -> return xs
 
 
 -- | Parses a \"stopper\" - that is, a double dash. Changes the internal
 -- state of the parser to reflect that a stopper has been seen.
 stopper :: Parser ()
-stopper = Parser $ \s ->
-  let err = s { errors = msg : errors s } where
-        msg = Expecting "stopper, \"--\""
-      ert = (Bad, err)
-      gd (g, newSt) = (Good g, newSt)
+stopper = Parser $ \s@(State ps rm sp) ->
+  let err = Error (descLocation s)
+        [Expected "stopper, \"--\""]
+      ert = Empty (Fail err)
+      gd rm'' = Consumed (Ok () (State ps rm'' True) err)
   in maybe ert gd $ do
-    guard (noPendingShorts s)
-    guard (noStopper s)
-    (x, s') <- nextWord s
-    guard (x == "--")
-    let s'' = s' { sawStopper = True }
-    return ((), s'')
+     guard $ not sp
+     guard . not . null $ ps
+     (x, rm') <- nextWord rm
+     guard $ x == "--"
+     return rm'
+
 
 -- | If a stopper has already been seen, change the internal state
 -- back to indicating that no stopper has been seen.
 resetStopper :: Parser ()
-resetStopper = Parser $ \s ->
-  let s' = s { sawStopper = False }
-  in (Good (), s')
+resetStopper = Parser $ \s@(State ps rm _) ->
+  Empty (Ok () (State ps rm False) (Error (descLocation s) []))
+
 
 -- | try p behaves just like p, but if p fails, try p will not consume
 -- any input.
 try :: Parser a -> Parser a
 try a = Parser $ \s ->
-  let (r, s') = runParser a s
-  in case r of
-    Good g -> (Good g, s')
-    Bad -> (Bad, s'') where
-      s'' = s { errors = errors s' }
+  case runParser a s of
+    Consumed r -> case r of
+      Fail e -> Empty (Fail e)
+      Ok x s' e -> Consumed (Ok x s' e)
+    o -> o
 
 
+{-
 -- | Returns the next string on the command line as long as there are
 -- no pendings. Be careful - this will return the next string even if
 -- it looks like an option (that is, it starts with a dash.) Consider
