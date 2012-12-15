@@ -20,7 +20,7 @@ import qualified System.Console.MultiArg.Combinator as C
 import qualified Control.Monad.Exception.Synchronous as Ex
 import Control.Applicative ( many, (<|>), optional,
                              (<$), (<*>), (<*), (<$>))
-import Data.List (find, isPrefixOf)
+import Data.List (find)
 import Data.Maybe (catMaybes, fromJust)
 import qualified Data.Set as Set
 
@@ -191,18 +191,8 @@ modes globals lsToB getCmds ss = P.parse ss $ do
       r <- processModeArgs cmd
       return (b, Right (mId cmd, r))
 
--- | Looks ahead at next word in input. If the next word is a
--- non-option-looking word (that is, it does not start with a dash),
--- succeeds without consuming any input. Otherwise, fails without
--- consuming any input.
-nextIsNonOpt :: P.Parser ()
-nextIsNonOpt = do
-  n <- P.lookAhead P.nextWord
-  if "-" `isPrefixOf` n
-    then fail "next word is an option"
-    else return ()
-
 -- | Looks at the next word. Succeeds if it is a non-option, or if we
 -- are at the end of input. Fails otherwise.
 endOrNonOpt :: P.Parser ()
-endOrNonOpt = P.end <|> nextIsNonOpt
+endOrNonOpt = (P.lookAhead P.nonOptionPosArg >> return ())
+              <|> P.end

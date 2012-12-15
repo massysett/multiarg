@@ -467,7 +467,7 @@ splitLongWord t = (f, s, r) where
 
 approxLongOptError :: [LongOpt] -> [Description]
 approxLongOptError =
-  map (Expected . ("a long option: --" ++) . unLongOpt)
+  map (Expected . ("long option: --" ++) . unLongOpt)
 
 
 -- | Examines the next word. If it matches a LongOpt in the set
