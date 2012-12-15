@@ -85,7 +85,7 @@ parseStopOpts optParser p =
   (\opts args -> opts ++ map p args)
   <$> parseOptsNoIntersperse optParser
   <* optional P.stopper
-  <*> many P.nextArg
+  <*> many P.nextWord
 
 
 -- | @parseIntersperse o p@ parses options and positional arguments,
@@ -182,7 +182,7 @@ modes globals lsToB getCmds ss = P.parse ss $ do
   let cmds = getCmds b
   case cmds of
     Left fPa -> do
-      posArgs <- (fmap (fmap fPa) $ many P.nextArg) <* P.end
+      posArgs <- (fmap (fmap fPa) $ many P.nextWord) <* P.end
       return (b, Left posArgs)
     Right cds -> do
       let cmdWords = Set.fromList . map mName $ cds
@@ -197,7 +197,7 @@ modes globals lsToB getCmds ss = P.parse ss $ do
 -- consuming any input.
 nextIsNonOpt :: P.Parser ()
 nextIsNonOpt = do
-  n <- P.lookAhead P.nextArg
+  n <- P.lookAhead P.nextWord
   if "-" `isPrefixOf` n
     then fail "next word is an option"
     else return ()

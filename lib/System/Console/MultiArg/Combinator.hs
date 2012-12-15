@@ -24,9 +24,9 @@ import Control.Applicative
 
 import System.Console.MultiArg.Prim
   ( Parser, try, approxLongOpt,
-    nextArg, pendingShortOptArg, nonOptionPosArg,
-    pendingShortOpt, nonPendingShortOpt, nextArg, (<?>),
-    Error(..), Message(..))
+    nextWord, pendingShortOptArg, nonOptionPosArg,
+    pendingShortOpt, nonPendingShortOpt, nextWord, (<?>),
+    Error(..), Description(..))
 import System.Console.MultiArg.Option
   ( LongOpt, ShortOpt, unLongOpt,
     makeLongOpt, makeShortOpt, unShortOpt )
@@ -206,7 +206,7 @@ longOpt ::
 longOpt set mp = do
   (_, lo, maybeArg) <- approxLongOpt set
   let spec = mp ! lo
-      maybeNextArg = maybe nextArg return maybeArg
+      maybeNextArg = maybe nextWord return maybeArg
   case spec of
     NoArg a -> case maybeArg of
       Nothing -> return a
@@ -214,8 +214,8 @@ longOpt set mp = do
                   ++ " does not take argument"
     OptionalArg f -> return (f maybeArg)
     OneArg f -> f <$> maybeNextArg
-    TwoArg f -> f <$> maybeNextArg <*> nextArg
-    ThreeArg f -> f <$> maybeNextArg <*> nextArg <*> nextArg
+    TwoArg f -> f <$> maybeNextArg <*> nextWord
+    ThreeArg f -> f <$> maybeNextArg <*> nextWord <*> nextWord
     VariableArg f -> do
       as <- many nonOptionPosArg
       return . f $ case maybeArg of
@@ -270,7 +270,7 @@ shortOneArg f = f <$> firstShortArg
 
 firstShortArg :: Parser String
 firstShortArg =
-  optional pendingShortOptArg >>= maybe nextArg return
+  optional pendingShortOptArg >>= maybe nextWord return
 
 
 shortChoiceArg :: ShortOpt -> [(String, a)] -> Parser a
@@ -285,10 +285,10 @@ shortChoiceArg opt ls =
 
 
 shortTwoArg :: (String -> String -> a) -> Parser a
-shortTwoArg f = f <$> firstShortArg <*> nextArg
+shortTwoArg f = f <$> firstShortArg <*> nextWord
 
 shortThreeArg :: (String -> String -> String -> a) -> Parser a
-shortThreeArg f = f <$> firstShortArg <*> nextArg <*> nextArg
+shortThreeArg f = f <$> firstShortArg <*> nextWord <*> nextWord
 
 shortOptionalArg :: (Maybe String -> a) -> Parser a
 shortOptionalArg f = do
@@ -323,20 +323,20 @@ formatError
 
   -> Error
   -> String
-formatError p (Error ls loc) =
+formatError p (Error loc ls) =
   p ++ ": error: could not parse command line.\n"
   ++ "Error at: " ++ loc ++ "\n"
   ++ expError
-  ++ othError
+  ++ genError
   ++ unk
   where
-    toExp m = case m of { Expecting s -> Just s; _ -> Nothing }
+    toExp m = case m of { Expected s -> Just s; _ -> Nothing }
     expc = unlines . mapMaybe toExp $ ls
     expError = if null expc then "" else "Expecting:\n" ++ expc
-    toOther m = case m of { Other s -> Just s; _ -> Nothing }
-    oth = unlines . mapMaybe toOther $ ls
-    othError = if null oth
+    toGeneral m = case m of { General s -> Just s; _ -> Nothing }
+    gen = unlines . mapMaybe toGeneral $ ls
+    genError = if null gen
                then ""
-               else "Other errors:\n" ++ oth
+               else "Other errors:\n" ++ gen
     unk = if any (== Unknown) ls then "Unknown error\n" else ""
     

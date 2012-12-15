@@ -4,6 +4,10 @@
 -- will want to look at "System.Console.MultiArg.SimpleParser" or
 -- "System.Console.MultiArg.Combinator", which do a lot of grunt work
 -- for you.
+--
+-- Internal design, especially the error handling, is based in large
+-- part on Parsec, as described in the paper at
+-- <http://legacy.cs.uu.nl/daan/pubs.html#parsec>.
 module System.Console.MultiArg.Prim (
     -- * Parser types
   Parser,
@@ -23,10 +27,10 @@ module System.Console.MultiArg.Prim (
   -- ** Running parsers multiple times
   several,
   several1,
-  --manyTill,
+  manyTill,
 
   -- ** Failure and errors
-  throw,
+  failString,
   genericThrow,
   (<?>),
   try,
@@ -68,12 +72,9 @@ import System.Console.MultiArg.Option
     LongOpt,
     unLongOpt,
     makeLongOpt )
-import Control.Applicative ( Applicative, Alternative )
+import Control.Applicative ( Applicative, Alternative, optional )
 import qualified Control.Applicative as A
 import qualified Control.Monad.Exception.Synchronous as Ex
-import qualified Control.Monad.Trans.State as St
-import Control.Monad.Trans.Class (lift)
-import qualified Data.Either as Ei
 import qualified Data.Set as Set
 import Data.Set ( Set )
 import qualified Control.Monad
@@ -95,7 +96,7 @@ newtype Parser a = Parser { runParser :: State -> Consumed a }
 instance Monad Parser where
   (>>=) = bind
   return = good
-  fail = throw
+  fail = failString
 
 instance Functor Parser where
   fmap = liftM
@@ -125,7 +126,10 @@ data State = State PendingShort Remaining SawStopper
 
 type InputDesc = String
 data Description = Unknown | General String | Expected String
+  deriving (Eq, Show, Ord)
+
 data Error = Error InputDesc [Description]
+  deriving (Eq, Show, Ord)
 
 data Reply a = Ok a State Error
              | Fail Error
@@ -179,16 +183,17 @@ descLocation (State ps rm st) = pending ++ next ++ stop
     stop = if st then " (stopper already seen)" else ""
 
 
--- | @throw s@ always fails without consuming any input. The
+-- | @failString s@ always fails without consuming any input. The
 -- failure contains a record of the string passed in by s. This
 -- provides the implementation for 'Control.Monad.Monad.fail'.
-throw :: String -> Parser a
-throw str = Parser $ \s ->
+failString :: String -> Parser a
+failString str = Parser $ \s ->
   Empty (Fail (Error (descLocation s) [General str]))
 
 
--- | Fail with an unhelpful error message. Usually 'throw' is more
--- useful, but this is handy to implement some typeclass instances.
+-- | Fail with an unhelpful error message. Usually 'throwString' is
+-- more useful, but this is handy to implement some typeclass
+-- instances.
 genericThrow :: Parser a
 genericThrow = Parser $ \s ->
   Empty (Fail (Error (descLocation s) [Unknown]))
@@ -219,67 +224,52 @@ choice p q = Parser $ \s ->
     merge (Error loc exp1) (Error _ exp2) =
       Error loc (exp1 ++ exp2)
 
+-- | Applies 'error' if a parser would succeed without consuming any
+-- input. Useful for preventing infinite loops on parsers like
+-- 'several1'.
+crashOnEmptyOk
+  :: String
+  -- ^ Use this label when applying 'error'
+
+  -> Parser a
+  -> Parser a
+crashOnEmptyOk str p = Parser $ \s ->
+  case runParser p s of
+    Empty r -> case r of
+      Ok _ _ _ ->
+         error $ "multiarg: error: " ++ str
+               ++ " applied to parser that succeeds without "
+               ++ "consuming any input. Aborted to prevent "
+               ++ "an infinite loop."
+      e -> Empty e
+    o -> o
+               
+
+-- | Runs a parser one or more times. Runs the parser once and then
+-- applies 'several'.
 several1 :: Parser a -> Parser [a]
 several1 p = do
   r1 <- p
   rs <- several p
   return $ r1:rs
 
+
+-- | Runs a parser zero or more times. If the last run of the parser
+-- fails without consuming any input, this parser succeeds without
+-- consuming any input. If the last run of the parser fails while
+-- consuming input, this parser fails while consuming input. This
+-- provides the implementation for 'many' in Control.Applicative.
 several :: Parser a -> Parser [a]
-several p = Parser $ \s ->
-  let (ex, s') = flip St.runState s
-                 . Ex.runExceptionalT . runSeveral $ p
-  in case ex of
-    Ex.Exception e -> Consumed (Fail e)
-    Ex.Success ls ->
-      let (r, eLastLs) = Ei.partitionEithers ls
-          eLast = case eLastLs of
-                    x:[] -> x
-                    _ -> error "multiarg: several failed"
-      in Consumed (Ok r s' eLast)
-
-
--- | runSeveral runs a parser zero or more times.
---
--- A simpler implementation would be this:
---
--- > several p = several1 p `choice` return []
---
--- The problem with that implementation is that it will lock into an
--- infinite loop if the parser p succeeds without consuming any
--- input. This implementation will apply @error@ in such an event.
---
--- There are four different values that a parser can return. Here is
--- what this function does for each of those values:
---
--- * Consumed - OK - run runSeveral again
--- * Consumed - Fail - throw with the Error message
--- * Empty - OK - apply error
--- * Empty - Fail - return an empty list
---
--- The return type is a list of Eithers. The init of the list is all
--- Left with the return value. The last of the list is a Right with
--- the final error message.
-runSeveral
-  :: Parser a
-  -> Ex.ExceptionalT Error (St.State State) [Either a Error]
-runSeveral p = do
-  st <- lift St.get
-  case runParser p st of
-    Consumed r -> case r of
-      Ok x st' _ -> do
-        lift $ St.put st'
-        rs <- runSeveral p
-        return $ (Left x):rs
-      Fail e -> Ex.throwT e
-    Empty r -> case r of
-      Ok _ _ _ ->
-        error $ "multiarg: runSeveral: many, some, "
-                ++ "several1, or several applied to parser that "
-                ++ "succeeds without consuming any input. "
-                ++ "Execution halted to prevent an infinite loop."
-      Fail e -> return [Right e]
-    
+several unwrapped =
+  let p = crashOnEmptyOk "several" unwrapped
+  in do
+    maybeA <- optional p
+    case maybeA of
+      Nothing -> return []
+      Just a -> do
+        rest <- several unwrapped
+        return $ a:rest
+  
 
 -- | Runs the parser given. If it fails without consuming any input,
 -- replaces all Expected messages with the one given. Otherwise,
@@ -673,27 +663,12 @@ matchApproxWord set = Parser $ \s@(State ps rm sp) ->
 -- @manyTill@ fails and consumes input. If that is a problem, wrap
 -- @end@ in @try@.
 manyTill :: Parser a -> Parser end -> Parser [a]
-manyTill = undefined
+manyTill p e = do
+  maybeEnd <- optional e
+  case maybeEnd of
+    Just _ -> return []
+    Nothing -> do
+      a <- crashOnEmptyOk "manyTill" p
+      rs <- manyTill p e
+      return $ a:rs
 
--- | Carries out the recursive parse for manyTill.
---
--- First runs the end parser. Takes the following actions:
---
--- * Consumed-OK - Done, returns error from the successful end parse.
--- * Consumed-Fail - Throw the error
--- * Empty-OK - Done, return error from successful end parse.
--- * Empty-Fail - runs the inner parser
---
--- If necessary runs the inner parser. Takes the following actions:
---
--- * Consumed-OK - OK, add this result to the list and run the end
--- parser again
---
--- * Consumed-Fail - throw the error
--- * Empty-OK - Apply error
--- * Empty-Fail - throw the error
-runManyTill
-  :: Parser a
-  -> Parser end
-  -> Ex.ExceptionalT Error (St.State State) [Either a Error]
-runManyTill p e = do
