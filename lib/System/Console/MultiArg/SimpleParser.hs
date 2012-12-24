@@ -100,11 +100,8 @@ parseIntersperse optParser p =
   in catMaybes <$> P.manyTill parser P.end
 
 -- | Provides information on each mode that you wish to parse.
-data Mode iden result = forall b. Mode
-  { mId :: iden
-    -- ^ How to identify this Mode.
-
-  , mName :: String
+data Mode result = forall b. Mode
+  { mName :: String
     -- ^ How the user identifies the mode on the command line. For
     -- example, with @git@ this would be @commit@, @pull@, etc.
 
@@ -123,8 +120,12 @@ data Mode iden result = forall b. Mode
   
   }
 
-processModeArgs :: Mode iden result -> P.Parser result
-processModeArgs (Mode _ _ i os pa p) = do
+instance Functor Mode where
+  fmap f (Mode nm i os pa p) =
+    Mode nm i os pa (f . p)
+
+processModeArgs :: Mode result -> P.Parser result
+processModeArgs (Mode _ i os pa p) = do
   let prsr = case i of
         Intersperse -> parseIntersperse
         StopOptions -> parseStopOpts
@@ -148,7 +149,7 @@ modes
      -- If you indicate a failure here, parsing of the command line
      -- will stop and this error message will be returned.
 
-  -> (b -> Either (String -> c) [Mode iden result])
+  -> (b -> Either (String -> c) [Mode result])
      -- ^ This function determines whether modes will be parsed and,
      -- if so, which ones. The function is applied to the result of
      -- the pre-processing of the global options, so which modes are
@@ -162,7 +163,7 @@ modes
   -> [String]
      -- ^ The command line to parse (presumably from 'getArgs')
 
-  -> Ex.Exceptional P.Error (b, Either [c] (iden, result))
+  -> Ex.Exceptional P.Error (b, Either [c] result)
      -- ^ Returns an Exception if an error was encountered when
      -- parsing the command line (including if the global options
      -- procesor returned an Exception.) Otherwise, returns a
@@ -170,9 +171,7 @@ modes
      -- global options processor. The second element of the pair is an
      -- Either. It is Left if no modes were parsed, with a list of the
      -- positional arguments. It is a Right if modes were parsed, with
-     -- a pair, where the first element identifies the mode parsed,
-     -- and the second element is the result of parsing the arguments
-     -- to the mode.
+     -- the result of parsing the arguments to the mode.
 
 modes globals lsToB getCmds ss = P.parse ss $ do
   gs <- P.manyTill (C.parseOption globals) endOrNonOpt
@@ -189,7 +188,7 @@ modes globals lsToB getCmds ss = P.parse ss $ do
       (_, w) <- P.matchApproxWord cmdWords
       let cmd = fromJust . find (\c -> mName c == w) $ cds
       r <- processModeArgs cmd
-      return (b, Right (mId cmd, r))
+      return (b, Right r)
 
 -- | Looks at the next word. Succeeds if it is a non-option, or if we
 -- are at the end of input. Fails otherwise.
