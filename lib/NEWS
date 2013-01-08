@@ -38,7 +38,7 @@ Changes since release 0.4.0.0:
 
 * Add ThreeArg and ChoiceArg ArgSpecs
 
-Release 0.8.0.0, [DATE]
+Release 0.8.0.0, January 8, 2013
 Changes since release 0.6.0.0:
 
 * Added a multi-mode parser to SimpleParser
