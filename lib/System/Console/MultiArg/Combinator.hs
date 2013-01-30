@@ -315,7 +315,9 @@ matchAbbrev ls s =
         (_, a):[] -> return a
         _ -> Nothing
 
--- | Formats error messages for nice display.
+-- | Formats error messages for nice display. Returns a multi-line
+-- string (there is no need to append a newline to the end of the
+-- string returned).
 formatError
   :: String
   -- ^ Pass the name of your program here. Displayed at the beginning

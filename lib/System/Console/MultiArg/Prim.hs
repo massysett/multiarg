@@ -128,6 +128,8 @@ type InputDesc = String
 data Description = Unknown | General String | Expected String
   deriving (Eq, Show, Ord)
 
+-- | Error messages. To format error messages for nice display, see
+-- 'System.Console.MultiArg.Combinator.formatError'.
 data Error = Error InputDesc [Description]
   deriving (Eq, Show, Ord)
 

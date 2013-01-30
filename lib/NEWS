@@ -64,3 +64,15 @@ Changes since release 0.6.0.0:
   System.Console.MultiArg. So fixing that is just a matter of changing
   imports in client code. Other breakage will be limited to error
   handling code.
+
+Release 0.10.0.0, DATE
+Changes since release 0.8.0.0:
+
+* Added the simpleWithHelp and modesWithHelp pre-built parsers to
+  the SimpleParser module
+
+* Added the mHelp field to the Mode record to allow for the
+  modesWithHelp pre-built parser
+
+* Changed the modes function in the SimpleParser module. The new
+  function has a simpler type. It will however break old code.
