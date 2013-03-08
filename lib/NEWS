@@ -65,7 +65,7 @@ Changes since release 0.6.0.0:
   imports in client code. Other breakage will be limited to error
   handling code.
 
-Release 0.10.0.0, DATE
+Release 0.10.0.0, March 7, 2013
 Changes since release 0.8.0.0:
 
 * Added the simpleWithHelp and modesWithHelp pre-built parsers to
