@@ -8,8 +8,10 @@ module System.Console.MultiArg.Combinator (
 
   -- * Combined long and short option parser
   OptSpec(OptSpec, longOpts, shortOpts, argSpec),
-  ArgSpec(NoArg, OptionalArg, OneArg, TwoArg,
-          ThreeArg, VariableArg, ChoiceArg),
+  OptArgError(..),
+  reader,
+  optReader,
+  ArgSpec(..),
   parseOption,
 
   -- * Formatting errors
@@ -22,6 +24,7 @@ import qualified Data.Set as Set
 import Control.Applicative
        ((<$>), (<*>), optional, (<$), (*>), (<|>), many)
 
+import qualified Control.Monad.Exception.Synchronous as Ex
 import System.Console.MultiArg.Prim
   ( Parser, try, approxLongOpt,
     nextWord, pendingShortOptArg, nonOptionPosArg,
@@ -84,6 +87,69 @@ data OptSpec a = OptSpec {
 instance Functor OptSpec where
   fmap f (OptSpec ls ss as) = OptSpec ls ss (fmap f as)
 
+-- | Reads in values that are members of Read. Provides a generic
+-- error message if the read fails.
+reader :: Read a => String -> Ex.Exceptional OptArgError a
+reader s = case reads s of
+  (a, ""):[] -> return a
+  _ -> Ex.throw . ErrMsg $ "could not parse option argument"
+
+-- | Reads in values that are members of Read, but the value does not
+-- have to appear on the command line. Provides a generic error
+-- message if the read fails. If the argument is Nothing, returns
+-- Nothing.
+optReader
+  :: Read a
+  => Maybe String
+  -> Ex.Exceptional OptArgError (Maybe a)
+optReader ms = case ms of
+  Nothing -> return Nothing
+  Just s -> case reads s of
+    (a, ""):[] -> return (Just a)
+    _ -> Ex.throw . ErrMsg $ "could not parse option argument"
+
+-- | Indicates errors when parsing options to arguments.
+data OptArgError
+  = NoMsg
+  -- ^ No error message accompanies this failure. multiarg will create
+  -- a generic error message for you.
+
+  | ErrMsg String
+  -- ^ Parsing the argument failed with this error message. An example
+  -- might be @option argument is not an integer@ or @option argument
+  -- is too large@. The text of the options the user provided is
+  -- automatically prepended to the error message, so do not replicate
+  -- this in your message.
+
+  deriving (Eq, Show)
+
+-- | Create an error message from an OptArgError.
+errorMsg
+  :: Either LongOpt ShortOpt
+  -- ^ The option with the faulty argument
+
+  -> [String]
+  -- ^ The faulty command line arguments
+
+  -> OptArgError
+  -> String
+errorMsg badOpt ss err = arg ++ opt ++ msg
+  where
+    arg = let aw = if length ss > 1 then "arguments " else "argument "
+              ws = concat . intersperse " " . map quote $ ss
+              quote s = "\"" ++ s ++ "\""
+          in aw ++ ws
+    opt = " to option " ++ optDesc
+    optDesc = case badOpt of
+      Left lo -> "--" ++ unLongOpt lo
+      Right so -> "-" ++ [unShortOpt so]
+    msg = "invalid" ++ detail
+    detail = case err of
+      NoMsg -> ""
+      ErrMsg s -> ": " ++ s
+
+
+
 -- | Specifies how many arguments each option takes. As with
 -- 'System.Console.GetOpt.ArgDescr', there are (at least) two ways to
 -- use this type. You can simply represent each possible option using
@@ -91,6 +157,12 @@ instance Functor OptSpec where
 -- have each ArgSpec yield a function that transforms a record. For an
 -- example that uses an algebraic data type, see
 -- "System.Console.MultiArg.SampleParser".
+--
+-- Some of these value constructors have names ending in @E@. Use
+-- these constructors when you want to parse option arguments that may
+-- fail to parse--for example, you want to parse an Int. The function
+-- passed as an argument to the value constructor indicates failure by
+-- returing an 'Exception'.
 data ArgSpec a =
   NoArg a
   -- ^ This option takes no arguments
@@ -143,6 +215,26 @@ data ArgSpec a =
     -- option to GNU grep, which requires the user to supply one of
     -- three arguments: @always@, @never@, or @auto@.
 
+  | OptionalArgE (Maybe String -> Ex.Exceptional OptArgError a)
+    -- ^ This option takes an optional argument, like
+    -- 'OptionalArg'. Parsing of the optional argument might fail.
+
+  | OneArgE (String -> Ex.Exceptional OptArgError a)
+    -- ^ This option takes a single argument, like 'OneArg'. Parsing
+    -- of the argument might fail.
+
+  | TwoArgE (String -> String -> Ex.Exceptional OptArgError a)
+    -- ^ This option takes two arguments, like 'TwoArg'. Parsing of
+    -- the arguments might fail.
+
+  | ThreeArgE (String -> String -> String -> Ex.Exceptional OptArgError a)
+    -- ^ This option takes three arguments, like 'ThreeArg'. Parsing
+    -- of the arguments might fail.
+
+  | VariableArgE ([String] -> Ex.Exceptional OptArgError a)
+    -- ^ This option takes a variable number of arguments, like
+    -- 'VariableArg'. Parsing of the arguments might fail.
+
 
 instance Functor ArgSpec where
   fmap f a = case a of
@@ -159,6 +251,20 @@ instance Functor ArgSpec where
       VariableArg $ \ls -> f (g ls)
     ChoiceArg gs ->
       ChoiceArg . map (\(s, r) -> (s, f r)) $ gs
+
+    OptionalArgE g -> OptionalArgE $ \ms -> fmap f (g ms)
+
+    OneArgE g ->
+      OneArgE $ \s1 -> fmap f (g s1)
+
+    TwoArgE g ->
+      TwoArgE $ \s1 s2 -> fmap f (g s1 s2)
+
+    ThreeArgE g ->
+      ThreeArgE $ \s1 s2 s3 -> fmap f (g s1 s2 s3)
+
+    VariableArgE g ->
+      VariableArgE $ \ls -> fmap f (g ls)
 
 
 -- | Parses a single command line option. Examines all the options
@@ -229,6 +335,40 @@ longOpt set mp = do
                    ++ (concat . intersperse ", " . map fst $ ls)
         Just g -> return g
 
+    OptionalArgE f -> case maybeArg of
+      Nothing -> Ex.switch (fail . errorMsg (Left lo) []) return
+                 $ f Nothing
+      Just s -> Ex.switch (fail . errorMsg (Left lo) [s]) return
+                $ f (Just s)
+
+
+    OneArgE f -> maybeNextArg >>= g
+      where
+        g a = Ex.switch (fail . errorMsg (Left lo) [a]) return
+              $ f a
+
+    TwoArgE f -> do
+      a1 <- maybeNextArg
+      a2 <- nextWord
+      Ex.switch (fail . errorMsg (Left lo) [a1, a2]) return
+        $ f a1 a2
+
+    ThreeArgE f -> do
+      a1 <- maybeNextArg
+      a2 <- nextWord
+      a3 <- nextWord
+      Ex.switch (fail . errorMsg (Left lo) [a1, a2, a3]) return
+        $ f a1 a2 a3
+
+    VariableArgE f -> do
+      as <- many nonOptionPosArg
+      let args = case maybeArg of
+            Nothing -> as
+            Just a -> a:as
+      Ex.switch (fail . errorMsg (Left lo) args) return
+        $ f args
+
+
 shortOpt :: OptSpec a -> Maybe (Parser a)
 shortOpt o = mconcat parsers where
   parsers = map mkParser . shortOpts $ o
@@ -242,6 +382,11 @@ shortOpt o = mconcat parsers where
       ThreeArg f -> shortThreeArg f
       VariableArg f -> shortVariableArg f
       ChoiceArg ls -> shortChoiceArg opt ls
+      OptionalArgE f -> shortOptionalArgE opt f
+      OneArgE f -> shortOneArgE opt f
+      TwoArgE f -> shortTwoArgE opt f
+      ThreeArgE f -> shortThreeArgE opt f
+      VariableArgE f -> shortVariableArgE opt f
 
 -- | Parses a short option without an argument, either pending or
 -- non-pending. Fails with a single error message rather than two.
@@ -264,9 +409,29 @@ shortVariableArg f = do
     Just arg1 -> return (f (arg1:args))
 
 
+shortVariableArgE
+  :: ShortOpt
+  -> ([String] -> Ex.Exceptional OptArgError a)
+  -> Parser a
+shortVariableArgE so f = do
+  maybeSameWordArg <- optional pendingShortOptArg
+  args <- many nonOptionPosArg
+  let as = case maybeSameWordArg of
+        Nothing -> args
+        Just a -> a:args
+  Ex.switch (fail . errorMsg (Right so) as) return $ f as
+
+
 shortOneArg :: (String -> a) -> Parser a
 shortOneArg f = f <$> firstShortArg
 
+shortOneArgE
+  :: ShortOpt
+  -> (String -> Ex.Exceptional OptArgError a)
+  -> Parser a
+shortOneArgE so f = do
+  a <- firstShortArg
+  Ex.switch (fail . errorMsg (Right so) [a]) return $ f a
 
 firstShortArg :: Parser String
 firstShortArg =
@@ -287,8 +452,29 @@ shortChoiceArg opt ls =
 shortTwoArg :: (String -> String -> a) -> Parser a
 shortTwoArg f = f <$> firstShortArg <*> nextWord
 
+shortTwoArgE
+  :: ShortOpt
+  -> (String -> String -> Ex.Exceptional OptArgError a)
+  -> Parser a
+shortTwoArgE so f = do
+  a1 <- firstShortArg
+  a2 <- nextWord
+  Ex.switch (fail . errorMsg (Right so) [a1, a2]) return
+    $ f a1 a2
+
 shortThreeArg :: (String -> String -> String -> a) -> Parser a
 shortThreeArg f = f <$> firstShortArg <*> nextWord <*> nextWord
+
+shortThreeArgE
+  :: ShortOpt
+  -> (String -> String -> String -> Ex.Exceptional OptArgError a)
+  -> Parser a
+shortThreeArgE so f = do
+  a1 <- firstShortArg
+  a2 <- nextWord
+  a3 <- nextWord
+  Ex.switch (fail . errorMsg (Right so) [a1, a2, a3]) return
+    $ f a1 a2 a3
 
 shortOptionalArg :: (Maybe String -> a) -> Parser a
 shortOptionalArg f = do
@@ -300,6 +486,25 @@ shortOptionalArg f = do
         Nothing -> return (f Nothing)
         Just a -> return (f (Just a))
     Just a -> return (f (Just a))
+
+shortOptionalArgE
+  :: ShortOpt
+  -> (Maybe String -> Ex.Exceptional OptArgError a)
+  -> Parser a
+shortOptionalArgE so f = do
+  maybeSameWordArg <- optional pendingShortOptArg
+  case maybeSameWordArg of
+    Nothing -> do
+      maybeArg <- optional nonOptionPosArg
+      case maybeArg of
+        Nothing -> Ex.switch (fail . errorMsg (Right so) []) return
+                   $ f Nothing
+        Just a -> Ex.switch (fail . errorMsg (Right so) [a]) return
+                  $ f (Just a)
+    Just a -> Ex.switch (fail . errorMsg (Right so) [a]) return
+              $ f (Just a)
+
+
 
 -- | Finds the unambiguous short match for a string, if there is
 -- one. Returns a string describing the error condition if there is
