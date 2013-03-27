@@ -143,7 +143,7 @@ errorMsg badOpt ss err = arg ++ opt ++ msg
     optDesc = case badOpt of
       Left lo -> "--" ++ unLongOpt lo
       Right so -> "-" ++ [unShortOpt so]
-    msg = "invalid" ++ detail
+    msg = " invalid" ++ detail
     detail = case err of
       NoMsg -> ""
       ErrorMsg s -> ": " ++ s
@@ -544,6 +544,8 @@ formatError p (Error loc ls) =
     gen = unlines . mapMaybe toGeneral $ ls
     genError = if null gen
                then ""
-               else "Other errors:\n" ++ gen
+               else let sep = if null expError
+                              then "" else "\n"
+                        in sep ++ gen
     unk = if any (== Unknown) ls then "Unknown error\n" else ""
     

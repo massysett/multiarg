@@ -184,10 +184,19 @@ simpleWithHelp h i os p = do
   rs <- case exResult of
     Ex.Exception e -> do
       IO.hPutStr IO.stderr (C.formatError pn e)
+      enterForHelp pn
       exitFailure
     Ex.Success g -> return g
   extractOpts pn h rs
 
+-- | Display a simple enter-h-for-help message.
+enterForHelp
+  :: String
+  -- ^ Program name
+  -> IO ()
+enterForHelp pn =
+  let s = "\nEnter \"" ++ pn ++ " -h\" for help.\n"
+  in IO.hPutStr IO.stderr s
 
 --
 -- Mode parsing
@@ -363,6 +372,7 @@ modesWithHelp hlp glbls lsToEi = do
   case modesWithHelpPure pn hlp glbls lsToEi as of
     Ex.Exception e -> do
       IO.hPutStr IO.stderr $ C.formatError pn e
+      enterForHelp pn
       exitFailure
     Ex.Success g -> case g of
       NeedsHelp h -> putStr h >> exitSuccess
