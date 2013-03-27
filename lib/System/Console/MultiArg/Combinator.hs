@@ -92,7 +92,7 @@ instance Functor OptSpec where
 reader :: Read a => String -> Ex.Exceptional OptArgError a
 reader s = case reads s of
   (a, ""):[] -> return a
-  _ -> Ex.throw . ErrMsg $ "could not parse option argument"
+  _ -> Ex.throw . ErrorMsg $ "could not parse option argument"
 
 -- | Reads in values that are members of Read, but the value does not
 -- have to appear on the command line. Provides a generic error
@@ -106,7 +106,7 @@ optReader ms = case ms of
   Nothing -> return Nothing
   Just s -> case reads s of
     (a, ""):[] -> return (Just a)
-    _ -> Ex.throw . ErrMsg $ "could not parse option argument"
+    _ -> Ex.throw . ErrorMsg $ "could not parse option argument"
 
 -- | Indicates errors when parsing options to arguments.
 data OptArgError
@@ -114,7 +114,7 @@ data OptArgError
   -- ^ No error message accompanies this failure. multiarg will create
   -- a generic error message for you.
 
-  | ErrMsg String
+  | ErrorMsg String
   -- ^ Parsing the argument failed with this error message. An example
   -- might be @option argument is not an integer@ or @option argument
   -- is too large@. The text of the options the user provided is
@@ -146,7 +146,7 @@ errorMsg badOpt ss err = arg ++ opt ++ msg
     msg = "invalid" ++ detail
     detail = case err of
       NoMsg -> ""
-      ErrMsg s -> ": " ++ s
+      ErrorMsg s -> ": " ++ s
 
 
 
