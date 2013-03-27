@@ -76,3 +76,12 @@ Changes since release 0.8.0.0:
 
 * Changed the modes function in the SimpleParser module. The new
   function has a simpler type. It will however break old code.
+
+Release 0.12.0.0, March 27, 2013
+Changes since release 0.10.0.0:
+
+* Added value constructors to the Combinator module to allow for
+  easier parsing of option arguments that can fail to parse
+
+* Added automatic "Enter -h for help" to simpleWithHelp and
+  modesWithHelp functions in SimpleParser
