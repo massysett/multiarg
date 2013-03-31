@@ -1,42 +1,31 @@
-Release 0.2.0.0, April 2, 2012
-Changes since release 0.1.0.0:
+Release 0.12.0.2, March 31, 2013
+Changes since release 0.12.0.0:
 
-* Henceforth all public releases will have only even numbers in their
-  release numbers (e.g. 0.2.0.0, 0.2.0.2, etc.) If a release has any
-  odd numbers in its version, it is a development release.
+* Reorder NEWS so recent versions are on top
 
-* QuickCheck tests are removed. Eventually I will reimplement these in
-  a separate library package.
+* Fix bug in Prim.stopper that prevented most stoppers from being
+  recognized
 
-* Added Feed function to System.Console.MultiArg.Prim; this allows you
-  to carry out stateful parses without using a user state. Sometimes
-  this aids in composability--for instance, I use it when combining
-  parsers from different parts of the same program.
+Release 0.12.0.0, March 27, 2013
+Changes since release 0.10.0.0:
 
-Release 0.4.0.0, June 30, 2012
-Changes since release 0.2.0.0:
+* Added value constructors to the Combinator module to allow for
+  easier parsing of option arguments that can fail to parse
 
-* Code written for version 0.2.* will not work at all with this
-  version.
+* Added automatic "Enter -h for help" to simpleWithHelp and
+  modesWithHelp functions in SimpleParser
 
-* Removed dependency on text library. multiarg now only deals with
-  plain Strings. The memory usage concerns that originally led me to
-  use Texts were unfounded.
+Release 0.10.0.0, March 7, 2013
+Changes since release 0.8.0.0:
 
-* Dramatically simplified code for primitive parsers. No more custom
-  error types, monad transformers, or user states. This sort of
-  functionality is easily implemented in the parsers that you can
-  build; baking it into the primitive parsers makes things needlessly
-  complicated.
+* Added the simpleWithHelp and modesWithHelp pre-built parsers to
+  the SimpleParser module
 
-* Reworked included combinators in Combinator module.
+* Added the mHelp field to the Mode record to allow for the
+  modesWithHelp pre-built parser
 
-Release 0.6.0.0, September 28, 2012
-Changes since release 0.4.0.0:
-
-* Add Functor instances for OptSpec, ArgSpec
-
-* Add ThreeArg and ChoiceArg ArgSpecs
+* Changed the modes function in the SimpleParser module. The new
+  function has a simpler type. It will however break old code.
 
 Release 0.8.0.0, January 8, 2013
 Changes since release 0.6.0.0:
@@ -65,23 +54,42 @@ Changes since release 0.6.0.0:
   imports in client code. Other breakage will be limited to error
   handling code.
 
-Release 0.10.0.0, March 7, 2013
-Changes since release 0.8.0.0:
+Release 0.6.0.0, September 28, 2012
+Changes since release 0.4.0.0:
 
-* Added the simpleWithHelp and modesWithHelp pre-built parsers to
-  the SimpleParser module
+* Add Functor instances for OptSpec, ArgSpec
 
-* Added the mHelp field to the Mode record to allow for the
-  modesWithHelp pre-built parser
+* Add ThreeArg and ChoiceArg ArgSpecs
 
-* Changed the modes function in the SimpleParser module. The new
-  function has a simpler type. It will however break old code.
+Release 0.4.0.0, June 30, 2012
+Changes since release 0.2.0.0:
 
-Release 0.12.0.0, March 27, 2013
-Changes since release 0.10.0.0:
+* Code written for version 0.2.* will not work at all with this
+  version.
 
-* Added value constructors to the Combinator module to allow for
-  easier parsing of option arguments that can fail to parse
+* Removed dependency on text library. multiarg now only deals with
+  plain Strings. The memory usage concerns that originally led me to
+  use Texts were unfounded.
 
-* Added automatic "Enter -h for help" to simpleWithHelp and
-  modesWithHelp functions in SimpleParser
+* Dramatically simplified code for primitive parsers. No more custom
+  error types, monad transformers, or user states. This sort of
+  functionality is easily implemented in the parsers that you can
+  build; baking it into the primitive parsers makes things needlessly
+  complicated.
+
+* Reworked included combinators in Combinator module.
+
+Release 0.2.0.0, April 2, 2012
+Changes since release 0.1.0.0:
+
+* Henceforth all public releases will have only even numbers in their
+  release numbers (e.g. 0.2.0.0, 0.2.0.2, etc.) If a release has any
+  odd numbers in its version, it is a development release.
+
+* QuickCheck tests are removed. Eventually I will reimplement these in
+  a separate library package.
+
+* Added Feed function to System.Console.MultiArg.Prim; this allows you
+  to carry out stateful parses without using a user state. Sometimes
+  this aids in composability--for instance, I use it when combining
+  parsers from different parts of the same program.

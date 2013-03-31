@@ -539,7 +539,7 @@ stopper = Parser $ \s@(State ps rm sp) ->
       gd rm'' = Consumed (Ok () (State ps rm'' True) err)
   in maybe ert gd $ do
      guard $ not sp
-     guard . not . null $ ps
+     guard . null $ ps
      (x, rm') <- nextW rm
      guard $ x == "--"
      return rm'
