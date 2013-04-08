@@ -10,9 +10,6 @@ module System.Console.MultiArg.Option (
   makeLongOpt )
   where
 
-import Data.List (find)
-import Data.Maybe (isNothing)
-
 -- | Short options. Options that are preceded with a single dash on
 -- the command line and consist of a single letter. That single letter
 -- cannot be a dash. Any other Unicode character is good (including
