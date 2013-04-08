@@ -29,8 +29,7 @@ makeShortOpt c = case c of
 -- | Long options. Options that are preceded with two dashes on the
 -- command line and typically consist of an entire mnemonic word, such
 -- as @lines@. However, anything that is at least one letter long is
--- fine for a long option name. The name must not have a dash as
--- either the first or second character and it must be at least one
+-- fine for a long option name. The name must be at least one
 -- character long. It cannot have an equal sign anywhere in its
 -- name. Otherwise any Unicode character is good (including
 -- pathological ones like newlines).
@@ -46,12 +45,4 @@ makeLongOpt t =
 isValidLongOptText :: String -> Bool
 isValidLongOptText s = case s of
   [] -> False
-  x:xs ->
-    if x `elem` ['-', '=']
-    then False
-    else case xs of
-      [] -> True
-      y:_ ->
-        if y `elem` ['-', '=']
-        then False
-        else isNothing . find (== '=') $ xs
+  xs -> not $ '=' `elem` xs
