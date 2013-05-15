@@ -8,7 +8,7 @@ module System.Console.MultiArg.Combinator (
 
   -- * Combined long and short option parser
   OptSpec(OptSpec, longOpts, shortOpts, argSpec),
-  OptArgError(..),
+  InputError(..),
   reader,
   optReader,
   ArgSpec(..),
@@ -89,7 +89,7 @@ instance Functor OptSpec where
 
 -- | Reads in values that are members of Read. Provides a generic
 -- error message if the read fails.
-reader :: Read a => String -> Ex.Exceptional OptArgError a
+reader :: Read a => String -> Ex.Exceptional InputError a
 reader s = case reads s of
   (a, ""):[] -> return a
   _ -> Ex.throw . ErrorMsg $ "could not parse option argument"
@@ -101,7 +101,7 @@ reader s = case reads s of
 optReader
   :: Read a
   => Maybe String
-  -> Ex.Exceptional OptArgError (Maybe a)
+  -> Ex.Exceptional InputError (Maybe a)
 optReader ms = case ms of
   Nothing -> return Nothing
   Just s -> case reads s of
@@ -109,7 +109,7 @@ optReader ms = case ms of
     _ -> Ex.throw . ErrorMsg $ "could not parse option argument"
 
 -- | Indicates errors when parsing options to arguments.
-data OptArgError
+data InputError
   = NoMsg
   -- ^ No error message accompanies this failure. multiarg will create
   -- a generic error message for you.
@@ -123,7 +123,7 @@ data OptArgError
 
   deriving (Eq, Show)
 
--- | Create an error message from an OptArgError.
+-- | Create an error message from an InputError.
 errorMsg
   :: Either LongOpt ShortOpt
   -- ^ The option with the faulty argument
@@ -131,7 +131,7 @@ errorMsg
   -> [String]
   -- ^ The faulty command line arguments
 
-  -> OptArgError
+  -> InputError
   -> String
 errorMsg badOpt ss err = arg ++ opt ++ msg
   where
@@ -215,23 +215,23 @@ data ArgSpec a =
     -- option to GNU grep, which requires the user to supply one of
     -- three arguments: @always@, @never@, or @auto@.
 
-  | OptionalArgE (Maybe String -> Ex.Exceptional OptArgError a)
+  | OptionalArgE (Maybe String -> Ex.Exceptional InputError a)
     -- ^ This option takes an optional argument, like
     -- 'OptionalArg'. Parsing of the optional argument might fail.
 
-  | OneArgE (String -> Ex.Exceptional OptArgError a)
+  | OneArgE (String -> Ex.Exceptional InputError a)
     -- ^ This option takes a single argument, like 'OneArg'. Parsing
     -- of the argument might fail.
 
-  | TwoArgE (String -> String -> Ex.Exceptional OptArgError a)
+  | TwoArgE (String -> String -> Ex.Exceptional InputError a)
     -- ^ This option takes two arguments, like 'TwoArg'. Parsing of
     -- the arguments might fail.
 
-  | ThreeArgE (String -> String -> String -> Ex.Exceptional OptArgError a)
+  | ThreeArgE (String -> String -> String -> Ex.Exceptional InputError a)
     -- ^ This option takes three arguments, like 'ThreeArg'. Parsing
     -- of the arguments might fail.
 
-  | VariableArgE ([String] -> Ex.Exceptional OptArgError a)
+  | VariableArgE ([String] -> Ex.Exceptional InputError a)
     -- ^ This option takes a variable number of arguments, like
     -- 'VariableArg'. Parsing of the arguments might fail.
 
@@ -411,7 +411,7 @@ shortVariableArg f = do
 
 shortVariableArgE
   :: ShortOpt
-  -> ([String] -> Ex.Exceptional OptArgError a)
+  -> ([String] -> Ex.Exceptional InputError a)
   -> Parser a
 shortVariableArgE so f = do
   maybeSameWordArg <- optional pendingShortOptArg
@@ -427,7 +427,7 @@ shortOneArg f = f <$> firstShortArg
 
 shortOneArgE
   :: ShortOpt
-  -> (String -> Ex.Exceptional OptArgError a)
+  -> (String -> Ex.Exceptional InputError a)
   -> Parser a
 shortOneArgE so f = do
   a <- firstShortArg
@@ -454,7 +454,7 @@ shortTwoArg f = f <$> firstShortArg <*> nextWord
 
 shortTwoArgE
   :: ShortOpt
-  -> (String -> String -> Ex.Exceptional OptArgError a)
+  -> (String -> String -> Ex.Exceptional InputError a)
   -> Parser a
 shortTwoArgE so f = do
   a1 <- firstShortArg
@@ -467,7 +467,7 @@ shortThreeArg f = f <$> firstShortArg <*> nextWord <*> nextWord
 
 shortThreeArgE
   :: ShortOpt
-  -> (String -> String -> String -> Ex.Exceptional OptArgError a)
+  -> (String -> String -> String -> Ex.Exceptional InputError a)
   -> Parser a
 shortThreeArgE so f = do
   a1 <- firstShortArg
@@ -489,7 +489,7 @@ shortOptionalArg f = do
 
 shortOptionalArgE
   :: ShortOpt
-  -> (Maybe String -> Ex.Exceptional OptArgError a)
+  -> (Maybe String -> Ex.Exceptional InputError a)
   -> Parser a
 shortOptionalArgE so f = do
   maybeSameWordArg <- optional pendingShortOptArg

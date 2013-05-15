@@ -62,10 +62,12 @@ simple ::
   -> [C.OptSpec a]
   -- ^ All possible options
 
-  -> (String -> a)
+  -> (String -> Ex.Exceptional C.InputError a)
   -- ^ How to handle positional arguments. This function is applied to
   -- the appropriate string every time the parser encounters a
-  -- positional argument.
+  -- positional argument. This function shall return an Exception if
+  -- something was wrong with the argument, or a Success if it is
+  -- okay.
 
   -> [String]
   -- ^ The command line to parse. This function correctly handles
@@ -90,20 +92,39 @@ parseOptsNoIntersperse p = P.manyTill p e where
   next = (() <$ P.nonOptionPosArg) <|> P.stopper
 
 
-parseStopOpts :: P.Parser a -> (String -> a) -> P.Parser [a]
+parsePosArg
+  :: (String -> Ex.Exceptional C.InputError a)
+  -> P.Parser a
+parsePosArg p = do
+  a <- P.nextWord
+  case p a of
+    Ex.Exception e ->
+      let msg = "invalid positional argument: \"" ++ a ++ "\""
+      in case e of
+          C.NoMsg -> fail msg
+          C.ErrorMsg s -> fail $ msg ++ ": " ++ s
+    Ex.Success g -> return g
+
+parseStopOpts
+  :: P.Parser a
+  -> (String -> Ex.Exceptional C.InputError a)
+  -> P.Parser [a]
 parseStopOpts optParser p =
-  (\opts args -> opts ++ map p args)
+  (++)
   <$> parseOptsNoIntersperse optParser
   <* optional P.stopper
-  <*> many P.nextWord
+  <*> many (parsePosArg p)
 
 
 -- | @parseIntersperse o p@ parses options and positional arguments,
 -- where o is a parser that parses options, and p is a function that,
 -- when applied to a string, returns the appropriate type.
-parseIntersperse :: P.Parser a -> (String -> a) -> P.Parser [a]
+parseIntersperse
+  :: P.Parser a
+  -> (String -> Ex.Exceptional C.InputError a)
+  -> P.Parser [a]
 parseIntersperse optParser p =
-  let pa = (Just . p) <$> P.nonOptionPosArg
+  let pa = Just <$> parsePosArg p
       po = Just <$> optParser
       ps = Nothing <$ P.stopper
       parser = po <|> ps <|> pa
@@ -166,10 +187,12 @@ simpleWithHelp
   -- ^ All possible options. Do not add a @-h@ or @--help@ option;
   -- these are added for you.
 
-  -> (String -> a)
+  -> (String -> Ex.Exceptional C.InputError a)
   -- ^ How to handle positional arguments. This function is applied to
   -- the appropriate string every time the parser encounters a
-  -- positional argument.
+  -- positional argument. This function shall return an Exception if
+  -- something was wrong with the argument, or a Success if it is
+  -- okay.
 
   -> IO [a]
   -- ^ If help is requested, the program will print it and exit
@@ -180,7 +203,7 @@ simpleWithHelp h i os p = do
   let os' = addHelpOpt os
   as <- GetArgs.getArgs
   pn <- GetArgs.getProgName
-  let exResult = simple i os' (fmap OtherArg p) as
+  let exResult = simple i os' (fmap (fmap OtherArg) p) as
   rs <- case exResult of
     Ex.Exception e -> do
       IO.hPutStr IO.stderr (C.formatError pn e)
@@ -215,8 +238,10 @@ data Mode result = forall b. Mode
   , mOpts :: [C.OptSpec b]
     -- ^ Options for this mode
 
-  , mPosArgs :: String -> b
-    -- ^ How to parse positional arguments for this mode
+  , mPosArgs :: String -> Ex.Exceptional C.InputError b
+    -- ^ How to parse positional arguments for this mode. This
+    -- function shall return an Exception if something was wrong with
+    -- the argument, or a Success if it is okay.
 
   , mProcess :: [b] -> result
     -- ^ Processes the options after they have been parsed.
@@ -285,7 +310,7 @@ processModeWithHelp pn (Mode _ i os pa p h) = do
         Intersperse -> parseIntersperse
         StopOptions -> parseStopOpts
       os' = addHelpOpt os
-  rs <- prsr (C.parseOption os') (fmap OtherArg pa) <* P.end
+  rs <- prsr (C.parseOption os') (fmap (fmap OtherArg) pa) <* P.end
   let (needsHelp, parsedOpts) = partitionHelp rs
   return $ if needsHelp then NeedsHelp (h pn) else NoHelp $ p parsedOpts
 
