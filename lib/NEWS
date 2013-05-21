@@ -1,3 +1,11 @@
+Release 0.16.0.0, May 21, 2013
+Changes since release 0.14.0.0:
+
+* Rename OptArgError to InputError
+
+* Change functions in SimpleParser to allow for positional arguments
+  that might fail to be parsed
+
 Release 0.14.0.0, April 8, 2013
 Changes since release 0.12.0.2:
 
