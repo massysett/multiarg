@@ -155,15 +155,7 @@ partitionHelp xs = (not . null . fst $ r, snd r)
       OtherArg a -> Right a
     r = partitionEithers . map toEither $ xs
 
--- | Shows help and exits successfully if that was requested;
--- otherwise, returns the parsed command line options.
-extractOpts :: String -> (String -> String) -> [ArgWrap a] -> IO [a]
-extractOpts pn hlp opts =
-  let (doHelp, os) = partitionHelp opts
-  in if doHelp
-      then putStr (hlp pn) >> exitSuccess
-      else return os
-
+type ProgramName = String
 
 -- | Parses a simple command line (that is, one without modes) in the
 -- IO monad. Gets the arguments for you using 'getArgs'.  In addition
@@ -174,7 +166,7 @@ extractOpts pn hlp opts =
 -- addition, it will print a message to standard error if parsing the
 -- command line fails and then exit unsuccessfully.
 simpleWithHelp
-  :: (String -> String)
+  :: (ProgramName -> String)
   -- ^ Help message. Printed as is, so it can be one line or have many
   -- lines. It should however have a final end-of-line character. The
   -- function is applied to the name of the program (which is
@@ -199,27 +191,43 @@ simpleWithHelp
   -- successfully. If there was an error parsing the command line, the
   -- program will print an error message and exit
   -- unsuccessfully. Otherwise, the parsed arguments are returned.
-simpleWithHelp h i os p = do
-  let os' = addHelpOpt os
+simpleWithHelp h i os p =
+  simpleWithShortCircuit [("h", ["help"], showHelp)] i os p showErr
+  where
+    showHelp = putStr . h
+    showErr pn err = (C.formatError pn err)
+      ++ "\nEnter \"" ++ pn ++ " -h\" for help.\n"
+
+
+--
+-- simpleWithShortCircuit
+--
+
+simpleWithShortCircuit
+  :: [(String, [String], ProgramName -> IO void)]
+  -> Intersperse
+  -> [C.OptSpec a]
+  -> (String -> Ex.Exceptional C.InputError a)
+  -> (ProgramName -> P.Error -> String)
+  -> IO [a]
+simpleWithShortCircuit ss itr os posArg err = do
+  let allOpts = map makeShortCircuitOpt ss
+                ++ map (fmap Right) os
   as <- GetArgs.getArgs
   pn <- GetArgs.getProgName
-  let exResult = simple i os' (fmap (fmap OtherArg) p) as
-  rs <- case exResult of
+  let exParsed = simple itr allOpts (fmap (fmap Right) posArg) as
+  case exParsed of
     Ex.Exception e -> do
-      IO.hPutStr IO.stderr (C.formatError pn e)
-      enterForHelp pn
+      IO.hPutStr IO.stderr $ err pn e
       exitFailure
-    Ex.Success g -> return g
-  extractOpts pn h rs
+    Ex.Success gs -> case partitionEithers gs of
+      ([], xs) -> return xs
+      (x:_, _) -> do { _ <- x pn; exitSuccess }
 
--- | Display a simple enter-h-for-help message.
-enterForHelp
-  :: String
-  -- ^ Program name
-  -> IO ()
-enterForHelp pn =
-  let s = "\nEnter \"" ++ pn ++ " -h\" for help.\n"
-  in IO.hPutStr IO.stderr s
+makeShortCircuitOpt
+  :: (String, [String], String -> IO v)
+  -> C.OptSpec (Either (String -> IO v) a)
+makeShortCircuitOpt (ss, ls, act) = C.OptSpec ls ss (C.NoArg (Left act))
 
 --
 -- Mode parsing
@@ -405,9 +413,72 @@ modesWithHelp hlp glbls lsToEi = do
         NeedsHelp h -> putStr h >> exitSuccess
         NoHelp g3 -> return g3
 
-
+enterForHelp = undefined
 -- | Looks at the next word. Succeeds if it is a non-option, or if we
 -- are at the end of input. Fails otherwise.
 endOrNonOpt :: P.Parser ()
 endOrNonOpt = (P.lookAhead P.nonOptionPosArg >> return ())
               <|> P.end
+
+--
+--
+--
+
+data Opts a = forall v. Opts
+  { oOptions :: [C.OptSpec a]
+  , oShortcuts :: [(String, [String], ProgramName -> IO v)]
+  }
+
+data OptsWithPosArgs a = OptsWithPosArgs
+  { opOpts :: Opts a
+  , opIntersperse :: Intersperse
+  , opPosArg :: String -> Ex.Exceptional C.InputError a
+  }
+
+data NMode r = forall a. NMode
+  { nmModeName :: String
+  , nmGetResult :: [a] -> r
+  , nmOpts :: OptsWithPosArgs a
+  }
+
+parseOpts :: Opts a -> P.Parser (Either (ProgramName -> IO v) [a])
+parseOpts = undefined
+
+simplePure
+  :: OptsWithPosArgs a
+  -> Ex.Exceptional P.Error (Either (ProgramName -> IO v) [a])
+simplePure = undefined
+
+modesPure
+  :: Opts a
+  -- ^ Global options
+  -> ([a] -> NMode r)
+  -- ^ Gets modes
+  -> Ex.Exceptional P.Error (Either (ProgramName -> IO v) r)
+modesPure = undefined
+
+simpleIO
+  :: (ProgramName -> P.Error -> IO void)
+  -> OptsWithPosArgs a
+  -> IO [a]
+simpleIO = undefined
+
+modesIO
+  :: (ProgramName -> P.Error -> IO void)
+  -> Opts a
+  -> ([a] -> NMode r)
+  -> IO r
+modesIO = undefined
+
+simpleHelp
+  :: (ProgramName -> String)
+  -> OptsWithPosArgs a
+  -> IO a
+simpleHelp = undefined
+
+simpleHelpVersion
+  :: (ProgramName -> String)
+  -> (ProgramName -> String)
+  -> OptsWithPosArgs a
+  -> IO a
+simpleHelpVersion = undefined
