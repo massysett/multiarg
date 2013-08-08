@@ -26,6 +26,7 @@ import qualified System.Console.MultiArg.Combinator as C
 import qualified System.Console.MultiArg.GetArgs as GetArgs
 import qualified System.Console.MultiArg.Prim as P
 import qualified Control.Monad.Exception.Synchronous as Ex
+import System.Environment (getArgs, getProgName)
 import System.Exit (exitFailure, exitSuccess)
 import qualified System.IO as IO
 import Control.Applicative ( many, (<|>), optional,
@@ -213,8 +214,8 @@ simpleWithShortCircuit
 simpleWithShortCircuit ss itr os posArg err = do
   let allOpts = map makeShortCircuitOpt ss
                 ++ map (fmap Right) os
-  as <- GetArgs.getArgs
-  pn <- GetArgs.getProgName
+  as <- getArgs
+  pn <- getProgName
   let exParsed = simple itr allOpts (fmap (fmap Right) posArg) as
   case exParsed of
     Ex.Exception e -> do
@@ -400,8 +401,8 @@ modesWithHelp
   -> IO result
 
 modesWithHelp hlp glbls lsToEi = do
-  as <- GetArgs.getArgs
-  pn <- GetArgs.getProgName
+  as <- getArgs
+  pn <- getProgName
   case modesWithHelpPure pn hlp glbls lsToEi as of
     Ex.Exception e -> do
       IO.hPutStr IO.stderr $ C.formatError pn e
@@ -426,7 +427,7 @@ endOrNonOpt = (P.lookAhead P.nonOptionPosArg >> return ())
 
 data Opts a = Opts
   { oOptions :: [C.OptSpec a]
-  , oShortcuts :: [(String, [String], ProgramName -> IO ())]
+  , oShortcuts :: [([String], String, C.ArgSpec (ProgramName -> IO ()))]
   }
 
 data OptsWithPosArgs a = OptsWithPosArgs
@@ -441,44 +442,95 @@ data NMode g r = forall a. NMode
   , nmOpts :: OptsWithPosArgs a
   }
 
-makeShortcutOpt
-  :: (String, [String], ProgramName -> IO v)
-  -> C.OptSpec (Either (ProgramName -> IO v) a)
-makeShortcutOpt (ss, ls, a) = C.OptSpec ls ss (C.NoArg (Left a))
-                 
 parseOpts :: Opts a -> P.Parser (Either (ProgramName -> IO ()) [a])
 parseOpts os = do
-  let specials = map makeShortcutOpt . oShortcuts $ os
-      regs = map (fmap Right) . oOptions $ os
-  eis <- P.manyTill (C.parseOption (specials ++ regs)) endOrNonOpt
-  return $ case partitionEithers eis of
-    (x:_, _) -> Left x
-    ([], xs) -> Right xs
+  let specials = map (\(ls, ss, a) -> C.OptSpec ls ss a)
+                 . oShortcuts $ os
+  maySpecial <- optional (C.parseOption specials <* P.end)
+  case maySpecial of
+    Nothing -> fmap Right
+      $ P.manyTill (C.parseOption (oOptions os)) endOrNonOpt
+    Just spec -> return . Left $ spec
+
+parseOptsWithPosArgs
+  :: OptsWithPosArgs a
+  -> P.Parser (Either (ProgramName -> IO ()) [a])
+parseOptsWithPosArgs os = do
+  let specials = map (\(ls, ss, a) -> C.OptSpec ls ss a)
+                 . oShortcuts . opOpts $ os
+  maySpecial <- optional (C.parseOption specials <* P.end)
+  case maySpecial of
+    Nothing ->
+      let f = case opIntersperse os of
+            Intersperse -> parseStopOpts
+            StopOptions -> parseStopOpts
+          parser = C.parseOption (oOptions . opOpts $ os)
+      in fmap Right $ f parser (opPosArg os)
+    Just spec -> return . Left $ spec
+
+parseModes
+  :: [g]
+  -> [NMode g r]
+  -> P.Parser (Either (ProgramName -> IO ()) r)
+parseModes gs ms = do
+  let modeWords = Set.fromList . map nmModeName $ ms
+  (_, w) <- P.matchApproxWord modeWords
+  processMode (fromJust . find (\c -> nmModeName c == w) $ ms)
+  where
+    processMode (NMode _ gr os) = do
+      eiOpts <- parseOptsWithPosArgs os
+      return $ case eiOpts of
+        Left x -> Left x
+        Right opts -> Right (gr gs opts)
+
 
 simplePure
   :: OptsWithPosArgs a
-  -> Ex.Exceptional P.Error (Either (ProgramName -> IO v) [a])
-simplePure = undefined
+  -> [String]
+  -> Ex.Exceptional P.Error (Either (ProgramName -> IO ()) [a])
+simplePure os ss = P.parse ss (parseOptsWithPosArgs os)
 
 modesPure
   :: Opts a
   -- ^ Global options
   -> [NMode a r]
-  -> Ex.Exceptional P.Error (Either (ProgramName -> IO v) r)
-modesPure = undefined
+  -> [String]
+  -> Ex.Exceptional P.Error (Either (ProgramName -> IO ()) r)
+modesPure os ms ss = P.parse ss p
+  where
+    p = do
+      eiGs <- parseOpts os
+      case eiGs of
+        Left spec -> return . Left $ spec
+        Right gs -> parseModes gs ms
 
 simpleIO
-  :: (ProgramName -> P.Error -> IO void)
+  :: (ProgramName -> P.Error -> IO ())
   -> OptsWithPosArgs a
   -> IO [a]
-simpleIO = undefined
+simpleIO showErr os = do
+  pn <- getProgName
+  ss <- getArgs
+  case simplePure os ss of
+    Ex.Exception e -> showErr pn e >> exitFailure
+    Ex.Success g -> case g of
+      Left act -> act pn >> exitSuccess
+      Right ls -> return ls
+  
 
 modesIO
-  :: (ProgramName -> P.Error -> IO void)
+  :: (ProgramName -> P.Error -> IO ())
   -> Opts a
   -> [NMode a r]
   -> IO r
-modesIO = undefined
+modesIO showErr os ms = do
+  pn <- getProgName
+  ss <- getArgs
+  case modesPure os ms ss of
+    Ex.Exception e -> showErr pn e >> exitFailure
+    Ex.Success g -> case g of
+      Left act -> act pn >> exitSuccess
+      Right r -> return r
 
 simpleHelp
   :: (ProgramName -> String)
