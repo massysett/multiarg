@@ -424,9 +424,9 @@ endOrNonOpt = (P.lookAhead P.nonOptionPosArg >> return ())
 --
 --
 
-data Opts a = forall v. Opts
+data Opts a = Opts
   { oOptions :: [C.OptSpec a]
-  , oShortcuts :: [(String, [String], ProgramName -> IO v)]
+  , oShortcuts :: [(String, [String], ProgramName -> IO ())]
   }
 
 data OptsWithPosArgs a = OptsWithPosArgs
@@ -435,14 +435,25 @@ data OptsWithPosArgs a = OptsWithPosArgs
   , opPosArg :: String -> Ex.Exceptional C.InputError a
   }
 
-data NMode r = forall a. NMode
+data NMode g r = forall a. NMode
   { nmModeName :: String
-  , nmGetResult :: [a] -> r
+  , nmGetResult :: [g] -> [a] -> r
   , nmOpts :: OptsWithPosArgs a
   }
 
-parseOpts :: Opts a -> P.Parser (Either (ProgramName -> IO v) [a])
-parseOpts = undefined
+makeShortcutOpt
+  :: (String, [String], ProgramName -> IO v)
+  -> C.OptSpec (Either (ProgramName -> IO v) a)
+makeShortcutOpt (ss, ls, a) = C.OptSpec ls ss (C.NoArg (Left a))
+                 
+parseOpts :: Opts a -> P.Parser (Either (ProgramName -> IO ()) [a])
+parseOpts os = do
+  let specials = map makeShortcutOpt . oShortcuts $ os
+      regs = map (fmap Right) . oOptions $ os
+  eis <- P.manyTill (C.parseOption (specials ++ regs)) endOrNonOpt
+  return $ case partitionEithers eis of
+    (x:_, _) -> Left x
+    ([], xs) -> Right xs
 
 simplePure
   :: OptsWithPosArgs a
@@ -452,8 +463,7 @@ simplePure = undefined
 modesPure
   :: Opts a
   -- ^ Global options
-  -> ([a] -> NMode r)
-  -- ^ Gets modes
+  -> [NMode a r]
   -> Ex.Exceptional P.Error (Either (ProgramName -> IO v) r)
 modesPure = undefined
 
@@ -466,7 +476,7 @@ simpleIO = undefined
 modesIO
   :: (ProgramName -> P.Error -> IO void)
   -> Opts a
-  -> ([a] -> NMode r)
+  -> [NMode a r]
   -> IO r
 modesIO = undefined
 
