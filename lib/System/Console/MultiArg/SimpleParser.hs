@@ -463,7 +463,7 @@ data NMode g s r = forall a. NMode
 instance MapShortcuts (NMode g) where
   smap f (NMode n g o) = NMode n g (smap f o)
 
-instance Functor (NMode g s) whyere
+instance Functor (NMode g s) where
   fmap f (NMode n gr os) = NMode n (\gs as -> f (gr gs as)) os
 
 parseOpts :: Opts s a -> P.Parser (Either s [a])
