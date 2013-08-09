@@ -7,6 +7,14 @@
 --
 -- Another parser is provided for multi-mode programs that are similar
 -- to @git@ or @darcs@.
+--
+-- Previously there was a bug in System.Environment.getArgs that would
+-- not properly encode Unicode command line arguments.  multiarg used
+-- to provide its own GetArgs module to deal with this.  This bug was
+-- in base 4.3.1.0, which was bundled with ghc 7.0.4.  This bug was
+-- fixed in base 4.4.0.0, which came with ghc 7.2.  Since this bug has
+-- been fixed for awhile, multiarg no longer has its own GetArgs
+-- module.
 module System.Console.MultiArg.CommandLine (
   -- * Interspersion control
   Intersperse (Intersperse, StopOptions)
