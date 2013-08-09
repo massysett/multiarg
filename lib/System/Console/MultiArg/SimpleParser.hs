@@ -425,24 +425,24 @@ endOrNonOpt = (P.lookAhead P.nonOptionPosArg >> return ())
 --
 --
 
-data Opts a = Opts
+data Opts a s = Opts
   { oOptions :: [C.OptSpec a]
-  , oShortcuts :: [([String], String, C.ArgSpec (ProgramName -> IO ()))]
+  , oShortcuts :: [([String], String, C.ArgSpec s)]
   }
 
-data OptsWithPosArgs a = OptsWithPosArgs
-  { opOpts :: Opts a
+data OptsWithPosArgs a s = OptsWithPosArgs
+  { opOpts :: Opts a s
   , opIntersperse :: Intersperse
   , opPosArg :: String -> Ex.Exceptional C.InputError a
   }
 
-data NMode g r = forall a. NMode
+data NMode g s r = forall a. NMode
   { nmModeName :: String
   , nmGetResult :: [g] -> [a] -> r
-  , nmOpts :: OptsWithPosArgs a
+  , nmOpts :: OptsWithPosArgs a s
   }
 
-parseOpts :: Opts a -> P.Parser (Either (ProgramName -> IO ()) [a])
+parseOpts :: Opts a b -> P.Parser (Either b [a])
 parseOpts os = do
   let specials = map (\(ls, ss, a) -> C.OptSpec ls ss a)
                  . oShortcuts $ os
@@ -453,8 +453,8 @@ parseOpts os = do
     Just spec -> return . Left $ spec
 
 parseOptsWithPosArgs
-  :: OptsWithPosArgs a
-  -> P.Parser (Either (ProgramName -> IO ()) [a])
+  :: OptsWithPosArgs a b
+  -> P.Parser (Either b [a])
 parseOptsWithPosArgs os = do
   let specials = map (\(ls, ss, a) -> C.OptSpec ls ss a)
                  . oShortcuts . opOpts $ os
@@ -470,8 +470,8 @@ parseOptsWithPosArgs os = do
 
 parseModes
   :: [g]
-  -> [NMode g r]
-  -> P.Parser (Either (ProgramName -> IO ()) r)
+  -> [NMode g s r]
+  -> P.Parser (Either s r)
 parseModes gs ms = do
   let modeWords = Set.fromList . map nmModeName $ ms
   (_, w) <- P.matchApproxWord modeWords
@@ -485,17 +485,17 @@ parseModes gs ms = do
 
 
 simplePure
-  :: OptsWithPosArgs a
+  :: OptsWithPosArgs a b
   -> [String]
-  -> Ex.Exceptional P.Error (Either (ProgramName -> IO ()) [a])
+  -> Ex.Exceptional P.Error (Either b [a])
 simplePure os ss = P.parse ss (parseOptsWithPosArgs os)
 
 modesPure
-  :: Opts a
+  :: Opts a s
   -- ^ Global options
-  -> [NMode a r]
+  -> [NMode a s r]
   -> [String]
-  -> Ex.Exceptional P.Error (Either (ProgramName -> IO ()) r)
+  -> Ex.Exceptional P.Error (Either s r)
 modesPure os ms ss = P.parse ss p
   where
     p = do
@@ -505,42 +505,70 @@ modesPure os ms ss = P.parse ss p
         Right gs -> parseModes gs ms
 
 simpleIO
-  :: (ProgramName -> P.Error -> IO ())
-  -> OptsWithPosArgs a
-  -> IO [a]
+  :: (P.Error -> IO ())
+  -> OptsWithPosArgs a b
+  -> IO (Either b [a])
 simpleIO showErr os = do
-  pn <- getProgName
   ss <- getArgs
   case simplePure os ss of
-    Ex.Exception e -> showErr pn e >> exitFailure
-    Ex.Success g -> case g of
-      Left act -> act pn >> exitSuccess
-      Right ls -> return ls
+    Ex.Exception e -> showErr e >> exitFailure
+    Ex.Success g -> return g
   
 
 modesIO
-  :: (ProgramName -> P.Error -> IO ())
-  -> Opts a
-  -> [NMode a r]
-  -> IO r
+  :: (P.Error -> IO ())
+  -> Opts g s
+  -> [NMode g s r]
+  -> IO (Either s r)
 modesIO showErr os ms = do
   pn <- getProgName
   ss <- getArgs
   case modesPure os ms ss of
-    Ex.Exception e -> showErr pn e >> exitFailure
-    Ex.Success g -> case g of
-      Left act -> act pn >> exitSuccess
-      Right r -> return r
+    Ex.Exception e -> showErr e >> exitFailure
+    Ex.Success g -> return g
+
+
+displayAct :: (ProgramName -> String) -> IO a
+displayAct getHelp = do
+  pn <- getProgName
+  putStr $ getHelp pn
+  exitSuccess
+
+errorAct :: P.Error -> IO a
+errorAct e = do
+  pn <- getProgName
+  IO.hPutStr IO.stderr $ C.formatError pn e
+  exitFailure
 
 simpleHelp
   :: (ProgramName -> String)
-  -> OptsWithPosArgs a
-  -> IO a
-simpleHelp = undefined
+  -> [C.OptSpec a]
+  -> Intersperse
+  -> (String -> Ex.Exceptional C.InputError a)
+  -> IO [a]
+simpleHelp getHelp os ir getArg = do
+  let shortcuts = [(["help"], "h", C.NoArg (displayAct getHelp))]
+      opts = OptsWithPosArgs (Opts os shortcuts) ir getArg
+  ei <- simpleIO errorAct opts
+  case ei of
+    Left act -> act
+    Right as -> return as
 
 simpleHelpVersion
   :: (ProgramName -> String)
+  -- ^ Generates help string
   -> (ProgramName -> String)
-  -> OptsWithPosArgs a
-  -> IO a
-simpleHelpVersion = undefined
+  -- ^ Generates version string
+  -> [C.OptSpec a]
+  -> Intersperse
+  -> (String -> Ex.Exceptional C.InputError a)
+  -> IO [a]
+simpleHelpVersion getHelp getVer os ir getArg = do
+  let shortcuts = [ (["help"], "h", C.NoArg (displayAct getHelp))
+                  , (["version"], "v", C.NoArg (displayAct getVer)) ]
+      opts = OptsWithPosArgs (Opts os shortcuts) ir getArg
+  ei <- simpleIO errorAct opts
+  case ei of
+    Left act -> act
+    Right as -> return as
+
