@@ -26,7 +26,6 @@ module System.Console.MultiArg.CommandLine (
   , OptsWithPosArgs(..)
   , Mode(..)
 
-
   -- * Simple parsers
   , simplePure
   , simpleIO
@@ -36,6 +35,11 @@ module System.Console.MultiArg.CommandLine (
   -- * Mode parsers
   , modesPure
   , modesIO
+
+  -- * Helpers to create various options and modes
+  , optsHelp
+  , optsHelpVersion
+  , modeHelp
 
   ) where
 
@@ -71,65 +75,35 @@ data Intersperse =
     -- options, in the command line @-a posarg -b@, @b@ will be parsed
     -- as a positional argument rather than as an option.
 
-parseOptsNoIntersperse :: P.Parser a -> P.Parser [a]
-parseOptsNoIntersperse p = P.manyTill p e where
-  e = P.end <|> nonOpt
-  nonOpt = P.lookAhead next
-  next = (() <$ P.nonOptionPosArg) <|> P.stopper
-
-
-parsePosArg
-  :: (String -> Ex.Exceptional C.InputError a)
-  -> P.Parser a
-parsePosArg p = do
-  a <- P.nextWord
-  case p a of
-    Ex.Exception e ->
-      let msg = "invalid positional argument: \"" ++ a ++ "\""
-      in case e of
-          C.NoMsg -> fail msg
-          C.ErrorMsg s -> fail $ msg ++ ": " ++ s
-    Ex.Success g -> return g
-
-parseStopOpts
-  :: P.Parser a
-  -> (String -> Ex.Exceptional C.InputError a)
-  -> P.Parser [a]
-parseStopOpts optParser p =
-  (++)
-  <$> parseOptsNoIntersperse optParser
-  <* optional P.stopper
-  <*> many (parsePosArg p)
-
-
--- | @parseIntersperse o p@ parses options and positional arguments,
--- where o is a parser that parses options, and p is a function that,
--- when applied to a string, returns the appropriate type.
-parseIntersperse
-  :: P.Parser a
-  -> (String -> Ex.Exceptional C.InputError a)
-  -> P.Parser [a]
-parseIntersperse optParser p =
-  let pa = Just <$> parsePosArg p
-      po = Just <$> optParser
-      ps = Nothing <$ P.stopper
-      parser = po <|> ps <|> pa
-  in catMaybes <$> P.manyTill parser P.end
-
--- | Looks at the next word. Succeeds if it is a non-option, or if we
--- are at the end of input. Fails otherwise.
-endOrNonOpt :: P.Parser ()
-endOrNonOpt = (P.lookAhead P.nonOptionPosArg >> return ())
-              <|> P.end
-
---
---
---
 
 data Opts s a = Opts
   { oOptions :: [C.OptSpec a]
   , oShortcuts :: [([String], String, C.ArgSpec s)]
   }
+
+-- | Creates an Opts with a help shortcut option.
+optsHelp
+  :: (ProgramName -> String)
+  -- ^ This function, when applied to the program name, returns a help
+  -- string.
+  -> [C.OptSpec a]
+  -> Opts (ProgramName -> String) a
+optsHelp h os = Opts os [(["help"], "h", C.NoArg h)]
+
+-- | Creates an Opts with help and version shortcut options.
+optsHelpVersion
+  :: (ProgramName -> String)
+  -- ^ This function, when applied to the program name, returns a help
+  -- string.
+
+  -> (ProgramName -> String)
+  -- ^ This function, when applied to the program name, returns a version
+  -- string.
+
+  -> [C.OptSpec a]
+  -> Opts (ProgramName -> String) a
+optsHelpVersion h v os = Opts os [ (["help"], "h", C.NoArg h)
+                                 , (["version"], "v", C.NoArg v) ]
 
 instance Functor (Opts s) where
   fmap f (Opts os ss) = Opts (map (fmap f) os) ss
@@ -160,6 +134,34 @@ data Mode g s r = forall a. Mode
   , nmGetResult :: [g] -> [a] -> r
   , nmOpts :: OptsWithPosArgs s a
   }
+
+-- | Creates a Mode with a help option (help specific to the mode.)
+modeHelp
+  :: String
+  -- ^ Mode name
+
+  -> (ProgramName -> String)
+  -- ^ Applied to the name of the program, returns a help string.
+
+  -> ([g] -> [a] -> r)
+  -- ^ When applied to the global options and to the mode options,
+  -- returns the result.
+
+  -> [C.OptSpec a]
+  -- ^ Options for this mode
+
+  -> Intersperse
+  -- ^ Allow interspersion of mode options and positional arguments?
+
+  -> (String -> Ex.Exceptional C.InputError a)
+  -- ^ Parses positional arguments
+
+  -> Mode g (ProgramName -> String) r
+
+modeHelp n h getR os i p =
+  Mode n getR (OptsWithPosArgs (Opts os ss) i p)
+  where
+    ss = [(["help"], "h", C.NoArg h)]
 
 instance MapShortcuts (Mode g) where
   smap f (Mode n g o) = Mode n g (smap f o)
@@ -256,14 +258,13 @@ simpleIOCustomError showErr os = do
   
 
 modesIO
-  :: (P.Error -> IO ())
-  -> Opts s g
+  :: Opts s g
   -> [Mode g s r]
   -> IO (Either s r)
-modesIO showErr os ms = do
+modesIO os ms = do
   ss <- getArgs
   case modesPure os ms ss of
-    Ex.Exception e -> showErr e >> exitFailure
+    Ex.Exception e -> errorAct e
     Ex.Success g -> return g
 
 
@@ -319,4 +320,65 @@ simpleHelpVersion getHelp getVer os ir getArg = do
   case ei of
     Left act -> act
     Right as -> return as
+
+-- # Helpers
+
+-- | Parses positional arguments and handles errors with them.
+parsePosArg
+  :: (String -> Ex.Exceptional C.InputError a)
+  -> P.Parser a
+parsePosArg p = do
+  a <- P.nextWord
+  case p a of
+    Ex.Exception e ->
+      let msg = "invalid positional argument: \"" ++ a ++ "\""
+      in case e of
+          C.NoMsg -> fail msg
+          C.ErrorMsg s -> fail $ msg ++ ": " ++ s
+    Ex.Success g -> return g
+
+-- | Parses options only, where they are not interspersed with
+-- positional arguments.  Stops parsing only where it encouters a word
+-- that does not begin with a dash.  This way if the user enters a bad
+-- option, it shows in the error message as a bad option rather than
+-- simply not getting parsed.
+parseOptsNoIntersperse :: P.Parser a -> P.Parser [a]
+parseOptsNoIntersperse p = P.manyTill p e where
+  e = P.end <|> nonOpt
+  nonOpt = P.lookAhead next
+  next = (() <$ P.nonOptionPosArg) <|> P.stopper
+
+-- | Parses options and positional arguments where the two are not
+-- interspersed. Stops parsing options when a stopper is encountered
+-- or at the first word that does not look like an option.
+parseStopOpts
+  :: P.Parser a
+  -> (String -> Ex.Exceptional C.InputError a)
+  -> P.Parser [a]
+parseStopOpts optParser p =
+  (++)
+  <$> parseOptsNoIntersperse optParser
+  <* optional P.stopper
+  <*> many (parsePosArg p)
+
+
+-- | @parseIntersperse o p@ parses options and positional arguments,
+-- where o is a parser that parses options, and p is a function that,
+-- when applied to a string, returns the appropriate type.
+parseIntersperse
+  :: P.Parser a
+  -> (String -> Ex.Exceptional C.InputError a)
+  -> P.Parser [a]
+parseIntersperse optParser p =
+  let pa = Just <$> parsePosArg p
+      po = Just <$> optParser
+      ps = Nothing <$ P.stopper
+      parser = po <|> ps <|> pa
+  in catMaybes <$> P.manyTill parser P.end
+
+-- | Looks at the next word. Succeeds if it is a non-option, or if we
+-- are at the end of input. Fails otherwise.
+endOrNonOpt :: P.Parser ()
+endOrNonOpt = (P.lookAhead P.nonOptionPosArg >> return ())
+              <|> P.end
 
