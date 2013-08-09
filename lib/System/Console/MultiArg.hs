@@ -155,7 +155,6 @@ module System.Console.MultiArg (
 
     module System.Console.MultiArg.Combinator
   , module System.Console.MultiArg.CommandLine
-  , module System.Console.MultiArg.GetArgs
   , module System.Console.MultiArg.Option
   , module System.Console.MultiArg.Prim
   , module Control.Monad.Exception.Synchronous
@@ -163,7 +162,6 @@ module System.Console.MultiArg (
 
 import System.Console.MultiArg.Combinator
 import System.Console.MultiArg.CommandLine
-import System.Console.MultiArg.GetArgs
 import System.Console.MultiArg.Option
 import System.Console.MultiArg.Prim
 import Control.Monad.Exception.Synchronous
