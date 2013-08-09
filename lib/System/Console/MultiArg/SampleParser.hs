@@ -19,7 +19,6 @@
 module System.Console.MultiArg.SampleParser where
 
 import qualified System.Console.MultiArg.Combinator as C
-import System.Console.MultiArg.GetArgs (getArgs)
 import qualified System.Console.MultiArg.CommandLine as P
 
 data Flag =
@@ -55,6 +54,5 @@ specs =
 
 sampleMain :: P.Intersperse -> IO ()
 sampleMain i = do
-  as <- getArgs
-  let r = P.simple i specs (return . Filename) as
+  r <- P.simpleIO specs i (return . Filename)
   print r
