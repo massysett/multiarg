@@ -425,24 +425,48 @@ endOrNonOpt = (P.lookAhead P.nonOptionPosArg >> return ())
 --
 --
 
-data Opts a s = Opts
+data Opts s a = Opts
   { oOptions :: [C.OptSpec a]
   , oShortcuts :: [([String], String, C.ArgSpec s)]
   }
 
-data OptsWithPosArgs a s = OptsWithPosArgs
-  { opOpts :: Opts a s
+instance Functor (Opts s) where
+  fmap f (Opts os ss) = Opts (map (fmap f) os) ss
+
+class MapShortcuts f where
+  smap :: (a -> b) -> f a o -> f b o
+
+instance MapShortcuts Opts where
+  smap f (Opts os ss) = Opts os (map g ss)
+    where
+      g (ls, s, as) = (ls, s, fmap f as)
+
+data OptsWithPosArgs s a = OptsWithPosArgs
+  { opOpts :: Opts s a
   , opIntersperse :: Intersperse
   , opPosArg :: String -> Ex.Exceptional C.InputError a
   }
 
+instance MapShortcuts OptsWithPosArgs where
+  smap f (OptsWithPosArgs os i p) = OptsWithPosArgs (smap f os) i p
+
+instance Functor (OptsWithPosArgs s) where
+  fmap f (OptsWithPosArgs os i p) =
+    OptsWithPosArgs (fmap f os) i (fmap (fmap f) p)
+
 data NMode g s r = forall a. NMode
   { nmModeName :: String
   , nmGetResult :: [g] -> [a] -> r
-  , nmOpts :: OptsWithPosArgs a s
+  , nmOpts :: OptsWithPosArgs s a
   }
 
-parseOpts :: Opts a b -> P.Parser (Either b [a])
+instance MapShortcuts (NMode g) where
+  smap f (NMode n g o) = NMode n g (smap f o)
+
+instance Functor (NMode g s) whyere
+  fmap f (NMode n gr os) = NMode n (\gs as -> f (gr gs as)) os
+
+parseOpts :: Opts s a -> P.Parser (Either s [a])
 parseOpts os = do
   let specials = map (\(ls, ss, a) -> C.OptSpec ls ss a)
                  . oShortcuts $ os
@@ -453,8 +477,8 @@ parseOpts os = do
     Just spec -> return . Left $ spec
 
 parseOptsWithPosArgs
-  :: OptsWithPosArgs a b
-  -> P.Parser (Either b [a])
+  :: OptsWithPosArgs s a
+  -> P.Parser (Either s [a])
 parseOptsWithPosArgs os = do
   let specials = map (\(ls, ss, a) -> C.OptSpec ls ss a)
                  . oShortcuts . opOpts $ os
@@ -485,15 +509,15 @@ parseModes gs ms = do
 
 
 simplePure
-  :: OptsWithPosArgs a b
+  :: OptsWithPosArgs s a
   -> [String]
-  -> Ex.Exceptional P.Error (Either b [a])
+  -> Ex.Exceptional P.Error (Either s [a])
 simplePure os ss = P.parse ss (parseOptsWithPosArgs os)
 
 modesPure
-  :: Opts a s
+  :: Opts s g
   -- ^ Global options
-  -> [NMode a s r]
+  -> [NMode g s r]
   -> [String]
   -> Ex.Exceptional P.Error (Either s r)
 modesPure os ms ss = P.parse ss p
@@ -506,8 +530,8 @@ modesPure os ms ss = P.parse ss p
 
 simpleIO
   :: (P.Error -> IO ())
-  -> OptsWithPosArgs a b
-  -> IO (Either b [a])
+  -> OptsWithPosArgs s a
+  -> IO (Either s [a])
 simpleIO showErr os = do
   ss <- getArgs
   case simplePure os ss of
@@ -517,7 +541,7 @@ simpleIO showErr os = do
 
 modesIO
   :: (P.Error -> IO ())
-  -> Opts g s
+  -> Opts s g
   -> [NMode g s r]
   -> IO (Either s r)
 modesIO showErr os ms = do
