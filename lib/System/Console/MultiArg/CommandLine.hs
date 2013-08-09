@@ -24,7 +24,7 @@ module System.Console.MultiArg.CommandLine (
   , Opts(..)
   , MapShortcuts(..)
   , OptsWithPosArgs(..)
-  , NMode(..)
+  , Mode(..)
 
 
   -- * Simple parsers
@@ -155,17 +155,17 @@ instance Functor (OptsWithPosArgs s) where
   fmap f (OptsWithPosArgs os i p) =
     OptsWithPosArgs (fmap f os) i (fmap (fmap f) p)
 
-data NMode g s r = forall a. NMode
+data Mode g s r = forall a. Mode
   { nmModeName :: String
   , nmGetResult :: [g] -> [a] -> r
   , nmOpts :: OptsWithPosArgs s a
   }
 
-instance MapShortcuts (NMode g) where
-  smap f (NMode n g o) = NMode n g (smap f o)
+instance MapShortcuts (Mode g) where
+  smap f (Mode n g o) = Mode n g (smap f o)
 
-instance Functor (NMode g s) where
-  fmap f (NMode n gr os) = NMode n (\gs as -> f (gr gs as)) os
+instance Functor (Mode g s) where
+  fmap f (Mode n gr os) = Mode n (\gs as -> f (gr gs as)) os
 
 parseOpts :: Opts s a -> P.Parser (Either s [a])
 parseOpts os = do
@@ -195,14 +195,14 @@ parseOptsWithPosArgs os = do
 
 parseModes
   :: [g]
-  -> [NMode g s r]
+  -> [Mode g s r]
   -> P.Parser (Either s r)
 parseModes gs ms = do
   let modeWords = Set.fromList . map nmModeName $ ms
   (_, w) <- P.matchApproxWord modeWords
   processMode (fromJust . find (\c -> nmModeName c == w) $ ms)
   where
-    processMode (NMode _ gr os) = do
+    processMode (Mode _ gr os) = do
       eiOpts <- parseOptsWithPosArgs os
       return $ case eiOpts of
         Left x -> Left x
@@ -218,7 +218,7 @@ simplePure os ss = P.parse ss (parseOptsWithPosArgs os)
 modesPure
   :: Opts s g
   -- ^ Global options
-  -> [NMode g s r]
+  -> [Mode g s r]
   -> [String]
   -> Ex.Exceptional P.Error (Either s r)
 modesPure os ms ss = P.parse ss p
@@ -258,7 +258,7 @@ simpleIOCustomError showErr os = do
 modesIO
   :: (P.Error -> IO ())
   -> Opts s g
-  -> [NMode g s r]
+  -> [Mode g s r]
   -> IO (Either s r)
 modesIO showErr os ms = do
   ss <- getArgs
