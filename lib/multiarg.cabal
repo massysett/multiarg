@@ -55,7 +55,6 @@ Library
         System.Console.MultiArg,
         System.Console.MultiArg.Combinator,
         System.Console.MultiArg.CommandLine,
-        System.Console.MultiArg.GetArgs,
         System.Console.MultiArg.Option,
         System.Console.MultiArg.Prim,
         System.Console.MultiArg.SampleParser
