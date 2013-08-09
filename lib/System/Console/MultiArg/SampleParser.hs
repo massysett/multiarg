@@ -20,7 +20,7 @@ module System.Console.MultiArg.SampleParser where
 
 import qualified System.Console.MultiArg.Combinator as C
 import System.Console.MultiArg.GetArgs (getArgs)
-import qualified System.Console.MultiArg.SimpleParser as P
+import qualified System.Console.MultiArg.CommandLine as P
 
 data Flag =
   Bytes String

@@ -7,7 +7,7 @@
 --
 -- Another parser is provided for multi-mode programs that are similar
 -- to @git@ or @darcs@.
-module System.Console.MultiArg.SimpleParser (
+module System.Console.MultiArg.CommandLine (
   -- * Interspersion control
   Intersperse (Intersperse, StopOptions)
 
