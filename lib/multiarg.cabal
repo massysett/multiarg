@@ -54,10 +54,10 @@ Library
     Exposed-modules:
         System.Console.MultiArg,
         System.Console.MultiArg.Combinator,
+        System.Console.MultiArg.CommandLine,
         System.Console.MultiArg.GetArgs,
         System.Console.MultiArg.Option,
         System.Console.MultiArg.Prim,
-        System.Console.MultiArg.SampleParser,
-        System.Console.MultiArg.SimpleParser
+        System.Console.MultiArg.SampleParser
 
     ghc-options: -Wall
