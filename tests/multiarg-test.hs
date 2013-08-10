@@ -1,6 +1,7 @@
 module Main where
 
 import Control.Monad (liftM2, liftM4)
+import qualified Control.Monad.Exception.Synchronous as Ex
 import Data.Ord (comparing)
 import Data.List (group, sort)
 import qualified System.Console.MultiArg as A
@@ -21,8 +22,6 @@ instance Q.Arbitrary A.LongOpt where
     case A.makeLongOpt s of
       Nothing -> error "failed to generate long opt"
       Just r -> return r
-
-data Void a = Void
 
 data GArgSpec
   = GNoArg
@@ -95,7 +94,54 @@ data GOptsWithPosArgs = GOptsWithPosArgs
 instance Arbitrary GOptsWithPosArgs where
   arbitrary = liftM2 GOptsWithPosArgs arbitrary arbitrary
 
+--
+--
+--
 
+data ROption = ROption
+  { rId :: Int
+  , rOpt :: Either A.LongOpt A.ShortOpt
+  , rArgSpec :: RArgSpec
+  } deriving (Eq, Show)
+
+data RPreStopperPosArg = RPreStopperPosArg
+  { preArg :: String }
+  deriving (Eq, Show, Ord)
+
+data RPostStopperPosArg = RPostStopperPosArg
+  { postArg :: String }
+  deriving (Eq, Show, Ord)
+
+--
+--
+--
+
+data RArgSpec
+  = RNoArg
+  | ROptionalArg (Maybe String)
+  | ROneArg String
+  | RTwoArg (String, String)
+  | RThreeArg (String, String, String)
+  | RVariableArg [String]
+  | RChoiceArg Int
+  deriving (Eq, Show)
+
+data Opt = Opt
+  { optId :: Int
+  , optArg :: RArgSpec
+  } deriving (Eq, Show)
+
+data SimplePure = SimplePure
+  { spOpts :: A.OptsWithPosArgs Opt Opt
+  , spArgs :: [String]
+  , spResult :: Ex.Exceptional A.Error (Either Opt [Opt])
+  }
+
+instance Show SimplePure where
+  show = undefined
+
+prop_simple :: SimplePure -> Bool
+prop_simple (SimplePure os ss r) = A.simplePure os ss == r
 
 main :: IO ()
 main = undefined
