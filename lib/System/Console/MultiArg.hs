@@ -100,11 +100,11 @@ module System.Console.MultiArg (
   -- * Getting started
 
   -- |If your needs are simple to moderately complicated just look at the
-  -- "System.Console.MultiArg.SimpleParser" module, which uses the
+  -- "System.Console.MultiArg.CommandLine" module, which uses the
   -- underlying combinators to build a simple parser for you. That
   -- module is already exported from this module for easy usage.
   --
-  -- "System.Console.MultiArg.SimpleParser" also has a parser that can
+  -- "System.Console.MultiArg.CommandLine" also has a parser that can
   -- handle multi-mode commands (examples include @git@, @darcs@, and
   -- @cvs@.)
   --
@@ -120,7 +120,7 @@ module System.Console.MultiArg (
   -- positional arguments. Other helpful functions are in
   -- "System.Console.MultiArg.Combinator". You will also want to
   -- examine the source code for "System.Console.MultiArg.Combinator"
-  -- and "System.Console.MultiArg.SimpleParser" as these show some
+  -- and "System.Console.MultiArg.CommandLine" as these show some
   -- ways to use the primitive parsers and combinators.
 
   -- * Non-features and shortcomings

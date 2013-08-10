@@ -51,21 +51,3 @@ Library
 
   ghc-options: -Wall
 
-Executable multiarg-test
-  main-is: multiarg-test.hs
-  hs-source-dirs: lib tests
-  if flag(test)
-    build-depends:
-        QuickCheck ==2.6.*
-      , random-shuffle ==0.0.4
-      , base ==4.6.*
-      , containers ==0.5.*
-      , explicit-exception ==0.1.*
-      , transformers ==0.3.*
-    buildable: True
-  else
-    buildable: False
-
-Flag test
-  description: build test binary
-  default: False

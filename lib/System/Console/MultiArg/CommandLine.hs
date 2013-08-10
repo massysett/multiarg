@@ -76,9 +76,22 @@ data Intersperse =
     -- as a positional argument rather than as an option.
 
 
+-- | Specifies a set of options.
 data Opts s a = Opts
   { oOptions :: [C.OptSpec a]
-  , oShortcuts :: [([String], String, C.ArgSpec s)]
+  -- ^ If the user does not specify any shortcut options, she may
+  -- specify any number of these options.
+
+  , oShortcuts :: [C.OptSpec s]
+  -- ^ Shortcut options are commonly options such as @--help@ or
+  -- @--version@. Such options must be specified alone on the command
+  -- line.  The parser looks for one of these options first.  If it
+  -- finds one and it is the only option on the command line, only
+  -- this option is processed and returned.  If the option is not
+  -- alone on the command line, an error occurs.  If no shortcut
+  -- option is found, the parser processes non-shortcut options
+  -- instead.
+
   }
 
 -- | Creates an Opts with a help shortcut option.
@@ -88,7 +101,7 @@ optsHelp
   -- string.
   -> [C.OptSpec a]
   -> Opts (ProgramName -> String) a
-optsHelp h os = Opts os [(["help"], "h", C.NoArg h)]
+optsHelp h os = Opts os [C.OptSpec ["help"] "h" (C.NoArg h)]
 
 -- | Creates an Opts with help and version shortcut options.
 optsHelpVersion
@@ -102,20 +115,20 @@ optsHelpVersion
 
   -> [C.OptSpec a]
   -> Opts (ProgramName -> String) a
-optsHelpVersion h v os = Opts os [ (["help"], "h", C.NoArg h)
-                                 , (["version"], "v", C.NoArg v) ]
+optsHelpVersion h v os = Opts os [ C.OptSpec ["help"] "h" (C.NoArg h)
+                                 , C.OptSpec ["version"] "v" (C.NoArg v) ]
 
 instance Functor (Opts s) where
   fmap f (Opts os ss) = Opts (map (fmap f) os) ss
 
+-- | Things that contain shortcut options that can be changed.
 class MapShortcuts f where
   smap :: (a -> b) -> f a o -> f b o
 
 instance MapShortcuts Opts where
-  smap f (Opts os ss) = Opts os (map g ss)
-    where
-      g (ls, s, as) = (ls, s, fmap f as)
+  smap f (Opts os ss) = Opts os (map (fmap f) ss)
 
+-- | Specification for both options and positional arguments.
 data OptsWithPosArgs s a = OptsWithPosArgs
   { opOpts :: Opts s a
   , opIntersperse :: Intersperse
@@ -129,10 +142,25 @@ instance Functor (OptsWithPosArgs s) where
   fmap f (OptsWithPosArgs os i p) =
     OptsWithPosArgs (fmap f os) i (fmap (fmap f) p)
 
+-- | Specifies a mode.
 data Mode g s r = forall a. Mode
-  { nmModeName :: String
-  , nmGetResult :: [g] -> [a] -> r
-  , nmOpts :: OptsWithPosArgs s a
+  { mModeName :: String
+  -- ^ How the user specifies the mode on the command line.  For @git@
+  -- for example this might be @commit@ or @log@.
+
+  , mGetResult :: [g] -> [a] -> r
+  -- ^ This function is applied to a list of the results of parsing
+  -- global options and to a list of the results of parsing the
+  -- options that are specific to this mode.  The function returns a
+  -- type of your choosing (though all modes in the same parser will
+  -- have to return the same type.)
+
+  , mOpts :: OptsWithPosArgs s a
+  -- ^ Options and positional arguments that are specific to this
+  -- mode.  For example, in the command line @git commit -a -m 'this
+  -- is a log message'@, @commit@ is the mode name and everything
+  -- after that is specified here as an option or positional argument
+  -- that is specific to this mode.
   }
 
 -- | Creates a Mode with a help option (help specific to the mode.)
@@ -161,7 +189,7 @@ modeHelp
 modeHelp n h getR os i p =
   Mode n getR (OptsWithPosArgs (Opts os ss) i p)
   where
-    ss = [(["help"], "h", C.NoArg h)]
+    ss = [C.OptSpec ["help"] "h" (C.NoArg h)]
 
 instance MapShortcuts (Mode g) where
   smap f (Mode n g o) = Mode n g (smap f o)
@@ -171,8 +199,7 @@ instance Functor (Mode g s) where
 
 parseOpts :: Opts s a -> P.Parser (Either s [a])
 parseOpts os = do
-  let specials = map (\(ls, ss, a) -> C.OptSpec ls ss a)
-                 . oShortcuts $ os
+  let specials = oShortcuts os
   maySpecial <- optional (C.parseOption specials <* P.end)
   case maySpecial of
     Nothing -> fmap Right
@@ -183,8 +210,7 @@ parseOptsWithPosArgs
   :: OptsWithPosArgs s a
   -> P.Parser (Either s [a])
 parseOptsWithPosArgs os = do
-  let specials = map (\(ls, ss, a) -> C.OptSpec ls ss a)
-                 . oShortcuts . opOpts $ os
+  let specials = oShortcuts . opOpts $ os
   maySpecial <- optional (C.parseOption specials <* P.end)
   case maySpecial of
     Nothing ->
@@ -200,9 +226,9 @@ parseModes
   -> [Mode g s r]
   -> P.Parser (Either s r)
 parseModes gs ms = do
-  let modeWords = Set.fromList . map nmModeName $ ms
+  let modeWords = Set.fromList . map mModeName $ ms
   (_, w) <- P.matchApproxWord modeWords
-  processMode (fromJust . find (\c -> nmModeName c == w) $ ms)
+  processMode (fromJust . find (\c -> mModeName c == w) $ ms)
   where
     processMode (Mode _ gr os) = do
       eiOpts <- parseOptsWithPosArgs os
@@ -211,18 +237,47 @@ parseModes gs ms = do
         Right opts -> Right (gr gs opts)
 
 
+-- | A pure (non-IO) parser for simple command lines--that is, command
+-- lines that do not have modes.
 simplePure
   :: OptsWithPosArgs s a
+  -- ^ Specifies allowed regular options, allowed shortcut options,
+  -- and how to parse positional arguments.  Also specifies whether
+  -- the user may intersperse options with positional arguments.
+
   -> [String]
+  -- ^ The command line arguments to parse
+
   -> Ex.Exceptional P.Error (Either s [a])
+  -- ^ Returns an error if the command line arguments could not be
+  -- parsed. If the parse was successful, returns an Either.  A Left
+  -- indicates that the user selected a shortcut option.  A Right
+  -- indicates that the user did not specify a shortcut option, and
+  -- will contain a list of the options and positional arguments.
 simplePure os ss = P.parse ss (parseOptsWithPosArgs os)
 
+-- | A pure (non-IO) parser for command lines that contain modes.
 modesPure
   :: Opts s g
-  -- ^ Global options
+  -- ^ Global options.  These are specified before any mode.  For
+  -- instance, in the command @git --no-pager commit -a@, the option
+  -- @--no-pager@ is a global option.  Global options can contain
+  -- shortcut options.  For instance, @git --help@ contains a single
+  -- shortcut option.
+
   -> [Mode g s r]
+  -- ^ Specifies each mode
+
   -> [String]
+  -- ^ Command line arguments to parse
+
   -> Ex.Exceptional P.Error (Either s r)
+  -- ^ If the command line arguments fail to parse, this will be an
+  -- Exception with the error.  If the parser is successful, this
+  -- returns an Either. A Left indicates that the user entered a
+  -- shortcut option, either in the global options or in one of the
+  -- mode-specific options.  A Right indicates that the user selected
+  -- a mode.
 modesPure os ms ss = P.parse ss p
   where
     p = do
@@ -231,11 +286,22 @@ modesPure os ms ss = P.parse ss p
         Left spec -> return . Left $ spec
         Right gs -> parseModes gs ms
 
+-- | A parser for simple command lines that do not contain modes.
+-- Runs in the IO monad.
 simpleIO
   :: [C.OptSpec a]
+  -- ^ Options to parse
+
   -> Intersperse
+  -- ^ Allow interspersion of options and arguments?
+
   -> (String -> Ex.Exceptional C.InputError a)
+  -- ^ How to parse positional arguments
+
   -> IO [a]
+  -- ^ If there is an error parsing the command line, the program will
+  -- exit with an error message.  If successful the results are
+  -- returned here.
 simpleIO os i getArg = do
   let optsWithArgs = OptsWithPosArgs (Opts os []) i getArg
   ss <- getArgs
@@ -257,10 +323,21 @@ simpleIOCustomError showErr os = do
     Ex.Success g -> return g
   
 
+-- | A command line parser for multi-mode command lines.  Runs in the
+-- IO monad.
 modesIO
   :: Opts s g
+  -- ^ Specifies global options and global shortcut options
+
   -> [Mode g s r]
+  -- ^ Specifies each mode
+
   -> IO (Either s r)
+  -- ^ If parsing fails, the program will exit with a failure. If
+  -- successful, the result is returned here.  A Left indicates a
+  -- shortcut option, either from the global options or from the
+  -- mode-specific options; a Right indicates the mode a user
+  -- selected.
 modesIO os ms = do
   ss <- getArgs
   case modesPure os ms ss of
@@ -268,6 +345,8 @@ modesIO os ms = do
     Ex.Success g -> return g
 
 
+-- | The name of the program that was entered on the command line,
+-- obtained from System.Environment.getProgName.
 type ProgramName = String
 
 displayAct :: (ProgramName -> String) -> IO a
@@ -289,32 +368,69 @@ errorActDisplayHelp e = do
   IO.hPutStrLn IO.stderr $ "enter \"" ++ pn ++ " -h\" for help."
   exitFailure
 
+-- | A parser for simple command lines. Adds a @--help@ option for
+-- you.
 simpleHelp
   :: (ProgramName -> String)
+  -- ^ Indicate the help here. This function, when applied to the name
+  -- of the program, returns help.  simpleHelp automatically adds
+  -- options for @--help@ and @-h@ for you.
+
   -> [C.OptSpec a]
+  -- ^ Options to parse
+
   -> Intersperse
+  -- ^ Allow interspersion of options and positional arguments?
+
   -> (String -> Ex.Exceptional C.InputError a)
+  -- ^ How to parse positional arguments
+
   -> IO [a]
+  -- ^ If the parser fails, the program will exit with an error.  If
+  -- the user requested help, it will be displayed and the program
+  -- exits successfully.  Otherwise, the options and positional
+  -- arguments are returned here.
 simpleHelp getHelp os ir getArg = do
-  let shortcuts = [(["help"], "h", C.NoArg (displayAct getHelp))]
+  let shortcuts = [C.OptSpec ["help"] "h" (C.NoArg (displayAct getHelp))]
       opts = OptsWithPosArgs (Opts os shortcuts) ir getArg
   ei <- simpleIOCustomError errorActDisplayHelp opts
   case ei of
     Left act -> act
     Right as -> return as
 
+-- | A parser for simple command lines without modes.  Adds options
+-- for @--help@ and @--version@ for you.
 simpleHelpVersion
   :: (ProgramName -> String)
-  -- ^ Generates help string
+  -- ^ Indicate the help here. This function, when applied to the name
+  -- of the program, returns help.  simpleHelpVersion automatically adds
+  -- options for @--help@ and @-h@ for you.
+
   -> (ProgramName -> String)
-  -- ^ Generates version string
+  -- ^ Indicate the version here. This function, when applied to the
+  -- name of the program, returns a version string.  simpleHelpVersion
+  -- automatically adds an option for @--version@ for you.
+
   -> [C.OptSpec a]
+  -- ^ Options to parse
+
   -> Intersperse
+  -- ^ Allow interspersion of options and positional arguments?
+
   -> (String -> Ex.Exceptional C.InputError a)
+  -- ^ How to parse positional arguments
+
   -> IO [a]
+  -- ^ If the parser fails, the program will exit with an error.  If
+  -- the user requested help or version information, it will be
+  -- displayed and the program exits successfully.  Otherwise, the
+  -- options and positional arguments are returned here.
+
 simpleHelpVersion getHelp getVer os ir getArg = do
-  let shortcuts = [ (["help"], "h", C.NoArg (displayAct getHelp))
-                  , (["version"], "v", C.NoArg (displayAct getVer)) ]
+  let shortcuts = [ C.OptSpec ["help"] "h"
+                      (C.NoArg (displayAct getHelp))
+                  , C.OptSpec ["version"] ""
+                      (C.NoArg (displayAct getVer)) ]
       opts = OptsWithPosArgs (Opts os shortcuts) ir getArg
   ei <- simpleIOCustomError errorActDisplayHelp opts
   case ei of
