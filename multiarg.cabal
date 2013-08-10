@@ -29,34 +29,43 @@ description: multiarg is a parser combinator library to build command
  See the documentation in the System.Console.MultiArg module for
  details.
 
-Flag newbase
-    Description: Builds package with base >= 4.4.0.0.
-
 source-repository head
     type: git
     location: git://github.com/massysett/multiarg.git
 
 Library
-    Build-depends:
-        explicit-exception ==0.1.*,
-        containers ==0.5.*
+  Build-depends:
+      base ==4.6.*
+    , containers ==0.5.*
+    , explicit-exception ==0.1.*
 
+  hs-source-dirs: lib
 
-    -- See documentation in System.Console.MultiArg.GetArgs for details
-    if flag(newbase)
-        Build-depends:
-            base >= 4.4 && < 5
-    else
-        Build-depends:
-            base < 4.4,
-            utf8-string == 0.3.7
+  Exposed-modules:
+      System.Console.MultiArg
+    , System.Console.MultiArg.Combinator
+    , System.Console.MultiArg.CommandLine
+    , System.Console.MultiArg.Option
+    , System.Console.MultiArg.Prim
+    , System.Console.MultiArg.SampleParser
 
-    Exposed-modules:
-        System.Console.MultiArg,
-        System.Console.MultiArg.Combinator,
-        System.Console.MultiArg.CommandLine,
-        System.Console.MultiArg.Option,
-        System.Console.MultiArg.Prim,
-        System.Console.MultiArg.SampleParser
+  ghc-options: -Wall
 
-    ghc-options: -Wall
+Executable multiarg-test
+  main-is: multiarg-test.hs
+  hs-source-dirs: lib tests
+  if flag(test)
+    build-depends:
+        QuickCheck ==2.6.*
+      , random-shuffle ==0.0.4
+      , base ==4.6.*
+      , containers ==0.5.*
+      , explicit-exception ==0.1.*
+      , transformers ==0.3.*
+    buildable: True
+  else
+    buildable: False
+
+Flag test
+  description: build test binary
+  default: False
