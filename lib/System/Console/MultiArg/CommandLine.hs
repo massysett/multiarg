@@ -96,25 +96,22 @@ data Opts s a = Opts
 
 -- | Creates an Opts with a help shortcut option.
 optsHelp
-  :: (ProgramName -> String)
-  -- ^ This function, when applied to the program name, returns a help
-  -- string.
+  :: h
+  -- ^ Whatever type you wish to use for help
   -> [C.OptSpec a]
-  -> Opts (ProgramName -> String) a
+  -> Opts h a
 optsHelp h os = Opts os [C.OptSpec ["help"] "h" (C.NoArg h)]
 
 -- | Creates an Opts with help and version shortcut options.
 optsHelpVersion
-  :: (ProgramName -> String)
-  -- ^ This function, when applied to the program name, returns a help
-  -- string.
+  :: h
+  -- ^ What you wish to use for help
 
-  -> (ProgramName -> String)
-  -- ^ This function, when applied to the program name, returns a version
-  -- string.
+  -> h
+  -- ^ What you wish to use for version
 
   -> [C.OptSpec a]
-  -> Opts (ProgramName -> String) a
+  -> Opts h a
 optsHelpVersion h v os = Opts os [ C.OptSpec ["help"] "h" (C.NoArg h)
                                  , C.OptSpec ["version"] "v" (C.NoArg v) ]
 
@@ -143,14 +140,13 @@ instance Functor (OptsWithPosArgs s) where
     OptsWithPosArgs (fmap f os) i (fmap (fmap f) p)
 
 -- | Specifies a mode.
-data Mode g s r = forall a. Mode
+data Mode s r = forall a. Mode
   { mModeName :: String
   -- ^ How the user specifies the mode on the command line.  For @git@
   -- for example this might be @commit@ or @log@.
 
-  , mGetResult :: [g] -> [a] -> r
-  -- ^ This function is applied to a list of the results of parsing
-  -- global options and to a list of the results of parsing the
+  , mGetResult :: [a] -> r
+  -- ^ This function is applied to a list of the results of parsing the
   -- options that are specific to this mode.  The function returns a
   -- type of your choosing (though all modes in the same parser will
   -- have to return the same type.)
@@ -168,12 +164,14 @@ modeHelp
   :: String
   -- ^ Mode name
 
-  -> (ProgramName -> String)
-  -- ^ Applied to the name of the program, returns a help string.
+  -> h
+  -- ^ Whatever you want to use for the help (perhaps a string, or a
+  -- function, or an IO action).  Its type will have to match up with
+  -- the type of the global shortcut options and with the shortcut
+  -- type of the other modes.
 
-  -> ([g] -> [a] -> r)
-  -- ^ When applied to the global options and to the mode options,
-  -- returns the result.
+  -> ([a] -> r)
+  -- ^ When applied to the the mode options, returns the result.
 
   -> [C.OptSpec a]
   -- ^ Options for this mode
@@ -184,18 +182,18 @@ modeHelp
   -> (String -> Ex.Exceptional C.InputError a)
   -- ^ Parses positional arguments
 
-  -> Mode g (ProgramName -> String) r
+  -> Mode h r
 
 modeHelp n h getR os i p =
   Mode n getR (OptsWithPosArgs (Opts os ss) i p)
   where
     ss = [C.OptSpec ["help"] "h" (C.NoArg h)]
 
-instance MapShortcuts (Mode g) where
+instance MapShortcuts Mode where
   smap f (Mode n g o) = Mode n g (smap f o)
 
-instance Functor (Mode g s) where
-  fmap f (Mode n gr os) = Mode n (\gs as -> f (gr gs as)) os
+instance Functor (Mode s) where
+  fmap f (Mode n gr os) = Mode n (fmap f gr) os
 
 parseOpts :: Opts s a -> P.Parser (Either s [a])
 parseOpts os = do
@@ -222,10 +220,9 @@ parseOptsWithPosArgs os = do
     Just spec -> return . Left $ spec
 
 parseModes
-  :: [g]
-  -> [Mode g s r]
+  :: [Mode s r]
   -> P.Parser (Either s r)
-parseModes gs ms = do
+parseModes ms = do
   let modeWords = Set.fromList . map mModeName $ ms
   (_, w) <- P.matchApproxWord modeWords
   processMode (fromJust . find (\c -> mModeName c == w) $ ms)
@@ -234,7 +231,7 @@ parseModes gs ms = do
       eiOpts <- parseOptsWithPosArgs os
       return $ case eiOpts of
         Left x -> Left x
-        Right opts -> Right (gr gs opts)
+        Right opts -> Right (gr opts)
 
 
 -- | A pure (non-IO) parser for simple command lines--that is, command
@@ -265,8 +262,15 @@ modesPure
   -- shortcut options.  For instance, @git --help@ contains a single
   -- shortcut option.
 
-  -> [Mode g s r]
-  -- ^ Specifies each mode
+  -> ([g] -> Ex.Exceptional String (Either r [Mode s r]))
+  -- ^ This function processes the global options.  If there are no
+  -- shortcut options specified in the global options, it is applied
+  -- to the result of processing the global options.  This function
+  -- may return an Exception if there is something wrong with the
+  -- global options (a nonsensical combination, perhaps.)  Otherwise,
+  -- it returns an Either.  Return a Left if there is no need to
+  -- process any modes at all after seeing the global options.
+  -- Otherwise, return a Right with a list of modes.
 
   -> [String]
   -- ^ Command line arguments to parse
@@ -278,13 +282,17 @@ modesPure
   -- shortcut option, either in the global options or in one of the
   -- mode-specific options.  A Right indicates that the user selected
   -- a mode.
-modesPure os ms ss = P.parse ss p
+modesPure os process ss = P.parse ss p
   where
     p = do
       eiGs <- parseOpts os
       case eiGs of
         Left spec -> return . Left $ spec
-        Right gs -> parseModes gs ms
+        Right gs -> case process gs of
+          Ex.Exception s -> fail s
+          Ex.Success eiModes -> case eiModes of
+            Left r -> return (Right r)
+            Right modes -> parseModes modes
 
 -- | A parser for simple command lines that do not contain modes.
 -- Runs in the IO monad.
@@ -329,8 +337,15 @@ modesIO
   :: Opts s g
   -- ^ Specifies global options and global shortcut options
 
-  -> [Mode g s r]
-  -- ^ Specifies each mode
+  -> ([g] -> Ex.Exceptional String (Either r [Mode s r]))
+  -- ^ This function processes the global options.  If there are no
+  -- shortcut options specified in the global options, it is applied
+  -- to the result of processing the global options.  This function
+  -- may return an Exception if there is something wrong with the
+  -- global options (a nonsensical combination, perhaps.)  Otherwise,
+  -- it returns an Either.  Return a Left if there is no need to
+  -- process any modes at all after seeing the global options.
+  -- Otherwise, return a Right with a list of modes.
 
   -> IO (Either s r)
   -- ^ If parsing fails, the program will exit with a failure. If
