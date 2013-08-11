@@ -20,7 +20,7 @@ module System.Console.MultiArg.CommandLine (
   Intersperse (Intersperse, StopOptions)
 
   -- * Types
-  , ProgramName
+  , ProgName
   , Opts(..)
   , MapShortcuts(..)
   , OptsWithPosArgs(..)
@@ -362,9 +362,9 @@ modesIO os ms = do
 
 -- | The name of the program that was entered on the command line,
 -- obtained from System.Environment.getProgName.
-type ProgramName = String
+type ProgName = String
 
-displayAct :: (ProgramName -> String) -> IO a
+displayAct :: (ProgName -> String) -> IO a
 displayAct getHelp = do
   pn <- getProgName
   putStr $ getHelp pn
@@ -386,7 +386,7 @@ errorActDisplayHelp e = do
 -- | A parser for simple command lines. Adds a @--help@ option for
 -- you.
 simpleHelp
-  :: (ProgramName -> String)
+  :: (ProgName -> String)
   -- ^ Indicate the help here. This function, when applied to the name
   -- of the program, returns help.  simpleHelp automatically adds
   -- options for @--help@ and @-h@ for you.
@@ -416,12 +416,12 @@ simpleHelp getHelp os ir getArg = do
 -- | A parser for simple command lines without modes.  Adds options
 -- for @--help@ and @--version@ for you.
 simpleHelpVersion
-  :: (ProgramName -> String)
+  :: (ProgName -> String)
   -- ^ Indicate the help here. This function, when applied to the name
   -- of the program, returns help.  simpleHelpVersion automatically adds
   -- options for @--help@ and @-h@ for you.
 
-  -> (ProgramName -> String)
+  -> (ProgName -> String)
   -- ^ Indicate the version here. This function, when applied to the
   -- name of the program, returns a version string.  simpleHelpVersion
   -- automatically adds an option for @--version@ for you.
