@@ -1,3 +1,12 @@
+Release 0.18.0.0, August 14, 2013
+Changes since release 0.16.0.0:
+
+* Rename SimpleParser module to CommandLine
+
+* Made a number of changes to CommandLine to reorganize the data types
+  and functions responsible for parsing simple and multi-mode command
+  lines
+
 Release 0.16.0.0, May 21, 2013
 Changes since release 0.14.0.0:
 
