@@ -7,6 +7,9 @@ Changes since release 0.16.0.0:
   and functions responsible for parsing simple and multi-mode command
   lines
 
+* Remove GetArgs, as this was for an old library bug which has been
+  fixed for some time now
+
 Release 0.16.0.0, May 21, 2013
 Changes since release 0.14.0.0:
 
