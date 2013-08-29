@@ -157,7 +157,6 @@ module System.Console.MultiArg (
   , module System.Console.MultiArg.CommandLine
   , module System.Console.MultiArg.Option
   , module System.Console.MultiArg.Prim
-  , module Control.Monad.Exception.Synchronous
   , module System.Environment
   ) where
 
@@ -165,5 +164,4 @@ import System.Console.MultiArg.Combinator
 import System.Console.MultiArg.CommandLine
 import System.Console.MultiArg.Option
 import System.Console.MultiArg.Prim
-import Control.Monad.Exception.Synchronous
 import System.Environment

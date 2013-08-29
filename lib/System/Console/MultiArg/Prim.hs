@@ -74,7 +74,6 @@ import System.Console.MultiArg.Option
     makeLongOpt )
 import Control.Applicative ( Applicative, Alternative, optional )
 import qualified Control.Applicative as A
-import qualified Control.Monad.Exception.Synchronous as Ex
 import qualified Data.Set as Set
 import Data.Set ( Set )
 import qualified Control.Monad
@@ -306,7 +305,7 @@ parse
   -> Parser a
   -- ^ Parser to run
 
-  -> Ex.Exceptional Error a
+  -> Either Error a
   -- ^ Success or failure. Any parser might fail; for example, the
   -- command line might not have any values left to parse. Use of the
   -- 'choice' combinator can lead to a list of failures.
@@ -314,8 +313,8 @@ parse
 parse ss p =
   let s = State "" ss False
       procReply r = case r of
-        Ok x _ _ -> Ex.Success x
-        Fail m -> Ex.Exception m
+        Ok x _ _ -> Right x
+        Fail m -> Left m
   in case runParser p s of
       Consumed r -> procReply r
       Empty r -> procReply r
@@ -472,6 +471,12 @@ approxLongOptError =
   map (Expected . ("long option: --" ++) . unLongOpt)
 
 
+assert :: e -> Bool -> Either e ()
+assert e b = if b then Left e else Right ()
+
+fromMaybe :: e -> Maybe a -> Either e a
+fromMaybe e = maybe (Left e) Right
+
 -- | Examines the next word. If it matches a LongOpt in the set
 -- unambiguously, returns a tuple of the word actually found and the
 -- matching word in the set and the accompanying text after the equal
@@ -486,21 +491,21 @@ approxLongOpt ts = Parser $ \s@(State ps rm stop) ->
         Consumed (Ok (found, opt, arg) (State ps rm'' stop)
                      (err allOpts))
       allOpts = Set.toList ts
-  in Ex.switch ert gd $ do
-    Ex.assert allOpts $ null ps
-    Ex.assert allOpts $ not stop
-    (x, rm') <- Ex.fromMaybe allOpts $ nextW rm
-    (word, afterEq) <- Ex.fromMaybe allOpts $ getLongOption x
-    opt <- Ex.fromMaybe allOpts $ makeLongOpt word
+  in either ert gd $ do
+    assert allOpts $ null ps
+    assert allOpts $ not stop
+    (x, rm') <- fromMaybe allOpts $ nextW rm
+    (word, afterEq) <- fromMaybe allOpts $ getLongOption x
+    opt <- fromMaybe allOpts $ makeLongOpt word
     if Set.member opt ts
       then return (word, opt, afterEq, rm')
       else do
       let p t = word `isPrefixOf` unLongOpt t
           matches = Set.filter p ts
       case Set.toList matches of
-        [] -> Ex.throw allOpts
+        [] -> Left allOpts
         (m:[]) -> return (word, m, afterEq, rm')
-        ls -> Ex.throw ls
+        ls -> Left ls
 
 
 -- | Parses only pending short option arguments. For example, for the
@@ -648,15 +653,15 @@ matchApproxWord set = Parser $ \s@(State ps rm sp) ->
       gd (act, mtch, rm'') =
         Consumed $ Ok (act, mtch) (State ps rm'' sp) (err allWords)
       allWords = Set.toList set
-  in Ex.switch ert gd $ do
-      Ex.assert allWords $ null ps
-      (x, rm') <- Ex.fromMaybe allWords $ nextW rm
+  in either ert gd $ do
+      assert allWords $ null ps
+      (x, rm') <- fromMaybe allWords $ nextW rm
       let matches = Set.filter p set
           p t = x `isPrefixOf` t
       case Set.toList matches of
-        [] -> Ex.throw allWords
+        [] -> Left allWords
         r:[] -> return (x, r, rm')
-        xs -> Ex.throw xs
+        xs -> Left xs
       
 -- | @manyTill p end@ runs parser p zero or more times until parser
 -- @end@ succeeds. If @end@ succeeds and consumes input, that input is

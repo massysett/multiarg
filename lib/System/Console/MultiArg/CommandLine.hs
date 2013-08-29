@@ -45,7 +45,6 @@ module System.Console.MultiArg.CommandLine (
 
 import qualified System.Console.MultiArg.Combinator as C
 import qualified System.Console.MultiArg.Prim as P
-import qualified Control.Monad.Exception.Synchronous as Ex
 import System.Environment (getArgs, getProgName)
 import System.Exit (exitFailure, exitSuccess)
 import qualified System.IO as IO
@@ -129,7 +128,7 @@ instance MapShortcuts Opts where
 data OptsWithPosArgs s a = OptsWithPosArgs
   { opOpts :: Opts s a
   , opIntersperse :: Intersperse
-  , opPosArg :: String -> Ex.Exceptional C.InputError a
+  , opPosArg :: String -> Either C.InputError a
   }
 
 instance MapShortcuts OptsWithPosArgs where
@@ -179,7 +178,7 @@ modeHelp
   -> Intersperse
   -- ^ Allow interspersion of mode options and positional arguments?
 
-  -> (String -> Ex.Exceptional C.InputError a)
+  -> (String -> Either C.InputError a)
   -- ^ Parses positional arguments
 
   -> Mode h r
@@ -245,7 +244,7 @@ simplePure
   -> [String]
   -- ^ The command line arguments to parse
 
-  -> Ex.Exceptional P.Error (Either s [a])
+  -> Either P.Error (Either s [a])
   -- ^ Returns an error if the command line arguments could not be
   -- parsed. If the parse was successful, returns an Either.  A Left
   -- indicates that the user selected a shortcut option.  A Right
@@ -262,7 +261,7 @@ modesPure
   -- shortcut options.  For instance, @git --help@ contains a single
   -- shortcut option.
 
-  -> ([g] -> Ex.Exceptional String (Either r [Mode s r]))
+  -> ([g] -> Either String (Either r [Mode s r]))
   -- ^ This function processes the global options.  If there are no
   -- shortcut options specified in the global options, it is applied
   -- to the result of processing the global options.  This function
@@ -275,7 +274,7 @@ modesPure
   -> [String]
   -- ^ Command line arguments to parse
 
-  -> Ex.Exceptional P.Error (Either s r)
+  -> Either P.Error (Either s r)
   -- ^ If the command line arguments fail to parse, this will be an
   -- Exception with the error.  If the parser is successful, this
   -- returns an Either. A Left indicates that the user entered a
@@ -289,8 +288,8 @@ modesPure os process ss = P.parse ss p
       case eiGs of
         Left spec -> return . Left $ spec
         Right gs -> case process gs of
-          Ex.Exception s -> fail s
-          Ex.Success eiModes -> case eiModes of
+          Left s -> fail s
+          Right eiModes -> case eiModes of
             Left r -> return (Right r)
             Right modes -> parseModes modes
 
@@ -303,7 +302,7 @@ simpleIO
   -> Intersperse
   -- ^ Allow interspersion of options and arguments?
 
-  -> (String -> Ex.Exceptional C.InputError a)
+  -> (String -> Either C.InputError a)
   -- ^ How to parse positional arguments
 
   -> IO [a]
@@ -314,8 +313,8 @@ simpleIO os i getArg = do
   let optsWithArgs = OptsWithPosArgs (Opts os []) i getArg
   ss <- getArgs
   case simplePure optsWithArgs ss of
-    Ex.Exception e -> errorAct e
-    Ex.Success g -> case g of
+    Left e -> errorAct e
+    Right g -> case g of
       Left _ ->
         error "simpleIO: should never happen: no shortcut options"
       Right gs -> return gs
@@ -327,8 +326,8 @@ simpleIOCustomError
 simpleIOCustomError showErr os = do
   ss <- getArgs
   case simplePure os ss of
-    Ex.Exception e -> showErr e >> exitFailure
-    Ex.Success g -> return g
+    Left e -> showErr e >> exitFailure
+    Right g -> return g
   
 
 -- | A command line parser for multi-mode command lines.  Runs in the
@@ -337,7 +336,7 @@ modesIO
   :: Opts s g
   -- ^ Specifies global options and global shortcut options
 
-  -> ([g] -> Ex.Exceptional String (Either r [Mode s r]))
+  -> ([g] -> Either String (Either r [Mode s r]))
   -- ^ This function processes the global options.  If there are no
   -- shortcut options specified in the global options, it is applied
   -- to the result of processing the global options.  This function
@@ -356,8 +355,8 @@ modesIO
 modesIO os ms = do
   ss <- getArgs
   case modesPure os ms ss of
-    Ex.Exception e -> errorAct e
-    Ex.Success g -> return g
+    Left e -> errorAct e
+    Right g -> return g
 
 
 -- | The name of the program that was entered on the command line,
@@ -397,7 +396,7 @@ simpleHelp
   -> Intersperse
   -- ^ Allow interspersion of options and positional arguments?
 
-  -> (String -> Ex.Exceptional C.InputError a)
+  -> (String -> Either C.InputError a)
   -- ^ How to parse positional arguments
 
   -> IO [a]
@@ -432,7 +431,7 @@ simpleHelpVersion
   -> Intersperse
   -- ^ Allow interspersion of options and positional arguments?
 
-  -> (String -> Ex.Exceptional C.InputError a)
+  -> (String -> Either C.InputError a)
   -- ^ How to parse positional arguments
 
   -> IO [a]
@@ -456,17 +455,17 @@ simpleHelpVersion getHelp getVer os ir getArg = do
 
 -- | Parses positional arguments and handles errors with them.
 parsePosArg
-  :: (String -> Ex.Exceptional C.InputError a)
+  :: (String -> Either C.InputError a)
   -> P.Parser a
 parsePosArg p = do
   a <- P.nextWord
   case p a of
-    Ex.Exception e ->
+    Left e ->
       let msg = "invalid positional argument: \"" ++ a ++ "\""
       in case e of
           C.NoMsg -> fail msg
           C.ErrorMsg s -> fail $ msg ++ ": " ++ s
-    Ex.Success g -> return g
+    Right g -> return g
 
 -- | Parses options only, where they are not interspersed with
 -- positional arguments.  Stops parsing only where it encouters a word
@@ -484,7 +483,7 @@ parseOptsNoIntersperse p = P.manyTill p e where
 -- or at the first word that does not look like an option.
 parseStopOpts
   :: P.Parser a
-  -> (String -> Ex.Exceptional C.InputError a)
+  -> (String -> Either C.InputError a)
   -> P.Parser [a]
 parseStopOpts optParser p =
   (++)
@@ -498,7 +497,7 @@ parseStopOpts optParser p =
 -- when applied to a string, returns the appropriate type.
 parseIntersperse
   :: P.Parser a
-  -> (String -> Ex.Exceptional C.InputError a)
+  -> (String -> Either C.InputError a)
   -> P.Parser [a]
 parseIntersperse optParser p =
   let pa = Just <$> parsePosArg p

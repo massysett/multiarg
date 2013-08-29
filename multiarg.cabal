@@ -1,5 +1,5 @@
 Name: multiarg
-Version: 0.18.0.0
+Version: 0.19.0.0
 Cabal-version: >=1.8
 Build-Type: Simple
 License: BSD3
@@ -37,7 +37,6 @@ Library
   Build-depends:
       base ==4.6.*
     , containers ==0.5.*
-    , explicit-exception ==0.1.*
 
   hs-source-dirs: lib
 
