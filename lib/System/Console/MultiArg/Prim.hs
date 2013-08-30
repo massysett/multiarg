@@ -472,7 +472,7 @@ approxLongOptError =
 
 
 assert :: e -> Bool -> Either e ()
-assert e b = if b then Left e else Right ()
+assert e b = if b then Right () else Left e
 
 fromMaybe :: e -> Maybe a -> Either e a
 fromMaybe e = maybe (Left e) Right
