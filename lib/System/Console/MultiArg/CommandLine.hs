@@ -453,13 +453,21 @@ simpleHelpVersion getHelp getVer os ir getArg = do
 
 -- # Helpers
 
--- | Parses positional arguments and handles errors with them.
+-- | Handles positional arguments and errors with them.  The parser for
+-- the positional argument must be passed in (this way it can
+-- be parsed with nonOptionPosArg or nextWord, as appropriate; when
+-- parsing interpsersed command lines, you will want nonOptionPosArg;
+-- when parsing non-interspersed command lines, you will need
+-- nextWord.)
 parsePosArg
-  :: (String -> Either C.InputError a)
+  :: P.Parser String
+  -- ^ Parser for Word for next positional argument
+  -> (String -> Either C.InputError a)
+  -- ^ Function to handle positional arguments
   -> P.Parser a
-parsePosArg p = do
-  a <- P.nextWord
-  case p a of
+parsePosArg pa f = do
+  a <- pa
+  case f a of
     Left e ->
       let msg = "invalid positional argument: \"" ++ a ++ "\""
       in case e of
@@ -489,18 +497,23 @@ parseStopOpts optParser p =
   (++)
   <$> parseOptsNoIntersperse optParser
   <* optional P.stopper
-  <*> many (parsePosArg p)
+  <*> many (parsePosArg P.nextWord p)
 
 
 -- | @parseIntersperse o p@ parses options and positional arguments,
 -- where o is a parser that parses options, and p is a function that,
 -- when applied to a string, returns the appropriate type.
+--
+-- If a stopper has not yet been seen, any word that begins with a
+-- hyphen will not be parsed as a positional argument.  Therefore, if
+-- there is a word before a stopper and it begins with a hyphen, if it
+-- is not a valid option then the parse will fail with an error.
 parseIntersperse
   :: P.Parser a
   -> (String -> Either C.InputError a)
   -> P.Parser [a]
 parseIntersperse optParser p =
-  let pa = Just <$> parsePosArg p
+  let pa = Just <$> parsePosArg P.nonOptionPosArg p
       po = Just <$> optParser
       ps = Nothing <$ P.stopper
       parser = po <|> ps <|> pa
