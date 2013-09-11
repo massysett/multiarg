@@ -265,9 +265,9 @@ modesPure
   -- ^ This function processes the global options.  If there are no
   -- shortcut options specified in the global options, it is applied
   -- to the result of processing the global options.  This function
-  -- may return an Exception if there is something wrong with the
+  -- may return a Left if there is something wrong with the
   -- global options (a nonsensical combination, perhaps.)  Otherwise,
-  -- it returns an Either.  Return a Left if there is no need to
+  -- it returns a @Right Either@.  Return a Left if there is no need to
   -- process any modes at all after seeing the global options.
   -- Otherwise, return a Right with a list of modes.
 
@@ -275,9 +275,9 @@ modesPure
   -- ^ Command line arguments to parse
 
   -> Either P.Error (Either s r)
-  -- ^ If the command line arguments fail to parse, this will be an
-  -- Exception with the error.  If the parser is successful, this
-  -- returns an Either. A Left indicates that the user entered a
+  -- ^ If the command line arguments fail to parse, this will be a
+  -- Left with the error.  If the parser is successful, this
+  -- returns a @Right Either@. A Left indicates that the user entered a
   -- shortcut option, either in the global options or in one of the
   -- mode-specific options.  A Right indicates that the user selected
   -- a mode.
@@ -340,9 +340,9 @@ modesIO
   -- ^ This function processes the global options.  If there are no
   -- shortcut options specified in the global options, it is applied
   -- to the result of processing the global options.  This function
-  -- may return an Exception if there is something wrong with the
+  -- may return a Left if there is something wrong with the
   -- global options (a nonsensical combination, perhaps.)  Otherwise,
-  -- it returns an Either.  Return a Left if there is no need to
+  -- it returns a @Right Either@.  Return a Left if there is no need to
   -- process any modes at all after seeing the global options.
   -- Otherwise, return a Right with a list of modes.
 

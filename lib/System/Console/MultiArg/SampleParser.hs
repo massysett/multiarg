@@ -39,14 +39,26 @@ data Flag =
 specs :: [C.OptSpec Flag]
 
 specs =
-  [ C.OptSpec ["bytes"]                     ['c']     (C.OneArg Bytes)
-  , C.OptSpec ["follow"]                    ['f']     (C.OptionalArg Follow)
+  [ C.OptSpec ["bytes"]                     ['c']
+              (C.OneArg (return . Bytes))
+
+  , C.OptSpec ["follow"]                    ['f']
+              (C.OptionalArg (return . Follow))
+
   , C.OptSpec ["follow-retry"]              ['F']     (C.NoArg Retry)
-  , C.OptSpec ["lines"]                     ['n']     (C.OneArg Lines)
-  , C.OptSpec ["max-unchanged-stats"]       []        (C.OneArg Stats)
-  , C.OptSpec ["pid"]                       []        (C.OneArg Pid)
+
+  , C.OptSpec ["lines"]                     ['n']
+              (C.OneArg (return . Lines))
+
+  , C.OptSpec ["max-unchanged-stats"]       []
+              (C.OneArg (return . Stats))
+
+  , C.OptSpec ["pid"]                       []
+              (C.OneArg (return .Pid))
   , C.OptSpec ["quiet"]                     ['q']     (C.NoArg Quiet)
-  , C.OptSpec ["sleep-interval"]            ['s']     (C.OneArg Sleep)
+
+  , C.OptSpec ["sleep-interval"]            ['s']
+              (C.OneArg (return .Sleep))
   , C.OptSpec ["verbose"]                   ['v']     (C.NoArg Verbose)
   , C.OptSpec ["help"]                      []        (C.NoArg Help)
   , C.OptSpec ["version"]                   []        (C.NoArg Version)

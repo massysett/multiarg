@@ -22,7 +22,7 @@ import Data.List (isPrefixOf, intersperse, nubBy)
 import Data.Set ( Set )
 import qualified Data.Set as Set
 import Control.Applicative
-       ((<$>), (<*>), optional, (<$), (*>), (<|>), many)
+       ((<*>), optional, (<$), (*>), (<|>), many)
 
 import System.Console.MultiArg.Prim
   ( Parser, try, approxLongOpt,
@@ -158,16 +158,17 @@ errorMsg badOpt ss err = arg ++ opt ++ msg
 -- example that uses an algebraic data type, see
 -- "System.Console.MultiArg.SampleParser".
 --
--- Some of these value constructors have names ending in @E@. Use
--- these constructors when you want to parse option arguments that may
--- fail to parse--for example, you want to parse an Int. The function
--- passed as an argument to the value constructor indicates failure by
--- returing an 'Exception'.
+-- Most of these value constructors take as an argument a function
+-- that returns an Either.  The function should return a @Left
+-- InputError@ if the parsing of the arguments failed--if, for
+-- example, the user needs to enter an integer but she instead input a
+-- letter.  The functions should return a Right if parsing of the
+-- arguments was successful.
 data ArgSpec a =
   NoArg a
   -- ^ This option takes no arguments
 
-  | OptionalArg (Maybe String -> a)
+  | OptionalArg (Maybe String -> Either InputError a)
     -- ^ This option takes an optional argument. As noted in \"The Tao
     -- of Option Parsing\", optional arguments can result in some
     -- ambiguity. (Read it here:
@@ -181,21 +182,21 @@ data ArgSpec a =
     -- though, optional arguments lead to ambiguity, so if you don't
     -- like it, don't use them :)
 
-  | OneArg (String -> a)
+  | OneArg (String -> Either InputError a)
     -- ^ This option takes one argument. Here, if option @a@ takes one
     -- argument, @-a -b@ will be parsed with @-b@ being an argument to
     -- option @a@, even though @-b@ starts with a hyphen and therefore
     -- \"looks like\" an option.
 
-  | TwoArg (String -> String -> a)
+  | TwoArg (String -> String -> Either InputError a)
     -- ^ This option takes two arguments. Parsed similarly to
     -- 'OneArg'.
 
-  | ThreeArg (String -> String -> String -> a)
+  | ThreeArg (String -> String -> String -> Either InputError a)
     -- ^ This option takes three arguments. Parsed similarly to
     -- 'OneArg'.
 
-  | VariableArg ([String] -> a)
+  | VariableArg ([String] -> Either InputError a)
     -- ^ This option takes a variable number of arguments--zero or
     -- more. Option arguments continue until the command line contains
     -- a word that begins with a hyphen. For example, if option @a@
@@ -215,56 +216,26 @@ data ArgSpec a =
     -- option to GNU grep, which requires the user to supply one of
     -- three arguments: @always@, @never@, or @auto@.
 
-  | OptionalArgE (Maybe String -> Either InputError a)
-    -- ^ This option takes an optional argument, like
-    -- 'OptionalArg'. Parsing of the optional argument might fail.
-
-  | OneArgE (String -> Either InputError a)
-    -- ^ This option takes a single argument, like 'OneArg'. Parsing
-    -- of the argument might fail.
-
-  | TwoArgE (String -> String -> Either InputError a)
-    -- ^ This option takes two arguments, like 'TwoArg'. Parsing of
-    -- the arguments might fail.
-
-  | ThreeArgE (String -> String -> String -> Either InputError a)
-    -- ^ This option takes three arguments, like 'ThreeArg'. Parsing
-    -- of the arguments might fail.
-
-  | VariableArgE ([String] -> Either InputError a)
-    -- ^ This option takes a variable number of arguments, like
-    -- 'VariableArg'. Parsing of the arguments might fail.
-
 
 instance Functor ArgSpec where
   fmap f a = case a of
     NoArg i -> NoArg $ f i
-    OptionalArg g ->
-      OptionalArg $ \ms -> f (g ms)
-    OneArg g ->
-      OneArg $ \s1 -> f (g s1)
-    TwoArg g ->
-      TwoArg $ \s1 s2 -> f (g s1 s2)
-    ThreeArg g ->
-      ThreeArg $ \s1 s2 s3 -> f (g s1 s2 s3)
-    VariableArg g ->
-      VariableArg $ \ls -> f (g ls)
     ChoiceArg gs ->
       ChoiceArg . map (\(s, r) -> (s, f r)) $ gs
 
-    OptionalArgE g -> OptionalArgE $ \ms -> fmap f (g ms)
+    OptionalArg g -> OptionalArg $ \ms -> fmap f (g ms)
 
-    OneArgE g ->
-      OneArgE $ \s1 -> fmap f (g s1)
+    OneArg g ->
+      OneArg $ \s1 -> fmap f (g s1)
 
-    TwoArgE g ->
-      TwoArgE $ \s1 s2 -> fmap f (g s1 s2)
+    TwoArg g ->
+      TwoArg $ \s1 s2 -> fmap f (g s1 s2)
 
-    ThreeArgE g ->
-      ThreeArgE $ \s1 s2 s3 -> fmap f (g s1 s2 s3)
+    ThreeArg g ->
+      ThreeArg $ \s1 s2 s3 -> fmap f (g s1 s2 s3)
 
-    VariableArgE g ->
-      VariableArgE $ \ls -> fmap f (g ls)
+    VariableArg g ->
+      VariableArg $ \ls -> fmap f (g ls)
 
 
 -- | Parses a single command line option. Examines all the options
@@ -318,15 +289,6 @@ longOpt set mp = do
       Nothing -> return a
       Just _ -> fail $ "option " ++ unLongOpt lo
                   ++ " does not take argument"
-    OptionalArg f -> return (f maybeArg)
-    OneArg f -> f <$> maybeNextArg
-    TwoArg f -> f <$> maybeNextArg <*> nextWord
-    ThreeArg f -> f <$> maybeNextArg <*> nextWord <*> nextWord
-    VariableArg f -> do
-      as <- many nonOptionPosArg
-      return . f $ case maybeArg of
-        Nothing -> as
-        Just a1 -> a1 : as
     ChoiceArg ls -> do
       s <- maybeNextArg
       case matchAbbrev ls s of
@@ -335,32 +297,32 @@ longOpt set mp = do
                    ++ (concat . intersperse ", " . map fst $ ls)
         Just g -> return g
 
-    OptionalArgE f -> case maybeArg of
+    OptionalArg f -> case maybeArg of
       Nothing -> either (fail . errorMsg (Left lo) []) return
                  $ f Nothing
       Just s -> either (fail . errorMsg (Left lo) [s]) return
                 $ f (Just s)
 
 
-    OneArgE f -> maybeNextArg >>= g
+    OneArg f -> maybeNextArg >>= g
       where
         g a = either (fail . errorMsg (Left lo) [a]) return
               $ f a
 
-    TwoArgE f -> do
+    TwoArg f -> do
       a1 <- maybeNextArg
       a2 <- nextWord
       either (fail . errorMsg (Left lo) [a1, a2]) return
         $ f a1 a2
 
-    ThreeArgE f -> do
+    ThreeArg f -> do
       a1 <- maybeNextArg
       a2 <- nextWord
       a3 <- nextWord
       either (fail . errorMsg (Left lo) [a1, a2, a3]) return
         $ f a1 a2 a3
 
-    VariableArgE f -> do
+    VariableArg f -> do
       as <- many nonOptionPosArg
       let args = case maybeArg of
             Nothing -> as
@@ -376,17 +338,12 @@ shortOpt o = mconcat parsers where
     let opt = unsafeShortOpt c
     in Just $ nextShort opt *> case argSpec o of
       NoArg a -> return a
-      OptionalArg f -> shortOptionalArg f
-      OneArg f -> shortOneArg f
-      TwoArg f -> shortTwoArg f
-      ThreeArg f -> shortThreeArg f
-      VariableArg f -> shortVariableArg f
       ChoiceArg ls -> shortChoiceArg opt ls
-      OptionalArgE f -> shortOptionalArgE opt f
-      OneArgE f -> shortOneArgE opt f
-      TwoArgE f -> shortTwoArgE opt f
-      ThreeArgE f -> shortThreeArgE opt f
-      VariableArgE f -> shortVariableArgE opt f
+      OptionalArg f -> shortOptionalArg opt f
+      OneArg f -> shortOneArg opt f
+      TwoArg f -> shortTwoArg opt f
+      ThreeArg f -> shortThreeArg opt f
+      VariableArg f -> shortVariableArg opt f
 
 -- | Parses a short option without an argument, either pending or
 -- non-pending. Fails with a single error message rather than two.
@@ -400,20 +357,11 @@ nextShort o = p <?> ("short option: -" ++ [unShortOpt o])
         Nothing -> nonPendingShortOpt o
 
 
-shortVariableArg :: ([String] -> a) -> Parser a
-shortVariableArg f = do
-  maybeSameWordArg <- optional pendingShortOptArg
-  args <- many nonOptionPosArg
-  case maybeSameWordArg of
-    Nothing -> return (f args)
-    Just arg1 -> return (f (arg1:args))
-
-
-shortVariableArgE
+shortVariableArg
   :: ShortOpt
   -> ([String] -> Either InputError a)
   -> Parser a
-shortVariableArgE so f = do
+shortVariableArg so f = do
   maybeSameWordArg <- optional pendingShortOptArg
   args <- many nonOptionPosArg
   let as = case maybeSameWordArg of
@@ -422,14 +370,11 @@ shortVariableArgE so f = do
   either (fail . errorMsg (Right so) as) return $ f as
 
 
-shortOneArg :: (String -> a) -> Parser a
-shortOneArg f = f <$> firstShortArg
-
-shortOneArgE
+shortOneArg
   :: ShortOpt
   -> (String -> Either InputError a)
   -> Parser a
-shortOneArgE so f = do
+shortOneArg so f = do
   a <- firstShortArg
   either (fail . errorMsg (Right so) [a]) return $ f a
 
@@ -448,50 +393,33 @@ shortChoiceArg opt ls =
           ++ (concat . intersperse " " . map fst $ ls)
 
 
-
-shortTwoArg :: (String -> String -> a) -> Parser a
-shortTwoArg f = f <$> firstShortArg <*> nextWord
-
-shortTwoArgE
+shortTwoArg
   :: ShortOpt
   -> (String -> String -> Either InputError a)
   -> Parser a
-shortTwoArgE so f = do
+shortTwoArg so f = do
   a1 <- firstShortArg
   a2 <- nextWord
   either (fail . errorMsg (Right so) [a1, a2]) return
     $ f a1 a2
 
-shortThreeArg :: (String -> String -> String -> a) -> Parser a
-shortThreeArg f = f <$> firstShortArg <*> nextWord <*> nextWord
 
-shortThreeArgE
+shortThreeArg
   :: ShortOpt
   -> (String -> String -> String -> Either InputError a)
   -> Parser a
-shortThreeArgE so f = do
+shortThreeArg so f = do
   a1 <- firstShortArg
   a2 <- nextWord
   a3 <- nextWord
   either (fail . errorMsg (Right so) [a1, a2, a3]) return
     $ f a1 a2 a3
 
-shortOptionalArg :: (Maybe String -> a) -> Parser a
-shortOptionalArg f = do
-  maybeSameWordArg <- optional pendingShortOptArg
-  case maybeSameWordArg of
-    Nothing -> do
-      maybeArg <- optional nonOptionPosArg
-      case maybeArg of
-        Nothing -> return (f Nothing)
-        Just a -> return (f (Just a))
-    Just a -> return (f (Just a))
-
-shortOptionalArgE
+shortOptionalArg
   :: ShortOpt
   -> (Maybe String -> Either InputError a)
   -> Parser a
-shortOptionalArgE so f = do
+shortOptionalArg so f = do
   maybeSameWordArg <- optional pendingShortOptArg
   case maybeSameWordArg of
     Nothing -> do
