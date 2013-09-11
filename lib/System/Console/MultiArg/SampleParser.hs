@@ -54,11 +54,11 @@ specs =
               (C.OneArg (return . Stats))
 
   , C.OptSpec ["pid"]                       []
-              (C.OneArg (return .Pid))
+              (C.OneArg (return . Pid))
   , C.OptSpec ["quiet"]                     ['q']     (C.NoArg Quiet)
 
   , C.OptSpec ["sleep-interval"]            ['s']
-              (C.OneArg (return .Sleep))
+              (C.OneArg (return . Sleep))
   , C.OptSpec ["verbose"]                   ['v']     (C.NoArg Verbose)
   , C.OptSpec ["help"]                      []        (C.NoArg Help)
   , C.OptSpec ["version"]                   []        (C.NoArg Version)
