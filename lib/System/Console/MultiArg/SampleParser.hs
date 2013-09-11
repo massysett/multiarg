@@ -6,12 +6,7 @@
 -- like this and then feed it different options:
 --
 -- > import System.Console.MultiArg.SampleParser
--- > main = sampleMain Intersperse
---
--- or:
---
--- > import System.Console.MultiArg.SampleParser
--- > main = sampleMain StopOptions
+-- > main = sampleMain
 --
 -- The code in the module is the sample code; the sample code is not
 -- in the Haddock documentation! If you're reading this in Haddock,
@@ -52,7 +47,7 @@ specs =
   , C.OptSpec ["version"]                   []        (C.NoArg Version)
   ]
 
-sampleMain :: P.Intersperse -> IO ()
-sampleMain i = do
-  r <- P.simpleIO specs i (return . Filename)
+sampleMain :: IO ()
+sampleMain = do
+  r <- P.simpleIO specs (return . Filename)
   print r

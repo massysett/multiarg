@@ -8,6 +8,16 @@
 -- Another parser is provided for multi-mode programs that are similar
 -- to @git@ or @darcs@.
 --
+-- All the parsers in this module allow the user to intersperse
+-- positional arguments and options.  For example, in the command line
+-- @ls -l myfile -h myfile2@, both @-l@ and @-h@ will be interpreted
+-- as options.  If the user supplies a word that begins with a hyphen
+-- but it is not a valid option, an error occurs.  If the user wants
+-- to indicate that all remaining words on the command line are
+-- positional arguments, he can use a stopper.  For example, in the
+-- command line @ls -l myfile -- -h myfile2@, @myfile@, @-h@, and
+-- @myfile2@ are interpreted as positional arguments.
+--
 -- Previously there was a bug in System.Environment.getArgs that would
 -- not properly encode Unicode command line arguments.  multiarg used
 -- to provide its own GetArgs module to deal with this.  This bug was
@@ -16,11 +26,9 @@
 -- been fixed for awhile, multiarg no longer has its own GetArgs
 -- module.
 module System.Console.MultiArg.CommandLine (
-  -- * Interspersion control
-  Intersperse (Intersperse, StopOptions)
 
   -- * Types
-  , ProgName
+    ProgName
   , Opts(..)
   , MapShortcuts(..)
   , OptsWithPosArgs(..)
@@ -48,31 +56,11 @@ import qualified System.Console.MultiArg.Prim as P
 import System.Environment (getArgs, getProgName)
 import System.Exit (exitFailure, exitSuccess)
 import qualified System.IO as IO
-import Control.Applicative ( many, (<|>), optional,
-                             (<$), (<*>), (<*), (<$>))
+import Control.Applicative ( (<|>), optional,
+                             (<$), (<*), (<$>))
 import Data.List (find)
 import Data.Maybe (catMaybes, fromJust)
 import qualified Data.Set as Set
-
-
--- | What to do after encountering the first non-option,
--- non-option-argument word on the command line? In either case, no
--- more options are parsed after a stopper.
-data Intersperse =
-  Intersperse
-  -- ^ Additional options are allowed on the command line after
-  -- encountering the first positional argument. For example, if @a@
-  -- and @b@ are options, in the command line @-a posarg -b@, @b@ will
-  -- be parsed as an option. If @b@ is /not/ an option and the same
-  -- command line is entered, then @-b@ will result in an error
-  -- because @-b@ starts with a hyphen and therefore \"looks like\" an
-  -- option.
-
-  | StopOptions
-    -- ^ No additional options will be parsed after encountering the
-    -- first positional argument. For example, if @a@ and @b@ are
-    -- options, in the command line @-a posarg -b@, @b@ will be parsed
-    -- as a positional argument rather than as an option.
 
 
 -- | Specifies a set of options.
@@ -127,16 +115,15 @@ instance MapShortcuts Opts where
 -- | Specification for both options and positional arguments.
 data OptsWithPosArgs s a = OptsWithPosArgs
   { opOpts :: Opts s a
-  , opIntersperse :: Intersperse
   , opPosArg :: String -> Either C.InputError a
   }
 
 instance MapShortcuts OptsWithPosArgs where
-  smap f (OptsWithPosArgs os i p) = OptsWithPosArgs (smap f os) i p
+  smap f (OptsWithPosArgs os p) = OptsWithPosArgs (smap f os) p
 
 instance Functor (OptsWithPosArgs s) where
-  fmap f (OptsWithPosArgs os i p) =
-    OptsWithPosArgs (fmap f os) i (fmap (fmap f) p)
+  fmap f (OptsWithPosArgs os p) =
+    OptsWithPosArgs (fmap f os) (fmap (fmap f) p)
 
 -- | Specifies a mode.
 data Mode s r = forall a. Mode
@@ -175,16 +162,13 @@ modeHelp
   -> [C.OptSpec a]
   -- ^ Options for this mode
 
-  -> Intersperse
-  -- ^ Allow interspersion of mode options and positional arguments?
-
   -> (String -> Either C.InputError a)
   -- ^ Parses positional arguments
 
   -> Mode h r
 
-modeHelp n h getR os i p =
-  Mode n getR (OptsWithPosArgs (Opts os ss) i p)
+modeHelp n h getR os p =
+  Mode n getR (OptsWithPosArgs (Opts os ss) p)
   where
     ss = [C.OptSpec ["help"] "h" (C.NoArg h)]
 
@@ -211,11 +195,8 @@ parseOptsWithPosArgs os = do
   maySpecial <- optional (C.parseOption specials <* P.end)
   case maySpecial of
     Nothing ->
-      let f = case opIntersperse os of
-            Intersperse -> parseIntersperse
-            StopOptions -> parseStopOpts
-          parser = C.parseOption (oOptions . opOpts $ os)
-      in fmap Right $ f parser (opPosArg os)
+      let parser = C.parseOption (oOptions . opOpts $ os)
+      in fmap Right $ parseIntersperse parser (opPosArg os)
     Just spec -> return . Left $ spec
 
 parseModes
@@ -299,9 +280,6 @@ simpleIO
   :: [C.OptSpec a]
   -- ^ Options to parse
 
-  -> Intersperse
-  -- ^ Allow interspersion of options and arguments?
-
   -> (String -> Either C.InputError a)
   -- ^ How to parse positional arguments
 
@@ -309,8 +287,8 @@ simpleIO
   -- ^ If there is an error parsing the command line, the program will
   -- exit with an error message.  If successful the results are
   -- returned here.
-simpleIO os i getArg = do
-  let optsWithArgs = OptsWithPosArgs (Opts os []) i getArg
+simpleIO os getArg = do
+  let optsWithArgs = OptsWithPosArgs (Opts os []) getArg
   ss <- getArgs
   case simplePure optsWithArgs ss of
     Left e -> errorAct e
@@ -393,9 +371,6 @@ simpleHelp
   -> [C.OptSpec a]
   -- ^ Options to parse
 
-  -> Intersperse
-  -- ^ Allow interspersion of options and positional arguments?
-
   -> (String -> Either C.InputError a)
   -- ^ How to parse positional arguments
 
@@ -404,9 +379,9 @@ simpleHelp
   -- the user requested help, it will be displayed and the program
   -- exits successfully.  Otherwise, the options and positional
   -- arguments are returned here.
-simpleHelp getHelp os ir getArg = do
+simpleHelp getHelp os getArg = do
   let shortcuts = [C.OptSpec ["help"] "h" (C.NoArg (displayAct getHelp))]
-      opts = OptsWithPosArgs (Opts os shortcuts) ir getArg
+      opts = OptsWithPosArgs (Opts os shortcuts) getArg
   ei <- simpleIOCustomError errorActDisplayHelp opts
   case ei of
     Left act -> act
@@ -428,9 +403,6 @@ simpleHelpVersion
   -> [C.OptSpec a]
   -- ^ Options to parse
 
-  -> Intersperse
-  -- ^ Allow interspersion of options and positional arguments?
-
   -> (String -> Either C.InputError a)
   -- ^ How to parse positional arguments
 
@@ -440,12 +412,12 @@ simpleHelpVersion
   -- displayed and the program exits successfully.  Otherwise, the
   -- options and positional arguments are returned here.
 
-simpleHelpVersion getHelp getVer os ir getArg = do
+simpleHelpVersion getHelp getVer os getArg = do
   let shortcuts = [ C.OptSpec ["help"] "h"
                       (C.NoArg (displayAct getHelp))
                   , C.OptSpec ["version"] ""
                       (C.NoArg (displayAct getVer)) ]
-      opts = OptsWithPosArgs (Opts os shortcuts) ir getArg
+      opts = OptsWithPosArgs (Opts os shortcuts) getArg
   ei <- simpleIOCustomError errorActDisplayHelp opts
   case ei of
     Left act -> act
@@ -453,20 +425,13 @@ simpleHelpVersion getHelp getVer os ir getArg = do
 
 -- # Helpers
 
--- | Handles positional arguments and errors with them.  The parser for
--- the positional argument must be passed in (this way it can
--- be parsed with nonOptionPosArg or nextWord, as appropriate; when
--- parsing interpsersed command lines, you will want nonOptionPosArg;
--- when parsing non-interspersed command lines, you will need
--- nextWord.)
+-- | Handles positional arguments and errors with them.
 parsePosArg
-  :: P.Parser String
-  -- ^ Parser for Word for next positional argument
-  -> (String -> Either C.InputError a)
+  :: (String -> Either C.InputError a)
   -- ^ Function to handle positional arguments
   -> P.Parser a
-parsePosArg pa f = do
-  a <- pa
+parsePosArg f = do
+  a <- P.nonOptionPosArg
   case f a of
     Left e ->
       let msg = "invalid positional argument: \"" ++ a ++ "\""
@@ -474,31 +439,6 @@ parsePosArg pa f = do
           C.NoMsg -> fail msg
           C.ErrorMsg s -> fail $ msg ++ ": " ++ s
     Right g -> return g
-
--- | Parses options only, where they are not interspersed with
--- positional arguments.  Stops parsing only where it encouters a word
--- that does not begin with a dash.  This way if the user enters a bad
--- option, it shows in the error message as a bad option rather than
--- simply not getting parsed.
-parseOptsNoIntersperse :: P.Parser a -> P.Parser [a]
-parseOptsNoIntersperse p = P.manyTill p e where
-  e = P.end <|> nonOpt
-  nonOpt = P.lookAhead next
-  next = (() <$ P.nonOptionPosArg) <|> P.stopper
-
--- | Parses options and positional arguments where the two are not
--- interspersed. Stops parsing options when a stopper is encountered
--- or at the first word that does not look like an option.
-parseStopOpts
-  :: P.Parser a
-  -> (String -> Either C.InputError a)
-  -> P.Parser [a]
-parseStopOpts optParser p =
-  (++)
-  <$> parseOptsNoIntersperse optParser
-  <* optional P.stopper
-  <*> many (parsePosArg P.nextWord p)
-
 
 -- | @parseIntersperse o p@ parses options and positional arguments,
 -- where o is a parser that parses options, and p is a function that,
@@ -513,7 +453,7 @@ parseIntersperse
   -> (String -> Either C.InputError a)
   -> P.Parser [a]
 parseIntersperse optParser p =
-  let pa = Just <$> parsePosArg P.nonOptionPosArg p
+  let pa = Just <$> parsePosArg p
       po = Just <$> optParser
       ps = Nothing <$ P.stopper
       parser = po <|> ps <|> pa
