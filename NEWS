@@ -1,3 +1,15 @@
+Release 0.24.0.0, September 12, 2013
+Changes since release 0.20.0.0:
+
+* Remove OneArgE, TwoArgE, etc. from Combinator module.  These data
+  constructors were renamed OneArg, TwoArg, etc.  Having both OneArg
+  and OneArgE was redundant.
+
+* Improved error messages when the user enters an unrecognized option.
+  Previously unrecognized options were passed through to client code
+  as a positional argument; now they will be recognized as bad
+  options.
+
 Release 0.20.0.0, August 30, 2013
 Changes since release 0.18.0.0:
 
