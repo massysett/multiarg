@@ -36,7 +36,6 @@ import qualified Data.Map as M
 import Data.Map ((!))
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Monoid ( mconcat )
-import Text.Read (readMaybe)
 
 
 -- | @notFollowedBy p@ succeeds only if parser p fails. If p fails,
@@ -90,9 +89,9 @@ instance Functor OptSpec where
 -- | Reads in values that are members of Read. Provides a generic
 -- error message if the read fails.
 reader :: Read a => String -> Either InputError a
-reader s = case readMaybe s of
-  Just a -> return a
-  Nothing -> Left . ErrorMsg $ "could not parse option argument"
+reader s = case reads s of
+  (x, ""):[] -> return x
+  _ -> Left . ErrorMsg $ "could not parse option argument"
 
 -- | Reads in values that are members of Read, but the value does not
 -- have to appear on the command line. Provides a generic error
@@ -104,8 +103,8 @@ optReader
   -> Either InputError (Maybe a)
 optReader ms = case ms of
   Nothing -> return Nothing
-  Just s -> case readMaybe s of
-    Just a -> return (Just a)
+  Just s -> case reads s of
+    (x, ""):[] -> return (Just x)
     _ -> Left . ErrorMsg $ "could not parse option argument"
 
 -- | Indicates errors when parsing options to arguments.

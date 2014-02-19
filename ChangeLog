@@ -1,3 +1,9 @@
+Release 0.24.0.2, February 18, 2014
+Changes since release 0.24.0.0:
+
+* Removed upper bounds from build dependencies, and changed the
+  lower bounds.
+
 Release 0.24.0.0, September 12, 2013
 Changes since release 0.20.0.0:
 
