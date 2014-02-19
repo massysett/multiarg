@@ -1,4 +1,4 @@
-= Multiarg
+# Multiarg
 
 This is multiarg, a library of combinators to parse command lines.
 
@@ -10,7 +10,7 @@ multiarg is on Github:
 
 http://www.github.com/massysett/multiarg
 
-== Versioning
+## Versioning
 
 multiarg releases are numbered in accordance with the Haskell
 Package Versioning Policy.
