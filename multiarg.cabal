@@ -12,7 +12,7 @@ bug-reports: omari@smileystation.com
 Category: Console, Parsing
 License-File: LICENSE
 synopsis: Combinators to build command line parsers
-extra-source-files: ChangeLog, README.md, known-working-dependencies
+extra-source-files: ChangeLog, README.md, dependencies.txt
 
 description: multiarg is a parser combinator library to build command
  line parsers. With it you can easily create parsers with options
