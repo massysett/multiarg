@@ -1,3 +1,7 @@
+Release 0.24.0.4, February 24, 2014
+
+* Changed lower bound on base down to 4.5.0.0
+
 Release 0.24.0.2, February 18, 2014
 Changes since release 0.24.0.0:
 

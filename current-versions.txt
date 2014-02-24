@@ -1,6 +1,9 @@
-These dependencies were known to work with multiarg as of
-2014-02-18.  multiarg is always tested to work with the lower bounds
-given in the cabal file.
+This package was tested to work with these dependency
+versions and compiler version.
+These are the default versions fetched by cabal install.
+Tested as of: 2014-02-24 12:12:58.625909 UTC
+Path to compiler: ghc-7.6.3
+Compiler description: 7.6.3
 
 /opt/ghc-7.6.3/lib/ghc-7.6.3/package.conf.d:
     Cabal-1.16.0
@@ -29,6 +32,6 @@ given in the cabal file.
     time-1.4.0.1
     unix-2.6.0.1
 
-/home/massysett/multiarg/.cabal-sandbox/x86_64-linux-ghc-7.6.3-packages.conf.d:
-    multiarg-0.24.0.2
+/home/massysett/multiarg/sunlight-8428/db:
+    multiarg-0.24.0.4
 

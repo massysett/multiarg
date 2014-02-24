@@ -18,7 +18,7 @@ Package Versioning Policy.
 multiarg does not set its dependencies in accordance with the
 Package Versioning Policy, as I do not set upper bounds.  multiarg
 is guaranteed to build with the *minimum* versions specified in the
-cabal file.  I also include a dependencies.txt file that
+cabal file.  I also include a current-versions.txt file that
 documents more recent dependencies that are also known to work.
 
 If you find that multiarg does not build due to dependency problems:

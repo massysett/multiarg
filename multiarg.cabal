@@ -1,5 +1,5 @@
 Name: multiarg
-Version: 0.24.0.2
+Version: 0.24.0.4
 Cabal-version: >=1.8
 Build-Type: Simple
 License: BSD3
@@ -12,7 +12,11 @@ bug-reports: omari@smileystation.com
 Category: Console, Parsing
 License-File: LICENSE
 synopsis: Combinators to build command line parsers
-extra-source-files: ChangeLog, README.md, dependencies.txt
+extra-source-files: ChangeLog, README.md,
+  minimum-versions.txt, current-versions.txt,
+  sunlight-test.hs
+
+tested-with: GHC==7.4.1, GHC==7.6.3
 
 description: multiarg is a parser combinator library to build command
  line parsers. With it you can easily create parsers with options
@@ -35,7 +39,7 @@ source-repository head
 
 Library
   Build-depends:
-      base >=4.5.1.0 && < 5
+      base >=4.5.0.0 && < 5
     , containers >=0.4.2.1
 
   hs-source-dirs: lib
