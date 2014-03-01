@@ -1,0 +1,2232 @@
+Current time: 2014-03-01 20:12:15.212998 UTC
+ghc-7.4.1 ["--version"] succeeded with exit code 0
+Standard output:
+The Glorious Glasgow Haskell Compilation System, version 7.4.1
+
+Standard error:
+<empty>
+
+ghc-pkg-7.4.1 ["--version"] succeeded with exit code 0
+Standard output:
+GHC package manager version 7.4.1
+
+Standard error:
+<empty>
+
+cabal ["--version"] succeeded with exit code 0
+Standard output:
+cabal-install version 1.18.0.2
+using version 1.18.1.2 of the Cabal library 
+
+Standard error:
+<empty>
+
+ghc-7.4.1 ["--make","-outputdir","/home/massysett/multiarg/sunlight-29118","-o","/home/massysett/multiarg/sunlight-29118/Setup","Setup.hs"] succeeded with exit code 0
+Standard output:
+[1 of 1] Compiling Main             ( Setup.hs, /home/massysett/multiarg/sunlight-29118/Main.o )
+Linking /home/massysett/multiarg/sunlight-29118/Setup ...
+
+Standard error:
+<empty>
+
+/home/massysett/multiarg/sunlight-29118/Setup ["sdist","--output-directory=/home/massysett/multiarg/sunlight-29118/distDeps"] succeeded with exit code 0
+Standard output:
+Building source dist for multiarg-0.26.0.0...
+Source directory created: /home/massysett/multiarg/sunlight-29118/distDeps
+
+Standard error:
+Warning: Cannot run preprocessors. Run 'configure' command first.
+
+/home/massysett/multiarg/sunlight-29118/Setup ["sdist","--output-directory=/home/massysett/multiarg/sunlight-29118/distPkg"] succeeded with exit code 0
+Standard output:
+Building source dist for multiarg-0.26.0.0...
+Source directory created: /home/massysett/multiarg/sunlight-29118/distPkg
+
+Standard error:
+Warning: Cannot run preprocessors. Run 'configure' command first.
+
+ghc-pkg-7.4.1 ["init","/home/massysett/multiarg/sunlight-29118/db"] succeeded with exit code 0
+Standard output:
+<empty>
+
+Standard error:
+<empty>
+
+cabal ["install","--verbose=2","--with-compiler=ghc-7.4.1","--with-hc-pkg=ghc-pkg-7.4.1","--prefix=/home/massysett/multiarg/sunlight-29118/prefix","--disable-library-profiling","--disable-executable-profiling","--package-db=clear","--package-db=global","--package-db=/home/massysett/multiarg/sunlight-29118/db","--enable-tests","--disable-documentation","--only-dependencies"] succeeded with exit code 0
+Standard output:
+Reading available packages...
+Choosing modular solver.
+Resolving dependencies...
+Ready to install nats-0.1.2
+Ready to install tagged-0.7
+Ready to install text-1.1.0.0
+Ready to install transformers-0.3.0.0
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/nats/0.1.2/nats-0.1.2.tar.gz
+to /tmp/nats-0.1.2-29714...
+Updating nats.cabal with the latest revision from the index.
+Configuring nats-0.1.2...
+Dependency base ==4.5.0.0: using base-4.5.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1.2 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/nats-0.1.2
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/nats-0.1.2
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/nats-0.1.2
+Configuration files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/etc
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building nats-0.1.2...
+Preprocessing library nats-0.1.2...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -isrc -idist/build/autogen -Idist/build/autogen -Idist/build -optP-DLANGUAGE_DeriveDataTypeable -optP-include -optPdist/build/autogen/cabal_macros.h -package-name nats-0.1.2 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -XHaskell98 Numeric.Natural Numeric.Natural.Internal -Wall
+[1 of 2] Compiling Numeric.Natural.Internal ( src/Numeric/Natural/Internal.hs, dist/build/Numeric/Natural/Internal.o )
+[2 of 2] Compiling Numeric.Natural  ( src/Numeric/Natural.hs, dist/build/Numeric/Natural.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSnats-0.1.2.a dist/build/Numeric/Natural.o dist/build/Numeric/Natural/Internal.o
+In-place registering nats-0.1.2...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/nats does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/nats-0.1.2
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1
+creating /home/massysett/multiarg/sunlight-29118/prefix/share/doc
+creating /home/massysett/multiarg/sunlight-29118/prefix/share
+creating /home/massysett/multiarg/sunlight-29118/prefix/share/doc
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/nats-0.1.2
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/nats-0.1.2/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/nats-0.1.2
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/nats-0.1.2/Numeric
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/nats-0.1.2
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1
+creating /home/massysett/multiarg/sunlight-29118/prefix/lib
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/nats-0.1.2
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/nats-0.1.2/Numeric
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/nats-0.1.2/Numeric/Natural
+Installing dist/build/Numeric/Natural.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/nats-0.1.2/Numeric/Natural.hi
+Installing dist/build/Numeric/Natural/Internal.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/nats-0.1.2/Numeric/Natural/Internal.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/nats-0.1.2
+Installing dist/build/libHSnats-0.1.2.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/nats-0.1.2/libHSnats-0.1.2.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-isrc' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-DLANGUAGE_DeriveDataTypeable' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'nats-0.1.2' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/multiarg/sunlight-29118/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-XHaskell98' 'Numeric.Natural' 'Numeric.Natural.Internal' '-Wall'
+Registering nats-0.1.2...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db'
+Installed nats-0.1.2
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/tagged/0.7/tagged-0.7.tar.gz
+to /tmp/tagged-0.7-29714...
+Updating tagged.cabal with the latest revision from the index.
+Configuring tagged-0.7...
+Dependency base ==4.5.0.0: using base-4.5.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1.2 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/tagged-0.7
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/tagged-0.7
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/tagged-0.7
+Configuration files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/etc
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building tagged-0.7...
+Preprocessing library tagged-0.7...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -isrc -iold -idist/build/autogen -Idist/build/autogen -Idist/build -optP-DLANGUAGE_DeriveDataTypeable -optP-include -optPdist/build/autogen/cabal_macros.h -package-name tagged-0.7 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -XHaskell98 Data.Tagged Data.Proxy -Wall
+[1 of 2] Compiling Data.Proxy       ( old/Data/Proxy.hs, dist/build/Data/Proxy.o )
+[2 of 2] Compiling Data.Tagged      ( src/Data/Tagged.hs, dist/build/Data/Tagged.o )
+Linking...
+/usr/bin/ar -r dist/build/libHStagged-0.7.a dist/build/Data/Tagged.o dist/build/Data/Proxy.o
+In-place registering tagged-0.7...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/tagged does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/tagged-0.7
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/tagged-0.7/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/tagged-0.7
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/tagged-0.7/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/tagged-0.7
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/tagged-0.7/Data
+Installing dist/build/Data/Tagged.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/tagged-0.7/Data/Tagged.hi
+Installing dist/build/Data/Proxy.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/tagged-0.7/Data/Proxy.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/tagged-0.7
+Installing dist/build/libHStagged-0.7.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/tagged-0.7/libHStagged-0.7.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-isrc' '-iold' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-DLANGUAGE_DeriveDataTypeable' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'tagged-0.7' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/multiarg/sunlight-29118/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-XHaskell98' 'Data.Tagged' 'Data.Proxy' '-Wall'
+Registering tagged-0.7...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db'
+Installed tagged-0.7
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/text/1.1.0.0/text-1.1.0.0.tar.gz
+to /tmp/text-1.1.0.0-29714...
+Updating text.cabal with the latest revision from the index.
+Configuring text-1.1.0.0...
+Flags chosen: integer-simple=False, developer=False
+Dependency array ==0.4.0.0: using array-0.4.0.0
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency bytestring ==0.9.2.1: using bytestring-0.9.2.1
+Dependency deepseq ==1.3.0.0: using deepseq-1.3.0.0
+Dependency ghc-prim ==0.2.0.0: using ghc-prim-0.2.0.0
+Dependency integer-gmp ==0.4.0.0: using integer-gmp-0.4.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1.2 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+Configuration files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/etc
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building text-1.1.0.0...
+Preprocessing library text-1.1.0.0...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -i. -idist/build/autogen -Idist/build/autogen -Idist/build -Iinclude -optP-DHAVE_DEEPSEQ -optP-DINTEGER_GMP -optP-include -optPdist/build/autogen/cabal_macros.h -package-name text-1.1.0.0 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id array-0.4.0.0-59d1cc0e7979167b002f021942d60f46 -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id bytestring-0.9.2.1-18f26186028d7c0e92e78edc9071d376 -package-id deepseq-1.3.0.0-a73ec930018135e0dc0a1a3d29c74c88 -package-id ghc-prim-0.2.0.0-c2ff696e5b8ec4d4b2bc2e42085fe471 -package-id integer-gmp-0.4.0.0-3cccac07aef8e27023f605c1f45bdf74 -XHaskell98 Data.Text Data.Text.Array Data.Text.Encoding Data.Text.Encoding.Error Data.Text.Foreign Data.Text.IO Data.Text.Internal Data.Text.Internal.Builder Data.Text.Internal.Builder.Functions Data.Text.Internal.Builder.Int.Digits Data.Text.Internal.Builder.RealFloat.Functions Data.Text.Internal.Encoding.Fusion Data.Text.Internal.Encoding.Fusion.Common Data.Text.Internal.Encoding.Utf16 Data.Text.Internal.Encoding.Utf32 Data.Text.Internal.Encoding.Utf8 Data.Text.Internal.Functions Data.Text.Internal.Fusion Data.Text.Internal.Fusion.CaseMapping Data.Text.Internal.Fusion.Common Data.Text.Internal.Fusion.Size Data.Text.Internal.Fusion.Types Data.Text.Internal.IO Data.Text.Internal.Lazy Data.Text.Internal.Lazy.Encoding.Fusion Data.Text.Internal.Lazy.Fusion Data.Text.Internal.Lazy.Search Data.Text.Internal.Private Data.Text.Internal.Search Data.Text.Internal.Unsafe Data.Text.Internal.Unsafe.Char Data.Text.Internal.Unsafe.Shift Data.Text.Lazy Data.Text.Lazy.Builder Data.Text.Lazy.Builder.Int Data.Text.Lazy.Builder.RealFloat Data.Text.Lazy.Encoding Data.Text.Lazy.IO Data.Text.Lazy.Internal Data.Text.Lazy.Read Data.Text.Read Data.Text.Unsafe -Wall -fwarn-tabs -funbox-strict-fields -O2
+[ 1 of 42] Compiling Data.Text.Internal.Encoding.Utf32 ( Data/Text/Internal/Encoding/Utf32.hs, dist/build/Data/Text/Internal/Encoding/Utf32.o )
+[ 2 of 42] Compiling Data.Text.Internal.Fusion.Size ( Data/Text/Internal/Fusion/Size.hs, dist/build/Data/Text/Internal/Fusion/Size.o )
+[ 3 of 42] Compiling Data.Text.Internal.Builder.RealFloat.Functions ( Data/Text/Internal/Builder/RealFloat/Functions.hs, dist/build/Data/Text/Internal/Builder/RealFloat/Functions.o )
+[ 4 of 42] Compiling Data.Text.Internal.Builder.Int.Digits ( Data/Text/Internal/Builder/Int/Digits.hs, dist/build/Data/Text/Internal/Builder/Int/Digits.o )
+[ 5 of 42] Compiling Data.Text.Internal.Fusion.Types ( Data/Text/Internal/Fusion/Types.hs, dist/build/Data/Text/Internal/Fusion/Types.o )
+[ 6 of 42] Compiling Data.Text.Internal.Fusion.CaseMapping ( Data/Text/Internal/Fusion/CaseMapping.hs, dist/build/Data/Text/Internal/Fusion/CaseMapping.o )
+[ 7 of 42] Compiling Data.Text.Encoding.Error ( Data/Text/Encoding/Error.hs, dist/build/Data/Text/Encoding/Error.o )
+[ 8 of 42] Compiling Data.Text.Internal.Unsafe.Shift ( Data/Text/Internal/Unsafe/Shift.hs, dist/build/Data/Text/Internal/Unsafe/Shift.o )
+[ 9 of 42] Compiling Data.Text.Internal.Encoding.Utf16 ( Data/Text/Internal/Encoding/Utf16.hs, dist/build/Data/Text/Internal/Encoding/Utf16.o )
+[10 of 42] Compiling Data.Text.Internal.Functions ( Data/Text/Internal/Functions.hs, dist/build/Data/Text/Internal/Functions.o )
+[11 of 42] Compiling Data.Text.Internal.Unsafe ( Data/Text/Internal/Unsafe.hs, dist/build/Data/Text/Internal/Unsafe.o )
+[12 of 42] Compiling Data.Text.Internal.Fusion.Common ( Data/Text/Internal/Fusion/Common.hs, dist/build/Data/Text/Internal/Fusion/Common.o )
+[13 of 42] Compiling Data.Text.Array  ( Data/Text/Array.hs, dist/build/Data/Text/Array.o )
+[14 of 42] Compiling Data.Text.Internal.Unsafe.Char ( Data/Text/Internal/Unsafe/Char.hs, dist/build/Data/Text/Internal/Unsafe/Char.o )
+[15 of 42] Compiling Data.Text.Internal ( Data/Text/Internal.hs, dist/build/Data/Text/Internal.o )
+[16 of 42] Compiling Data.Text.Unsafe ( Data/Text/Unsafe.hs, dist/build/Data/Text/Unsafe.o )
+[17 of 42] Compiling Data.Text.Internal.Private ( Data/Text/Internal/Private.hs, dist/build/Data/Text/Internal/Private.o )
+[18 of 42] Compiling Data.Text.Internal.Fusion ( Data/Text/Internal/Fusion.hs, dist/build/Data/Text/Internal/Fusion.o )
+[19 of 42] Compiling Data.Text.Internal.Encoding.Fusion.Common ( Data/Text/Internal/Encoding/Fusion/Common.hs, dist/build/Data/Text/Internal/Encoding/Fusion/Common.o )
+[20 of 42] Compiling Data.Text.Internal.Encoding.Utf8 ( Data/Text/Internal/Encoding/Utf8.hs, dist/build/Data/Text/Internal/Encoding/Utf8.o )
+[21 of 42] Compiling Data.Text.Internal.Encoding.Fusion ( Data/Text/Internal/Encoding/Fusion.hs, dist/build/Data/Text/Internal/Encoding/Fusion.o )
+[22 of 42] Compiling Data.Text.Internal.Lazy.Encoding.Fusion ( Data/Text/Internal/Lazy/Encoding/Fusion.hs, dist/build/Data/Text/Internal/Lazy/Encoding/Fusion.o )
+[23 of 42] Compiling Data.Text.Internal.Search ( Data/Text/Internal/Search.hs, dist/build/Data/Text/Internal/Search.o )
+[24 of 42] Compiling Data.Text        ( Data/Text.hs, dist/build/Data/Text.o )
+[25 of 42] Compiling Data.Text.Encoding ( Data/Text/Encoding.hs, dist/build/Data/Text/Encoding.o )
+[26 of 42] Compiling Data.Text.Foreign ( Data/Text/Foreign.hs, dist/build/Data/Text/Foreign.o )
+[27 of 42] Compiling Data.Text.Internal.IO ( Data/Text/Internal/IO.hs, dist/build/Data/Text/Internal/IO.o )
+[28 of 42] Compiling Data.Text.IO     ( Data/Text/IO.hs, dist/build/Data/Text/IO.o )
+[29 of 42] Compiling Data.Text.Internal.Lazy ( Data/Text/Internal/Lazy.hs, dist/build/Data/Text/Internal/Lazy.o )
+[30 of 42] Compiling Data.Text.Internal.Lazy.Fusion ( Data/Text/Internal/Lazy/Fusion.hs, dist/build/Data/Text/Internal/Lazy/Fusion.o )
+[31 of 42] Compiling Data.Text.Internal.Lazy.Search ( Data/Text/Internal/Lazy/Search.hs, dist/build/Data/Text/Internal/Lazy/Search.o )
+[32 of 42] Compiling Data.Text.Lazy.Internal ( Data/Text/Lazy/Internal.hs, dist/build/Data/Text/Lazy/Internal.o )
+[33 of 42] Compiling Data.Text.Lazy   ( Data/Text/Lazy.hs, dist/build/Data/Text/Lazy.o )
+[34 of 42] Compiling Data.Text.Internal.Builder ( Data/Text/Internal/Builder.hs, dist/build/Data/Text/Internal/Builder.o )
+[35 of 42] Compiling Data.Text.Lazy.Builder ( Data/Text/Lazy/Builder.hs, dist/build/Data/Text/Lazy/Builder.o )
+[36 of 42] Compiling Data.Text.Internal.Builder.Functions ( Data/Text/Internal/Builder/Functions.hs, dist/build/Data/Text/Internal/Builder/Functions.o )
+[37 of 42] Compiling Data.Text.Lazy.Builder.Int ( Data/Text/Lazy/Builder/Int.hs, dist/build/Data/Text/Lazy/Builder/Int.o )
+[38 of 42] Compiling Data.Text.Lazy.Encoding ( Data/Text/Lazy/Encoding.hs, dist/build/Data/Text/Lazy/Encoding.o )
+[39 of 42] Compiling Data.Text.Lazy.IO ( Data/Text/Lazy/IO.hs, dist/build/Data/Text/Lazy/IO.o )
+[40 of 42] Compiling Data.Text.Lazy.Read ( Data/Text/Lazy/Read.hs, dist/build/Data/Text/Lazy/Read.o )
+[41 of 42] Compiling Data.Text.Lazy.Builder.RealFloat ( Data/Text/Lazy/Builder/RealFloat.hs, dist/build/Data/Text/Lazy/Builder/RealFloat.o )
+[42 of 42] Compiling Data.Text.Read   ( Data/Text/Read.hs, dist/build/Data/Text/Read.o )
+Building C Sources...
+creating dist/build
+/usr/local/bin/ghc-7.4.1 -c -odir dist/build -Idist/build/autogen -Idist/build -Iinclude -optc-O2 -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id array-0.4.0.0-59d1cc0e7979167b002f021942d60f46 -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id bytestring-0.9.2.1-18f26186028d7c0e92e78edc9071d376 -package-id deepseq-1.3.0.0-a73ec930018135e0dc0a1a3d29c74c88 -package-id ghc-prim-0.2.0.0-c2ff696e5b8ec4d4b2bc2e42085fe471 -package-id integer-gmp-0.4.0.0-3cccac07aef8e27023f605c1f45bdf74 cbits/cbits.c
+Linking...
+/usr/bin/ar -r dist/build/libHStext-1.1.0.0.a dist/build/Data/Text.o dist/build/Data/Text/Array.o dist/build/Data/Text/Encoding.o dist/build/Data/Text/Encoding/Error.o dist/build/Data/Text/Foreign.o dist/build/Data/Text/IO.o dist/build/Data/Text/Internal.o dist/build/Data/Text/Internal/Builder.o dist/build/Data/Text/Internal/Builder/Functions.o dist/build/Data/Text/Internal/Builder/Int/Digits.o dist/build/Data/Text/Internal/Builder/RealFloat/Functions.o dist/build/Data/Text/Internal/Encoding/Fusion.o dist/build/Data/Text/Internal/Encoding/Fusion/Common.o dist/build/Data/Text/Internal/Encoding/Utf16.o dist/build/Data/Text/Internal/Encoding/Utf32.o dist/build/Data/Text/Internal/Encoding/Utf8.o dist/build/Data/Text/Internal/Functions.o dist/build/Data/Text/Internal/Fusion.o dist/build/Data/Text/Internal/Fusion/CaseMapping.o dist/build/Data/Text/Internal/Fusion/Common.o dist/build/Data/Text/Internal/Fusion/Size.o dist/build/Data/Text/Internal/Fusion/Types.o dist/build/Data/Text/Internal/IO.o dist/build/Data/Text/Internal/Lazy.o dist/build/Data/Text/Internal/Lazy/Encoding/Fusion.o dist/build/Data/Text/Internal/Lazy/Fusion.o dist/build/Data/Text/Internal/Lazy/Search.o dist/build/Data/Text/Internal/Private.o dist/build/Data/Text/Internal/Search.o dist/build/Data/Text/Internal/Unsafe.o dist/build/Data/Text/Internal/Unsafe/Char.o dist/build/Data/Text/Internal/Unsafe/Shift.o dist/build/Data/Text/Lazy.o dist/build/Data/Text/Lazy/Builder.o dist/build/Data/Text/Lazy/Builder/Int.o dist/build/Data/Text/Lazy/Builder/RealFloat.o dist/build/Data/Text/Lazy/Encoding.o dist/build/Data/Text/Lazy/IO.o dist/build/Data/Text/Lazy/Internal.o dist/build/Data/Text/Lazy/Read.o dist/build/Data/Text/Read.o dist/build/Data/Text/Unsafe.o dist/build/cbits/cbits.o
+In-place registering text-1.1.0.0...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/text does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/text-1.1.0.0/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Encoding
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder/Int
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder/RealFloat
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding/Fusion
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Fusion
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy/Encoding
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy/Encoding
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Unsafe
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Builder
+Installing dist/build/Data/Text.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text.hi
+Installing dist/build/Data/Text/Array.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Array.hi
+Installing dist/build/Data/Text/Encoding.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Encoding.hi
+Installing dist/build/Data/Text/Encoding/Error.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Encoding/Error.hi
+Installing dist/build/Data/Text/Foreign.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Foreign.hi
+Installing dist/build/Data/Text/IO.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/IO.hi
+Installing dist/build/Data/Text/Internal.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal.hi
+Installing dist/build/Data/Text/Internal/Builder.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder.hi
+Installing dist/build/Data/Text/Internal/Builder/Functions.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder/Functions.hi
+Installing dist/build/Data/Text/Internal/Builder/Int/Digits.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder/Int/Digits.hi
+Installing dist/build/Data/Text/Internal/Builder/RealFloat/Functions.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Builder/RealFloat/Functions.hi
+Installing dist/build/Data/Text/Internal/Encoding/Fusion.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding/Fusion.hi
+Installing dist/build/Data/Text/Internal/Encoding/Fusion/Common.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding/Fusion/Common.hi
+Installing dist/build/Data/Text/Internal/Encoding/Utf16.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding/Utf16.hi
+Installing dist/build/Data/Text/Internal/Encoding/Utf32.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding/Utf32.hi
+Installing dist/build/Data/Text/Internal/Encoding/Utf8.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Encoding/Utf8.hi
+Installing dist/build/Data/Text/Internal/Functions.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Functions.hi
+Installing dist/build/Data/Text/Internal/Fusion.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Fusion.hi
+Installing dist/build/Data/Text/Internal/Fusion/CaseMapping.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Fusion/CaseMapping.hi
+Installing dist/build/Data/Text/Internal/Fusion/Common.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Fusion/Common.hi
+Installing dist/build/Data/Text/Internal/Fusion/Size.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Fusion/Size.hi
+Installing dist/build/Data/Text/Internal/Fusion/Types.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Fusion/Types.hi
+Installing dist/build/Data/Text/Internal/IO.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/IO.hi
+Installing dist/build/Data/Text/Internal/Lazy.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy.hi
+Installing dist/build/Data/Text/Internal/Lazy/Encoding/Fusion.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy/Encoding/Fusion.hi
+Installing dist/build/Data/Text/Internal/Lazy/Fusion.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy/Fusion.hi
+Installing dist/build/Data/Text/Internal/Lazy/Search.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Lazy/Search.hi
+Installing dist/build/Data/Text/Internal/Private.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Private.hi
+Installing dist/build/Data/Text/Internal/Search.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Search.hi
+Installing dist/build/Data/Text/Internal/Unsafe.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Unsafe.hi
+Installing dist/build/Data/Text/Internal/Unsafe/Char.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Unsafe/Char.hi
+Installing dist/build/Data/Text/Internal/Unsafe/Shift.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Internal/Unsafe/Shift.hi
+Installing dist/build/Data/Text/Lazy.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy.hi
+Installing dist/build/Data/Text/Lazy/Builder.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Builder.hi
+Installing dist/build/Data/Text/Lazy/Builder/Int.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Builder/Int.hi
+Installing dist/build/Data/Text/Lazy/Builder/RealFloat.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Builder/RealFloat.hi
+Installing dist/build/Data/Text/Lazy/Encoding.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Encoding.hi
+Installing dist/build/Data/Text/Lazy/IO.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/IO.hi
+Installing dist/build/Data/Text/Lazy/Internal.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Internal.hi
+Installing dist/build/Data/Text/Lazy/Read.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Lazy/Read.hi
+Installing dist/build/Data/Text/Read.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Read.hi
+Installing dist/build/Data/Text/Unsafe.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/Data/Text/Unsafe.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0
+Installing dist/build/libHStext-1.1.0.0.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/text-1.1.0.0/libHStext-1.1.0.0.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-i.' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-Iinclude' '-optP-DHAVE_DEEPSEQ' '-optP-DINTEGER_GMP' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'text-1.1.0.0' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/multiarg/sunlight-29118/db' '-package-id' 'array-0.4.0.0-59d1cc0e7979167b002f021942d60f46' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'bytestring-0.9.2.1-18f26186028d7c0e92e78edc9071d376' '-package-id' 'deepseq-1.3.0.0-a73ec930018135e0dc0a1a3d29c74c88' '-package-id' 'ghc-prim-0.2.0.0-c2ff696e5b8ec4d4b2bc2e42085fe471' '-package-id' 'integer-gmp-0.4.0.0-3cccac07aef8e27023f605c1f45bdf74' '-XHaskell98' 'Data.Text' 'Data.Text.Array' 'Data.Text.Encoding' 'Data.Text.Encoding.Error' 'Data.Text.Foreign' 'Data.Text.IO' 'Data.Text.Internal' 'Data.Text.Internal.Builder' 'Data.Text.Internal.Builder.Functions' 'Data.Text.Internal.Builder.Int.Digits' 'Data.Text.Internal.Builder.RealFloat.Functions' 'Data.Text.Internal.Encoding.Fusion' 'Data.Text.Internal.Encoding.Fusion.Common' 'Data.Text.Internal.Encoding.Utf16' 'Data.Text.Internal.Encoding.Utf32' 'Data.Text.Internal.Encoding.Utf8' 'Data.Text.Internal.Functions' 'Data.Text.Internal.Fusion' 'Data.Text.Internal.Fusion.CaseMapping' 'Data.Text.Internal.Fusion.Common' 'Data.Text.Internal.Fusion.Size' 'Data.Text.Internal.Fusion.Types' 'Data.Text.Internal.IO' 'Data.Text.Internal.Lazy' 'Data.Text.Internal.Lazy.Encoding.Fusion' 'Data.Text.Internal.Lazy.Fusion' 'Data.Text.Internal.Lazy.Search' 'Data.Text.Internal.Private' 'Data.Text.Internal.Search' 'Data.Text.Internal.Unsafe' 'Data.Text.Internal.Unsafe.Char' 'Data.Text.Internal.Unsafe.Shift' 'Data.Text.Lazy' 'Data.Text.Lazy.Builder' 'Data.Text.Lazy.Builder.Int' 'Data.Text.Lazy.Builder.RealFloat' 'Data.Text.Lazy.Encoding' 'Data.Text.Lazy.IO' 'Data.Text.Lazy.Internal' 'Data.Text.Lazy.Read' 'Data.Text.Read' 'Data.Text.Unsafe' '-Wall' '-fwarn-tabs' '-funbox-strict-fields' '-O2'
+Registering text-1.1.0.0...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db'
+Installed text-1.1.0.0
+Ready to install hashable-1.2.1.0
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/transformers/0.3.0.0/transformers-0.3.0.0.tar.gz
+to /tmp/transformers-0.3.0.0-29714...
+Updating transformers.cabal with the latest revision from the index.
+Configuring transformers-0.3.0.0...
+Flags chosen: applicativeinbase=True
+Dependency base ==4.5.0.0: using base-4.5.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1.2 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0
+Configuration files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/etc
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building transformers-0.3.0.0...
+Preprocessing library transformers-0.3.0.0...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -i. -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name transformers-0.3.0.0 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -XHaskell98 Control.Applicative.Backwards Control.Applicative.Lift Control.Monad.IO.Class Control.Monad.Trans.Class Control.Monad.Trans.Cont Control.Monad.Trans.Error Control.Monad.Trans.Identity Control.Monad.Trans.List Control.Monad.Trans.Maybe Control.Monad.Trans.Reader Control.Monad.Trans.RWS Control.Monad.Trans.RWS.Lazy Control.Monad.Trans.RWS.Strict Control.Monad.Trans.State Control.Monad.Trans.State.Lazy Control.Monad.Trans.State.Strict Control.Monad.Trans.Writer Control.Monad.Trans.Writer.Lazy Control.Monad.Trans.Writer.Strict Data.Functor.Compose Data.Functor.Constant Data.Functor.Identity Data.Functor.Product Data.Functor.Reverse
+[ 1 of 24] Compiling Data.Functor.Product ( Data/Functor/Product.hs, dist/build/Data/Functor/Product.o )
+[ 2 of 24] Compiling Data.Functor.Compose ( Data/Functor/Compose.hs, dist/build/Data/Functor/Compose.o )
+[ 3 of 24] Compiling Data.Functor.Identity ( Data/Functor/Identity.hs, dist/build/Data/Functor/Identity.o )
+[ 4 of 24] Compiling Control.Monad.Trans.Class ( Control/Monad/Trans/Class.hs, dist/build/Control/Monad/Trans/Class.o )
+[ 5 of 24] Compiling Control.Monad.IO.Class ( Control/Monad/IO/Class.hs, dist/build/Control/Monad/IO/Class.o )
+[ 6 of 24] Compiling Control.Monad.Trans.Cont ( Control/Monad/Trans/Cont.hs, dist/build/Control/Monad/Trans/Cont.o )
+[ 7 of 24] Compiling Control.Monad.Trans.Error ( Control/Monad/Trans/Error.hs, dist/build/Control/Monad/Trans/Error.o )
+[ 8 of 24] Compiling Control.Monad.Trans.Identity ( Control/Monad/Trans/Identity.hs, dist/build/Control/Monad/Trans/Identity.o )
+[ 9 of 24] Compiling Control.Monad.Trans.List ( Control/Monad/Trans/List.hs, dist/build/Control/Monad/Trans/List.o )
+[10 of 24] Compiling Control.Monad.Trans.Maybe ( Control/Monad/Trans/Maybe.hs, dist/build/Control/Monad/Trans/Maybe.o )
+[11 of 24] Compiling Control.Monad.Trans.Reader ( Control/Monad/Trans/Reader.hs, dist/build/Control/Monad/Trans/Reader.o )
+[12 of 24] Compiling Control.Monad.Trans.RWS.Lazy ( Control/Monad/Trans/RWS/Lazy.hs, dist/build/Control/Monad/Trans/RWS/Lazy.o )
+[13 of 24] Compiling Control.Monad.Trans.RWS ( Control/Monad/Trans/RWS.hs, dist/build/Control/Monad/Trans/RWS.o )
+[14 of 24] Compiling Control.Monad.Trans.RWS.Strict ( Control/Monad/Trans/RWS/Strict.hs, dist/build/Control/Monad/Trans/RWS/Strict.o )
+[15 of 24] Compiling Control.Monad.Trans.State.Lazy ( Control/Monad/Trans/State/Lazy.hs, dist/build/Control/Monad/Trans/State/Lazy.o )
+[16 of 24] Compiling Control.Monad.Trans.State ( Control/Monad/Trans/State.hs, dist/build/Control/Monad/Trans/State.o )
+[17 of 24] Compiling Control.Monad.Trans.State.Strict ( Control/Monad/Trans/State/Strict.hs, dist/build/Control/Monad/Trans/State/Strict.o )
+[18 of 24] Compiling Control.Monad.Trans.Writer.Lazy ( Control/Monad/Trans/Writer/Lazy.hs, dist/build/Control/Monad/Trans/Writer/Lazy.o )
+[19 of 24] Compiling Control.Monad.Trans.Writer ( Control/Monad/Trans/Writer.hs, dist/build/Control/Monad/Trans/Writer.o )
+[20 of 24] Compiling Control.Monad.Trans.Writer.Strict ( Control/Monad/Trans/Writer/Strict.hs, dist/build/Control/Monad/Trans/Writer/Strict.o )
+[21 of 24] Compiling Data.Functor.Constant ( Data/Functor/Constant.hs, dist/build/Data/Functor/Constant.o )
+[22 of 24] Compiling Control.Applicative.Lift ( Control/Applicative/Lift.hs, dist/build/Control/Applicative/Lift.o )
+[23 of 24] Compiling Control.Applicative.Backwards ( Control/Applicative/Backwards.hs, dist/build/Control/Applicative/Backwards.o )
+[24 of 24] Compiling Data.Functor.Reverse ( Data/Functor/Reverse.hs, dist/build/Data/Functor/Reverse.o )
+Linking...
+/usr/bin/ar -r dist/build/libHStransformers-0.3.0.0.a dist/build/Control/Applicative/Backwards.o dist/build/Control/Applicative/Lift.o dist/build/Control/Monad/IO/Class.o dist/build/Control/Monad/Trans/Class.o dist/build/Control/Monad/Trans/Cont.o dist/build/Control/Monad/Trans/Error.o dist/build/Control/Monad/Trans/Identity.o dist/build/Control/Monad/Trans/List.o dist/build/Control/Monad/Trans/Maybe.o dist/build/Control/Monad/Trans/Reader.o dist/build/Control/Monad/Trans/RWS.o dist/build/Control/Monad/Trans/RWS/Lazy.o dist/build/Control/Monad/Trans/RWS/Strict.o dist/build/Control/Monad/Trans/State.o dist/build/Control/Monad/Trans/State/Lazy.o dist/build/Control/Monad/Trans/State/Strict.o dist/build/Control/Monad/Trans/Writer.o dist/build/Control/Monad/Trans/Writer/Lazy.o dist/build/Control/Monad/Trans/Writer/Strict.o dist/build/Data/Functor/Compose.o dist/build/Data/Functor/Constant.o dist/build/Data/Functor/Identity.o dist/build/Data/Functor/Product.o dist/build/Data/Functor/Reverse.o
+In-place registering transformers-0.3.0.0...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/transformers does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Applicative
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Applicative
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/IO
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/IO
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/RWS
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/State
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/Writer
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Data/Functor
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Data/Functor
+Installing dist/build/Control/Applicative/Backwards.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Applicative/Backwards.hi
+Installing dist/build/Control/Applicative/Lift.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Applicative/Lift.hi
+Installing dist/build/Control/Monad/IO/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/IO/Class.hi
+Installing dist/build/Control/Monad/Trans/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/Class.hi
+Installing dist/build/Control/Monad/Trans/Cont.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/Cont.hi
+Installing dist/build/Control/Monad/Trans/Error.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/Error.hi
+Installing dist/build/Control/Monad/Trans/Identity.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/Identity.hi
+Installing dist/build/Control/Monad/Trans/List.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/List.hi
+Installing dist/build/Control/Monad/Trans/Maybe.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/Maybe.hi
+Installing dist/build/Control/Monad/Trans/Reader.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/Reader.hi
+Installing dist/build/Control/Monad/Trans/RWS.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/RWS.hi
+Installing dist/build/Control/Monad/Trans/RWS/Lazy.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/RWS/Lazy.hi
+Installing dist/build/Control/Monad/Trans/RWS/Strict.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/RWS/Strict.hi
+Installing dist/build/Control/Monad/Trans/State.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/State.hi
+Installing dist/build/Control/Monad/Trans/State/Lazy.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/State/Lazy.hi
+Installing dist/build/Control/Monad/Trans/State/Strict.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/State/Strict.hi
+Installing dist/build/Control/Monad/Trans/Writer.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/Writer.hi
+Installing dist/build/Control/Monad/Trans/Writer/Lazy.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/Writer/Lazy.hi
+Installing dist/build/Control/Monad/Trans/Writer/Strict.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Control/Monad/Trans/Writer/Strict.hi
+Installing dist/build/Data/Functor/Compose.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Data/Functor/Compose.hi
+Installing dist/build/Data/Functor/Constant.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Data/Functor/Constant.hi
+Installing dist/build/Data/Functor/Identity.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Data/Functor/Identity.hi
+Installing dist/build/Data/Functor/Product.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Data/Functor/Product.hi
+Installing dist/build/Data/Functor/Reverse.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/Data/Functor/Reverse.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0
+Installing dist/build/libHStransformers-0.3.0.0.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-0.3.0.0/libHStransformers-0.3.0.0.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-i.' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'transformers-0.3.0.0' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/multiarg/sunlight-29118/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-XHaskell98' 'Control.Applicative.Backwards' 'Control.Applicative.Lift' 'Control.Monad.IO.Class' 'Control.Monad.Trans.Class' 'Control.Monad.Trans.Cont' 'Control.Monad.Trans.Error' 'Control.Monad.Trans.Identity' 'Control.Monad.Trans.List' 'Control.Monad.Trans.Maybe' 'Control.Monad.Trans.Reader' 'Control.Monad.Trans.RWS' 'Control.Monad.Trans.RWS.Lazy' 'Control.Monad.Trans.RWS.Strict' 'Control.Monad.Trans.State' 'Control.Monad.Trans.State.Lazy' 'Control.Monad.Trans.State.Strict' 'Control.Monad.Trans.Writer' 'Control.Monad.Trans.Writer.Lazy' 'Control.Monad.Trans.Writer.Strict' 'Data.Functor.Compose' 'Data.Functor.Constant' 'Data.Functor.Identity' 'Data.Functor.Product' 'Data.Functor.Reverse'
+Registering transformers-0.3.0.0...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db'
+Installed transformers-0.3.0.0
+Ready to install mtl-2.1.2
+Ready to install transformers-compat-0.1.1.1
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/hashable/1.2.1.0/hashable-1.2.1.0.tar.gz
+to /tmp/hashable-1.2.1.0-29714...
+Updating hashable.cabal with the latest revision from the index.
+Configuring hashable-1.2.1.0...
+Flags chosen: sse41=False, sse2=True, integer-gmp=True
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency bytestring ==0.9.2.1: using bytestring-0.9.2.1
+Dependency ghc-prim ==0.2.0.0: using ghc-prim-0.2.0.0
+Dependency integer-gmp ==0.4.0.0: using integer-gmp-0.4.0.0
+Dependency text ==1.1.0.0: using text-1.1.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1.2 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0
+Configuration files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/etc
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building hashable-1.2.1.0...
+Preprocessing library hashable-1.2.1.0...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -i. -idist/build/autogen -Idist/build/autogen -Idist/build -optP-DGENERICS -optP-include -optPdist/build/autogen/cabal_macros.h -package-name hashable-1.2.1.0 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id bytestring-0.9.2.1-18f26186028d7c0e92e78edc9071d376 -package-id ghc-prim-0.2.0.0-c2ff696e5b8ec4d4b2bc2e42085fe471 -package-id integer-gmp-0.4.0.0-3cccac07aef8e27023f605c1f45bdf74 -package-id text-1.1.0.0-d290270f42bc0db499aa449b54b3f739 -XHaskell98 Data.Hashable Data.Hashable.Class Data.Hashable.Generic -Wall -fwarn-tabs
+[1 of 3] Compiling Data.Hashable.Class ( Data/Hashable/Class.hs, dist/build/Data/Hashable/Class.o )
+[2 of 3] Compiling Data.Hashable.Generic ( Data/Hashable/Generic.hs, dist/build/Data/Hashable/Generic.o )
+[3 of 3] Compiling Data.Hashable    ( Data/Hashable.hs, dist/build/Data/Hashable.o )
+Building C Sources...
+creating dist/build
+/usr/local/bin/ghc-7.4.1 -c -odir dist/build -Idist/build/autogen -Idist/build -optc-O2 -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id bytestring-0.9.2.1-18f26186028d7c0e92e78edc9071d376 -package-id ghc-prim-0.2.0.0-c2ff696e5b8ec4d4b2bc2e42085fe471 -package-id integer-gmp-0.4.0.0-3cccac07aef8e27023f605c1f45bdf74 -package-id text-1.1.0.0-d290270f42bc0db499aa449b54b3f739 cbits/fnv.c
+Linking...
+/usr/bin/ar -r dist/build/libHShashable-1.2.1.0.a dist/build/Data/Hashable.o dist/build/Data/Hashable/Class.o dist/build/Data/Hashable/Generic.o dist/build/cbits/fnv.o
+In-place registering hashable-1.2.1.0...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/hashable does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0/Data/Hashable
+Installing dist/build/Data/Hashable.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0/Data/Hashable.hi
+Installing dist/build/Data/Hashable/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0/Data/Hashable/Class.hi
+Installing dist/build/Data/Hashable/Generic.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0/Data/Hashable/Generic.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0
+Installing dist/build/libHShashable-1.2.1.0.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/hashable-1.2.1.0/libHShashable-1.2.1.0.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-i.' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-DGENERICS' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'hashable-1.2.1.0' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/multiarg/sunlight-29118/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'bytestring-0.9.2.1-18f26186028d7c0e92e78edc9071d376' '-package-id' 'ghc-prim-0.2.0.0-c2ff696e5b8ec4d4b2bc2e42085fe471' '-package-id' 'integer-gmp-0.4.0.0-3cccac07aef8e27023f605c1f45bdf74' '-package-id' 'text-1.1.0.0-d290270f42bc0db499aa449b54b3f739' '-XHaskell98' 'Data.Hashable' '-Wall' '-fwarn-tabs'
+Registering hashable-1.2.1.0...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db'
+Installed hashable-1.2.1.0
+Ready to install unordered-containers-0.2.3.3
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/mtl/2.1.2/mtl-2.1.2.tar.gz
+to /tmp/mtl-2.1.2-29714...
+Updating mtl.cabal with the latest revision from the index.
+Configuring mtl-2.1.2...
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency transformers ==0.3.0.0: using transformers-0.3.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1.2 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/mtl-2.1.2
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/mtl-2.1.2
+Configuration files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/etc
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building mtl-2.1.2...
+Preprocessing library mtl-2.1.2...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -i. -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name mtl-2.1.2 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id transformers-0.3.0.0-b55e1ba0a2f0da13c35eec50d1253059 -XHaskell98 -XMultiParamTypeClasses -XFunctionalDependencies -XFlexibleInstances Control.Monad.Cont Control.Monad.Cont.Class Control.Monad.Error Control.Monad.Error.Class Control.Monad.Identity Control.Monad.List Control.Monad.RWS Control.Monad.RWS.Class Control.Monad.RWS.Lazy Control.Monad.RWS.Strict Control.Monad.Reader Control.Monad.Reader.Class Control.Monad.State Control.Monad.State.Class Control.Monad.State.Lazy Control.Monad.State.Strict Control.Monad.Trans Control.Monad.Writer Control.Monad.Writer.Class Control.Monad.Writer.Lazy Control.Monad.Writer.Strict -Wall -fno-warn-unused-imports
+[ 1 of 21] Compiling Control.Monad.Writer.Class ( Control/Monad/Writer/Class.hs, dist/build/Control/Monad/Writer/Class.o )
+[ 2 of 21] Compiling Control.Monad.State.Class ( Control/Monad/State/Class.hs, dist/build/Control/Monad/State/Class.o )
+[ 3 of 21] Compiling Control.Monad.Reader.Class ( Control/Monad/Reader/Class.hs, dist/build/Control/Monad/Reader/Class.o )
+[ 4 of 21] Compiling Control.Monad.RWS.Class ( Control/Monad/RWS/Class.hs, dist/build/Control/Monad/RWS/Class.o )
+[ 5 of 21] Compiling Control.Monad.Identity ( Control/Monad/Identity.hs, dist/build/Control/Monad/Identity.o )
+[ 6 of 21] Compiling Control.Monad.Error.Class ( Control/Monad/Error/Class.hs, dist/build/Control/Monad/Error/Class.o )
+[ 7 of 21] Compiling Control.Monad.Cont.Class ( Control/Monad/Cont/Class.hs, dist/build/Control/Monad/Cont/Class.o )
+[ 8 of 21] Compiling Control.Monad.Trans ( Control/Monad/Trans.hs, dist/build/Control/Monad/Trans.o )
+[ 9 of 21] Compiling Control.Monad.Error ( Control/Monad/Error.hs, dist/build/Control/Monad/Error.o )
+[10 of 21] Compiling Control.Monad.List ( Control/Monad/List.hs, dist/build/Control/Monad/List.o )
+[11 of 21] Compiling Control.Monad.RWS.Lazy ( Control/Monad/RWS/Lazy.hs, dist/build/Control/Monad/RWS/Lazy.o )
+[12 of 21] Compiling Control.Monad.RWS ( Control/Monad/RWS.hs, dist/build/Control/Monad/RWS.o )
+[13 of 21] Compiling Control.Monad.Reader ( Control/Monad/Reader.hs, dist/build/Control/Monad/Reader.o )
+[14 of 21] Compiling Control.Monad.RWS.Strict ( Control/Monad/RWS/Strict.hs, dist/build/Control/Monad/RWS/Strict.o )
+[15 of 21] Compiling Control.Monad.State.Lazy ( Control/Monad/State/Lazy.hs, dist/build/Control/Monad/State/Lazy.o )
+[16 of 21] Compiling Control.Monad.State ( Control/Monad/State.hs, dist/build/Control/Monad/State.o )
+[17 of 21] Compiling Control.Monad.State.Strict ( Control/Monad/State/Strict.hs, dist/build/Control/Monad/State/Strict.o )
+[18 of 21] Compiling Control.Monad.Writer.Lazy ( Control/Monad/Writer/Lazy.hs, dist/build/Control/Monad/Writer/Lazy.o )
+[19 of 21] Compiling Control.Monad.Writer ( Control/Monad/Writer.hs, dist/build/Control/Monad/Writer.o )
+[20 of 21] Compiling Control.Monad.Writer.Strict ( Control/Monad/Writer/Strict.hs, dist/build/Control/Monad/Writer/Strict.o )
+[21 of 21] Compiling Control.Monad.Cont ( Control/Monad/Cont.hs, dist/build/Control/Monad/Cont.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSmtl-2.1.2.a dist/build/Control/Monad/Cont.o dist/build/Control/Monad/Cont/Class.o dist/build/Control/Monad/Error.o dist/build/Control/Monad/Error/Class.o dist/build/Control/Monad/Identity.o dist/build/Control/Monad/List.o dist/build/Control/Monad/RWS.o dist/build/Control/Monad/RWS/Class.o dist/build/Control/Monad/RWS/Lazy.o dist/build/Control/Monad/RWS/Strict.o dist/build/Control/Monad/Reader.o dist/build/Control/Monad/Reader/Class.o dist/build/Control/Monad/State.o dist/build/Control/Monad/State/Class.o dist/build/Control/Monad/State/Lazy.o dist/build/Control/Monad/State/Strict.o dist/build/Control/Monad/Trans.o dist/build/Control/Monad/Writer.o dist/build/Control/Monad/Writer/Class.o dist/build/Control/Monad/Writer/Lazy.o dist/build/Control/Monad/Writer/Strict.o
+In-place registering mtl-2.1.2...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/mtl does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/mtl-2.1.2
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/mtl-2.1.2/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Cont
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Error
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/RWS
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Reader
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/State
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Writer
+Installing dist/build/Control/Monad/Cont.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Cont.hi
+Installing dist/build/Control/Monad/Cont/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Cont/Class.hi
+Installing dist/build/Control/Monad/Error.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Error.hi
+Installing dist/build/Control/Monad/Error/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Error/Class.hi
+Installing dist/build/Control/Monad/Identity.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Identity.hi
+Installing dist/build/Control/Monad/List.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/List.hi
+Installing dist/build/Control/Monad/RWS.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/RWS.hi
+Installing dist/build/Control/Monad/RWS/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/RWS/Class.hi
+Installing dist/build/Control/Monad/RWS/Lazy.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/RWS/Lazy.hi
+Installing dist/build/Control/Monad/RWS/Strict.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/RWS/Strict.hi
+Installing dist/build/Control/Monad/Reader.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Reader.hi
+Installing dist/build/Control/Monad/Reader/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Reader/Class.hi
+Installing dist/build/Control/Monad/State.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/State.hi
+Installing dist/build/Control/Monad/State/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/State/Class.hi
+Installing dist/build/Control/Monad/State/Lazy.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/State/Lazy.hi
+Installing dist/build/Control/Monad/State/Strict.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/State/Strict.hi
+Installing dist/build/Control/Monad/Trans.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Trans.hi
+Installing dist/build/Control/Monad/Writer.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Writer.hi
+Installing dist/build/Control/Monad/Writer/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Writer/Class.hi
+Installing dist/build/Control/Monad/Writer/Lazy.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Writer/Lazy.hi
+Installing dist/build/Control/Monad/Writer/Strict.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/Control/Monad/Writer/Strict.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2
+Installing dist/build/libHSmtl-2.1.2.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/mtl-2.1.2/libHSmtl-2.1.2.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-i.' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'mtl-2.1.2' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/multiarg/sunlight-29118/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'transformers-0.3.0.0-b55e1ba0a2f0da13c35eec50d1253059' '-XHaskell98' '-XMultiParamTypeClasses' '-XFunctionalDependencies' '-XFlexibleInstances' 'Control.Monad.Cont' 'Control.Monad.Cont.Class' 'Control.Monad.Error' 'Control.Monad.Error.Class' 'Control.Monad.Identity' 'Control.Monad.List' 'Control.Monad.RWS' 'Control.Monad.RWS.Class' 'Control.Monad.RWS.Lazy' 'Control.Monad.RWS.Strict' 'Control.Monad.Reader' 'Control.Monad.Reader.Class' 'Control.Monad.State' 'Control.Monad.State.Class' 'Control.Monad.State.Lazy' 'Control.Monad.State.Strict' 'Control.Monad.Trans' 'Control.Monad.Writer' 'Control.Monad.Writer.Class' 'Control.Monad.Writer.Lazy' 'Control.Monad.Writer.Strict' '-Wall' '-fno-warn-unused-imports'
+Registering mtl-2.1.2...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db'
+Installed mtl-2.1.2
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/transformers-compat/0.1.1.1/transformers-compat-0.1.1.1.tar.gz
+to /tmp/transformers-compat-0.1.1.1-29714...
+Updating transformers-compat.cabal with the latest revision from the index.
+Configuring transformers-compat-0.1.1.1...
+Flags chosen: transformers2=False
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency transformers ==0.3.0.0: using transformers-0.3.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1.2 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-compat-0.1.1.1
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/transformers-compat-0.1.1.1
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/transformers-compat-0.1.1.1
+Configuration files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/etc
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building transformers-compat-0.1.1.1...
+Preprocessing library transformers-compat-0.1.1.1...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -isrc -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name transformers-compat-0.1.1.1 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id transformers-0.3.0.0-b55e1ba0a2f0da13c35eec50d1253059 -XHaskell98 Paths_transformers_compat
+[1 of 1] Compiling Paths_transformers_compat ( dist/build/autogen/Paths_transformers_compat.hs, dist/build/Paths_transformers_compat.o )
+Linking...
+/usr/bin/ar -r dist/build/libHStransformers-compat-0.1.1.1.a dist/build/Paths_transformers_compat.o
+In-place registering transformers-compat-0.1.1.1...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/transformers-compat does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/transformers-compat-0.1.1.1
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/transformers-compat-0.1.1.1/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-compat-0.1.1.1
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-compat-0.1.1.1
+Installing dist/build/Paths_transformers_compat.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-compat-0.1.1.1/Paths_transformers_compat.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-compat-0.1.1.1
+Installing dist/build/libHStransformers-compat-0.1.1.1.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/transformers-compat-0.1.1.1/libHStransformers-compat-0.1.1.1.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-isrc' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'transformers-compat-0.1.1.1' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/multiarg/sunlight-29118/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'transformers-0.3.0.0-b55e1ba0a2f0da13c35eec50d1253059' '-XHaskell98'
+Registering transformers-compat-0.1.1.1...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db'
+Installed transformers-compat-0.1.1.1
+Ready to install contravariant-0.4.4
+Ready to install distributive-0.4
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/unordered-containers/0.2.3.3/unordered-containers-0.2.3.3.tar.gz
+to /tmp/unordered-containers-0.2.3.3-29714...
+Updating unordered-containers.cabal with the latest revision from the index.
+Configuring unordered-containers-0.2.3.3...
+Flags chosen: debug=False
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency deepseq ==1.3.0.0: using deepseq-1.3.0.0
+Dependency hashable ==1.2.1.0: using hashable-1.2.1.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1.2 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3
+Configuration files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/etc
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building unordered-containers-0.2.3.3...
+Preprocessing library unordered-containers-0.2.3.3...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -i. -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name unordered-containers-0.2.3.3 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id deepseq-1.3.0.0-a73ec930018135e0dc0a1a3d29c74c88 -package-id hashable-1.2.1.0-73c93148ad098b58ede4636eb631192c -XHaskell98 Data.HashMap.Lazy Data.HashMap.Strict Data.HashSet Data.HashMap.Array Data.HashMap.Base Data.HashMap.PopCount Data.HashMap.Unsafe Data.HashMap.UnsafeShift -Wall -O2 -fwarn-tabs -fregs-graph
+[1 of 8] Compiling Data.HashMap.UnsafeShift ( Data/HashMap/UnsafeShift.hs, dist/build/Data/HashMap/UnsafeShift.o )
+[2 of 8] Compiling Data.HashMap.PopCount ( Data/HashMap/PopCount.hs, dist/build/Data/HashMap/PopCount.o )
+[3 of 8] Compiling Data.HashMap.Unsafe ( Data/HashMap/Unsafe.hs, dist/build/Data/HashMap/Unsafe.o )
+[4 of 8] Compiling Data.HashMap.Array ( Data/HashMap/Array.hs, dist/build/Data/HashMap/Array.o )
+[5 of 8] Compiling Data.HashMap.Base ( Data/HashMap/Base.hs, dist/build/Data/HashMap/Base.o )
+[6 of 8] Compiling Data.HashMap.Strict ( Data/HashMap/Strict.hs, dist/build/Data/HashMap/Strict.o )
+[7 of 8] Compiling Data.HashMap.Lazy ( Data/HashMap/Lazy.hs, dist/build/Data/HashMap/Lazy.o )
+[8 of 8] Compiling Data.HashSet     ( Data/HashSet.hs, dist/build/Data/HashSet.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSunordered-containers-0.2.3.3.a dist/build/Data/HashMap/Lazy.o dist/build/Data/HashMap/Strict.o dist/build/Data/HashSet.o dist/build/Data/HashMap/Array.o dist/build/Data/HashMap/Base.o dist/build/Data/HashMap/PopCount.o dist/build/Data/HashMap/Unsafe.o dist/build/Data/HashMap/UnsafeShift.o
+In-place registering unordered-containers-0.2.3.3...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/unordered-containers does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data/HashMap
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data/HashMap
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data
+Installing dist/build/Data/HashMap/Lazy.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data/HashMap/Lazy.hi
+Installing dist/build/Data/HashMap/Strict.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data/HashMap/Strict.hi
+Installing dist/build/Data/HashSet.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data/HashSet.hi
+Installing dist/build/Data/HashMap/Array.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data/HashMap/Array.hi
+Installing dist/build/Data/HashMap/Base.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data/HashMap/Base.hi
+Installing dist/build/Data/HashMap/PopCount.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data/HashMap/PopCount.hi
+Installing dist/build/Data/HashMap/Unsafe.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data/HashMap/Unsafe.hi
+Installing dist/build/Data/HashMap/UnsafeShift.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/Data/HashMap/UnsafeShift.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3
+Installing dist/build/libHSunordered-containers-0.2.3.3.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/unordered-containers-0.2.3.3/libHSunordered-containers-0.2.3.3.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-i.' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'unordered-containers-0.2.3.3' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/multiarg/sunlight-29118/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'deepseq-1.3.0.0-a73ec930018135e0dc0a1a3d29c74c88' '-package-id' 'hashable-1.2.1.0-73c93148ad098b58ede4636eb631192c' '-XHaskell98' 'Data.HashMap.Lazy' 'Data.HashMap.Strict' 'Data.HashSet' '-Wall' '-O2' '-fwarn-tabs' '-fregs-graph'
+Registering unordered-containers-0.2.3.3...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db'
+Installed unordered-containers-0.2.3.3
+Ready to install semigroups-0.12.2
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/contravariant/0.4.4/contravariant-0.4.4.tar.gz
+to /tmp/contravariant-0.4.4-29714...
+Updating contravariant.cabal with the latest revision from the index.
+Configuring contravariant-0.4.4...
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency tagged ==0.7: using tagged-0.7
+Dependency transformers ==0.3.0.0: using transformers-0.3.0.0
+Dependency transformers-compat ==0.1.1.1: using transformers-compat-0.1.1.1
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1.2 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/contravariant-0.4.4
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/contravariant-0.4.4
+Configuration files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/etc
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building contravariant-0.4.4...
+Preprocessing library contravariant-0.4.4...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -i. -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name contravariant-0.4.4 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id tagged-0.7-aa836ad5459c7a38ab1c4ce9984e857b -package-id transformers-0.3.0.0-b55e1ba0a2f0da13c35eec50d1253059 -package-id transformers-compat-0.1.1.1-073259a42bbf95f818c899c57ba5bf30 -XHaskell98 Data.Functor.Contravariant Data.Functor.Contravariant.Compose Data.Functor.Contravariant.Day -Wall
+[1 of 3] Compiling Data.Functor.Contravariant ( Data/Functor/Contravariant.hs, dist/build/Data/Functor/Contravariant.o )
+[2 of 3] Compiling Data.Functor.Contravariant.Compose ( Data/Functor/Contravariant/Compose.hs, dist/build/Data/Functor/Contravariant/Compose.o )
+[3 of 3] Compiling Data.Functor.Contravariant.Day ( Data/Functor/Contravariant/Day.hs, dist/build/Data/Functor/Contravariant/Day.o )
+Linking...
+/usr/bin/ar -r dist/build/libHScontravariant-0.4.4.a dist/build/Data/Functor/Contravariant.o dist/build/Data/Functor/Contravariant/Compose.o dist/build/Data/Functor/Contravariant/Day.o
+In-place registering contravariant-0.4.4...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/contravariant does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/contravariant-0.4.4
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/contravariant-0.4.4/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4/Data/Functor
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4/Data/Functor
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4/Data/Functor/Contravariant
+Installing dist/build/Data/Functor/Contravariant.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4/Data/Functor/Contravariant.hi
+Installing dist/build/Data/Functor/Contravariant/Compose.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4/Data/Functor/Contravariant/Compose.hi
+Installing dist/build/Data/Functor/Contravariant/Day.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4/Data/Functor/Contravariant/Day.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4
+Installing dist/build/libHScontravariant-0.4.4.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/contravariant-0.4.4/libHScontravariant-0.4.4.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-i.' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'contravariant-0.4.4' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/multiarg/sunlight-29118/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'tagged-0.7-aa836ad5459c7a38ab1c4ce9984e857b' '-package-id' 'transformers-0.3.0.0-b55e1ba0a2f0da13c35eec50d1253059' '-package-id' 'transformers-compat-0.1.1.1-073259a42bbf95f818c899c57ba5bf30' '-XHaskell98' 'Data.Functor.Contravariant' 'Data.Functor.Contravariant.Compose' 'Data.Functor.Contravariant.Day' '-Wall'
+Registering contravariant-0.4.4...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db'
+Installed contravariant-0.4.4
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/distributive/0.4/distributive-0.4.tar.gz
+to /tmp/distributive-0.4-29714...
+Updating distributive.cabal with the latest revision from the index.
+creating /tmp/distributive-0.4-29714/distributive-0.4/dist/setup
+creating /tmp/distributive-0.4-29714/distributive-0.4/dist
+creating /tmp/distributive-0.4-29714/distributive-0.4/dist/setup
+/usr/local/bin/ghc-7.4.1 --make -odir /tmp/distributive-0.4-29714/distributive-0.4/dist/setup -hidir /tmp/distributive-0.4-29714/distributive-0.4/dist/setup -i -i/tmp/distributive-0.4-29714/distributive-0.4 -package-conf /home/massysett/multiarg/sunlight-29118/db -package-id Cabal-1.14.0-5875475606fe70ef919bbc055077d744 /tmp/distributive-0.4-29714/distributive-0.4/Setup.lhs -o /tmp/distributive-0.4-29714/distributive-0.4/dist/setup/setup
+[1 of 1] Compiling Main             ( /tmp/distributive-0.4-29714/distributive-0.4/Setup.lhs, /tmp/distributive-0.4-29714/distributive-0.4/dist/setup/Main.o )
+Linking /tmp/distributive-0.4-29714/distributive-0.4/dist/setup/setup ...
+/tmp/distributive-0.4-29714/distributive-0.4/dist/setup/setup configure
+--verbose=2 --ghc --with-compiler=ghc-7.4.1 --with-hc-pkg=ghc-pkg-7.4.1
+--prefix=/home/massysett/multiarg/sunlight-29118/prefix
+--bindir=/home/massysett/multiarg/sunlight-29118/prefix/bin
+--libdir=/home/massysett/multiarg/sunlight-29118/prefix/lib
+--libsubdir=x86_64-linux-ghc-7.4.1/distributive-0.4
+--libexecdir=/home/massysett/multiarg/sunlight-29118/prefix/libexec
+--datadir=/home/massysett/multiarg/sunlight-29118/prefix/share
+--datasubdir=x86_64-linux-ghc-7.4.1/distributive-0.4
+--docdir=/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/distributive-0.4
+--htmldir=/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/distributive-0.4/html
+--haddockdir=/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/distributive-0.4/html
+--disable-library-profiling --disable-executable-profiling --user
+--package-db=clear --package-db=global
+--package-db=/home/massysett/multiarg/sunlight-29118/db --flags=-lib-werror
+--constraint=transformers-compat ==0.1.1.1 --constraint=transformers ==0.3.0.0
+--constraint=tagged ==0.7 --constraint=base ==4.5.0.0 --disable-tests
+--disable-benchmarks
+Configuring distributive-0.4...
+Flags chosen: lib-werror=False
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency tagged ==0.7: using tagged-0.7
+Dependency transformers ==0.3.0.0: using transformers-0.3.0.0
+Dependency transformers-compat ==0.1.1.1: using transformers-compat-0.1.1.1
+Using Cabal-1.14.0 compiled by ghc-7.4
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/distributive-0.4
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/distributive-0.4
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/distributive-0.4
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+creating /tmp/distributive-0.4-29714/distributive-0.4/dist/setup
+/tmp/distributive-0.4-29714/distributive-0.4/dist/setup/setup build
+--verbose=2
+creating dist/build/autogen
+creating dist/build
+creating dist/build/autogen
+creating dist/build
+creating dist/build/autogen
+Building distributive-0.4...
+Preprocessing library distributive-0.4...
+Building library...
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -package-name distributive-0.4 -hide-all-packages -fbuilding-cabal-package -package-conf /home/massysett/multiarg/sunlight-29118/db -i -idist/build -isrc -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -odir dist/build -hidir dist/build -stubdir dist/build -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id tagged-0.7-aa836ad5459c7a38ab1c4ce9984e857b -package-id transformers-0.3.0.0-b55e1ba0a2f0da13c35eec50d1253059 -package-id transformers-compat-0.1.1.1-073259a42bbf95f818c899c57ba5bf30 -O -Wall -XHaskell98 Data.Distributive
+[1 of 1] Compiling Data.Distributive ( src/Data/Distributive.hs, dist/build/Data/Distributive.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSdistributive-0.4.a dist/build/Data/Distributive.o
+/usr/bin/ld -x --hash-size=31 --reduce-memory-overheads -r -o dist/build/HSdistributive-0.4.o dist/build/Data/Distributive.o
+Registering distributive-0.4...
+/usr/local/bin/ghc-pkg-7.4.1 update - --global --user --package-conf=/home/massysett/multiarg/sunlight-29118/db --package-conf=dist/package.conf.inplace
+creating /tmp/distributive-0.4-29714/distributive-0.4/dist/setup
+/tmp/distributive-0.4-29714/distributive-0.4/dist/setup/setup install
+--verbose=2
+directory dist/doc/html/distributive does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/distributive-0.4
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/distributive-0.4/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/distributive-0.4
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/distributive-0.4/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/distributive-0.4
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/distributive-0.4/Data
+Installing dist/build/Data/Distributive.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/distributive-0.4/Data/Distributive.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/distributive-0.4
+Installing dist/build/libHSdistributive-0.4.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/distributive-0.4/libHSdistributive-0.4.a
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/distributive-0.4
+Installing dist/build/HSdistributive-0.4.o to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/distributive-0.4/HSdistributive-0.4.o
+/usr/local/bin/ghc-7.4.1 --abi-hash -package-name distributive-0.4 -hide-all-packages -fbuilding-cabal-package -package-conf /home/massysett/multiarg/sunlight-29118/db -i -idist/build -isrc -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -odir dist/build -hidir dist/build -stubdir dist/build -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id tagged-0.7-aa836ad5459c7a38ab1c4ce9984e857b -package-id transformers-0.3.0.0-b55e1ba0a2f0da13c35eec50d1253059 -package-id transformers-compat-0.1.1.1-073259a42bbf95f818c899c57ba5bf30 -O -Wall -XHaskell98 Data.Distributive
+Registering distributive-0.4...
+/usr/local/bin/ghc-pkg-7.4.1 update - --global --user --package-conf=/home/massysett/multiarg/sunlight-29118/db
+Installed distributive-0.4
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/semigroups/0.12.2/semigroups-0.12.2.tar.gz
+to /tmp/semigroups-0.12.2-29714...
+Updating semigroups.cabal with the latest revision from the index.
+Configuring semigroups-0.12.2...
+Flags chosen: base2=False
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency bytestring ==0.9.2.1: using bytestring-0.9.2.1
+Dependency containers ==0.4.2.1: using containers-0.4.2.1
+Dependency hashable ==1.2.1.0: using hashable-1.2.1.0
+Dependency nats ==0.1.2: using nats-0.1.2
+Dependency text ==1.1.0.0: using text-1.1.0.0
+Dependency unordered-containers ==0.2.3.3: using unordered-containers-0.2.3.3
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1.2 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroups-0.12.2
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/semigroups-0.12.2
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/semigroups-0.12.2
+Configuration files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/etc
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building semigroups-0.12.2...
+Preprocessing library semigroups-0.12.2...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -isrc -idist/build/autogen -Idist/build/autogen -Idist/build -optP-DLANGUAGE_DeriveDataTypeable -optP-include -optPdist/build/autogen/cabal_macros.h -package-name semigroups-0.12.2 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id bytestring-0.9.2.1-18f26186028d7c0e92e78edc9071d376 -package-id containers-0.4.2.1-cfc6420ecc2194c9ed977b06bdfd9e69 -package-id hashable-1.2.1.0-73c93148ad098b58ede4636eb631192c -package-id nats-0.1.2-9e0bb09c4772992ee1963157b323c94e -package-id text-1.1.0.0-d290270f42bc0db499aa449b54b3f739 -package-id unordered-containers-0.2.3.3-a34dc7ffcae01cfe75016693faf9859a -XHaskell98 Data.Semigroup Data.List.NonEmpty -Wall
+[1 of 2] Compiling Data.List.NonEmpty ( src/Data/List/NonEmpty.hs, dist/build/Data/List/NonEmpty.o )
+[2 of 2] Compiling Data.Semigroup   ( src/Data/Semigroup.hs, dist/build/Data/Semigroup.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSsemigroups-0.12.2.a dist/build/Data/Semigroup.o dist/build/Data/List/NonEmpty.o
+In-place registering semigroups-0.12.2...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/semigroups does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/semigroups-0.12.2
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/semigroups-0.12.2/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroups-0.12.2
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroups-0.12.2/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroups-0.12.2
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroups-0.12.2/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroups-0.12.2/Data/List
+Installing dist/build/Data/Semigroup.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroups-0.12.2/Data/Semigroup.hi
+Installing dist/build/Data/List/NonEmpty.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroups-0.12.2/Data/List/NonEmpty.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroups-0.12.2
+Installing dist/build/libHSsemigroups-0.12.2.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroups-0.12.2/libHSsemigroups-0.12.2.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-isrc' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-DLANGUAGE_DeriveDataTypeable' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'semigroups-0.12.2' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/multiarg/sunlight-29118/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'bytestring-0.9.2.1-18f26186028d7c0e92e78edc9071d376' '-package-id' 'containers-0.4.2.1-cfc6420ecc2194c9ed977b06bdfd9e69' '-package-id' 'hashable-1.2.1.0-73c93148ad098b58ede4636eb631192c' '-package-id' 'nats-0.1.2-9e0bb09c4772992ee1963157b323c94e' '-package-id' 'text-1.1.0.0-d290270f42bc0db499aa449b54b3f739' '-package-id' 'unordered-containers-0.2.3.3-a34dc7ffcae01cfe75016693faf9859a' '-XHaskell98' 'Data.Semigroup' 'Data.List.NonEmpty' '-Wall'
+Registering semigroups-0.12.2...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db'
+Installed semigroups-0.12.2
+Ready to install comonad-4.0
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/comonad/4.0/comonad-4.0.tar.gz
+to /tmp/comonad-4.0-29714...
+Updating comonad.cabal with the latest revision from the index.
+creating /tmp/comonad-4.0-29714/comonad-4.0/dist/setup
+creating /tmp/comonad-4.0-29714/comonad-4.0/dist
+creating /tmp/comonad-4.0-29714/comonad-4.0/dist/setup
+/usr/local/bin/ghc-7.4.1 --make -odir /tmp/comonad-4.0-29714/comonad-4.0/dist/setup -hidir /tmp/comonad-4.0-29714/comonad-4.0/dist/setup -i -i/tmp/comonad-4.0-29714/comonad-4.0 -package-conf /home/massysett/multiarg/sunlight-29118/db -package-id Cabal-1.14.0-5875475606fe70ef919bbc055077d744 /tmp/comonad-4.0-29714/comonad-4.0/Setup.lhs -o /tmp/comonad-4.0-29714/comonad-4.0/dist/setup/setup
+[1 of 1] Compiling Main             ( /tmp/comonad-4.0-29714/comonad-4.0/Setup.lhs, /tmp/comonad-4.0-29714/comonad-4.0/dist/setup/Main.o )
+Linking /tmp/comonad-4.0-29714/comonad-4.0/dist/setup/setup ...
+/tmp/comonad-4.0-29714/comonad-4.0/dist/setup/setup configure --verbose=2
+--ghc --with-compiler=ghc-7.4.1 --with-hc-pkg=ghc-pkg-7.4.1
+--prefix=/home/massysett/multiarg/sunlight-29118/prefix
+--bindir=/home/massysett/multiarg/sunlight-29118/prefix/bin
+--libdir=/home/massysett/multiarg/sunlight-29118/prefix/lib
+--libsubdir=x86_64-linux-ghc-7.4.1/comonad-4.0
+--libexecdir=/home/massysett/multiarg/sunlight-29118/prefix/libexec
+--datadir=/home/massysett/multiarg/sunlight-29118/prefix/share
+--datasubdir=x86_64-linux-ghc-7.4.1/comonad-4.0
+--docdir=/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/comonad-4.0
+--htmldir=/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/comonad-4.0/html
+--haddockdir=/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/comonad-4.0/html
+--disable-library-profiling --disable-executable-profiling --user
+--package-db=clear --package-db=global
+--package-db=/home/massysett/multiarg/sunlight-29118/db --flags=test-doctests
+--constraint=transformers ==0.3.0.0 --constraint=tagged ==0.7
+--constraint=semigroups ==0.12.2 --constraint=mtl ==2.1.2
+--constraint=distributive ==0.4 --constraint=contravariant ==0.4.4
+--constraint=containers ==0.4.2.1 --constraint=base ==4.5.0.0 --disable-tests
+--disable-benchmarks
+Configuring comonad-4.0...
+Flags chosen: test-doctests=True
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency containers ==0.4.2.1: using containers-0.4.2.1
+Dependency contravariant ==0.4.4: using contravariant-0.4.4
+Dependency distributive ==0.4: using distributive-0.4
+Dependency mtl ==2.1.2: using mtl-2.1.2
+Dependency semigroups ==0.12.2: using semigroups-0.12.2
+Dependency tagged ==0.7: using tagged-0.7
+Dependency transformers ==0.3.0.0: using transformers-0.3.0.0
+Using Cabal-1.14.0 compiled by ghc-7.4
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/comonad-4.0
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/comonad-4.0
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+creating /tmp/comonad-4.0-29714/comonad-4.0/dist/setup
+/tmp/comonad-4.0-29714/comonad-4.0/dist/setup/setup build --verbose=2
+creating dist/build/autogen
+creating dist/build
+creating dist/build/autogen
+creating dist/build
+creating dist/build/autogen
+Building comonad-4.0...
+Preprocessing library comonad-4.0...
+Building library...
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -package-name comonad-4.0 -hide-all-packages -fbuilding-cabal-package -package-conf /home/massysett/multiarg/sunlight-29118/db -i -idist/build -isrc -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -odir dist/build -hidir dist/build -stubdir dist/build -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id containers-0.4.2.1-cfc6420ecc2194c9ed977b06bdfd9e69 -package-id contravariant-0.4.4-62b69914af47179ed2fa5090f5c55e92 -package-id distributive-0.4-8ad4e27667daada523662e3bd1026075 -package-id mtl-2.1.2-0973d74bbf4cfd12f281b730fcc93be9 -package-id semigroups-0.12.2-a848794f43a950daf006258505f789d1 -package-id tagged-0.7-aa836ad5459c7a38ab1c4ce9984e857b -package-id transformers-0.3.0.0-b55e1ba0a2f0da13c35eec50d1253059 -O -Wall -XHaskell2010 -XCPP Control.Comonad Control.Comonad.Env Control.Comonad.Env.Class Control.Comonad.Hoist.Class Control.Comonad.Identity Control.Comonad.Store Control.Comonad.Store.Class Control.Comonad.Traced Control.Comonad.Traced.Class Control.Comonad.Trans.Class Control.Comonad.Trans.Env Control.Comonad.Trans.Identity Control.Comonad.Trans.Store Control.Comonad.Trans.Traced Data.Functor.Composition Data.Functor.Coproduct
+[ 1 of 16] Compiling Data.Functor.Composition ( src/Data/Functor/Composition.hs, dist/build/Data/Functor/Composition.o )
+[ 2 of 16] Compiling Control.Comonad.Trans.Identity ( src/Control/Comonad/Trans/Identity.hs, dist/build/Control/Comonad/Trans/Identity.o )
+[ 3 of 16] Compiling Control.Comonad  ( src/Control/Comonad.hs, dist/build/Control/Comonad.o )
+[ 4 of 16] Compiling Control.Comonad.Trans.Class ( src/Control/Comonad/Trans/Class.hs, dist/build/Control/Comonad/Trans/Class.o )
+[ 5 of 16] Compiling Control.Comonad.Hoist.Class ( src/Control/Comonad/Hoist/Class.hs, dist/build/Control/Comonad/Hoist/Class.o )
+[ 6 of 16] Compiling Control.Comonad.Trans.Env ( src/Control/Comonad/Trans/Env.hs, dist/build/Control/Comonad/Trans/Env.o )
+[ 7 of 16] Compiling Control.Comonad.Trans.Store ( src/Control/Comonad/Trans/Store.hs, dist/build/Control/Comonad/Trans/Store.o )
+[ 8 of 16] Compiling Control.Comonad.Trans.Traced ( src/Control/Comonad/Trans/Traced.hs, dist/build/Control/Comonad/Trans/Traced.o )
+[ 9 of 16] Compiling Control.Comonad.Env.Class ( src/Control/Comonad/Env/Class.hs, dist/build/Control/Comonad/Env/Class.o )
+[10 of 16] Compiling Control.Comonad.Env ( src/Control/Comonad/Env.hs, dist/build/Control/Comonad/Env.o )
+[11 of 16] Compiling Control.Comonad.Identity ( src/Control/Comonad/Identity.hs, dist/build/Control/Comonad/Identity.o )
+[12 of 16] Compiling Control.Comonad.Store.Class ( src/Control/Comonad/Store/Class.hs, dist/build/Control/Comonad/Store/Class.o )
+[13 of 16] Compiling Control.Comonad.Store ( src/Control/Comonad/Store.hs, dist/build/Control/Comonad/Store.o )
+[14 of 16] Compiling Control.Comonad.Traced.Class ( src/Control/Comonad/Traced/Class.hs, dist/build/Control/Comonad/Traced/Class.o )
+[15 of 16] Compiling Control.Comonad.Traced ( src/Control/Comonad/Traced.hs, dist/build/Control/Comonad/Traced.o )
+[16 of 16] Compiling Data.Functor.Coproduct ( src/Data/Functor/Coproduct.hs, dist/build/Data/Functor/Coproduct.o )
+Linking...
+/usr/bin/ar -r dist/build/libHScomonad-4.0.a dist/build/Control/Comonad.o dist/build/Control/Comonad/Env.o dist/build/Control/Comonad/Env/Class.o dist/build/Control/Comonad/Hoist/Class.o dist/build/Control/Comonad/Identity.o dist/build/Control/Comonad/Store.o dist/build/Control/Comonad/Store/Class.o dist/build/Control/Comonad/Traced.o dist/build/Control/Comonad/Traced/Class.o dist/build/Control/Comonad/Trans/Class.o dist/build/Control/Comonad/Trans/Env.o dist/build/Control/Comonad/Trans/Identity.o dist/build/Control/Comonad/Trans/Store.o dist/build/Control/Comonad/Trans/Traced.o dist/build/Data/Functor/Composition.o dist/build/Data/Functor/Coproduct.o
+/usr/bin/ld -x --hash-size=31 --reduce-memory-overheads -r -o dist/build/HScomonad-4.0.o dist/build/Control/Comonad.o dist/build/Control/Comonad/Env.o dist/build/Control/Comonad/Env/Class.o dist/build/Control/Comonad/Hoist/Class.o dist/build/Control/Comonad/Identity.o dist/build/Control/Comonad/Store.o dist/build/Control/Comonad/Store/Class.o dist/build/Control/Comonad/Traced.o dist/build/Control/Comonad/Traced/Class.o dist/build/Control/Comonad/Trans/Class.o dist/build/Control/Comonad/Trans/Env.o dist/build/Control/Comonad/Trans/Identity.o dist/build/Control/Comonad/Trans/Store.o dist/build/Control/Comonad/Trans/Traced.o dist/build/Data/Functor/Composition.o dist/build/Data/Functor/Coproduct.o
+Registering comonad-4.0...
+/usr/local/bin/ghc-pkg-7.4.1 update - --global --user --package-conf=/home/massysett/multiarg/sunlight-29118/db --package-conf=dist/package.conf.inplace
+creating /tmp/comonad-4.0-29714/comonad-4.0/dist/setup
+/tmp/comonad-4.0-29714/comonad-4.0/dist/setup/setup install --verbose=2
+directory dist/doc/html/comonad does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/comonad-4.0
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/comonad-4.0/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Env
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Hoist
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Store
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Traced
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Trans
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Data/Functor
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Data/Functor
+Installing dist/build/Control/Comonad.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad.hi
+Installing dist/build/Control/Comonad/Env.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Env.hi
+Installing dist/build/Control/Comonad/Env/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Env/Class.hi
+Installing dist/build/Control/Comonad/Hoist/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Hoist/Class.hi
+Installing dist/build/Control/Comonad/Identity.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Identity.hi
+Installing dist/build/Control/Comonad/Store.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Store.hi
+Installing dist/build/Control/Comonad/Store/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Store/Class.hi
+Installing dist/build/Control/Comonad/Traced.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Traced.hi
+Installing dist/build/Control/Comonad/Traced/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Traced/Class.hi
+Installing dist/build/Control/Comonad/Trans/Class.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Trans/Class.hi
+Installing dist/build/Control/Comonad/Trans/Env.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Trans/Env.hi
+Installing dist/build/Control/Comonad/Trans/Identity.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Trans/Identity.hi
+Installing dist/build/Control/Comonad/Trans/Store.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Trans/Store.hi
+Installing dist/build/Control/Comonad/Trans/Traced.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Control/Comonad/Trans/Traced.hi
+Installing dist/build/Data/Functor/Composition.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Data/Functor/Composition.hi
+Installing dist/build/Data/Functor/Coproduct.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/Data/Functor/Coproduct.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0
+Installing dist/build/libHScomonad-4.0.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/libHScomonad-4.0.a
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0
+Installing dist/build/HScomonad-4.0.o to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/comonad-4.0/HScomonad-4.0.o
+/usr/local/bin/ghc-7.4.1 --abi-hash -package-name comonad-4.0 -hide-all-packages -fbuilding-cabal-package -package-conf /home/massysett/multiarg/sunlight-29118/db -i -idist/build -isrc -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -odir dist/build -hidir dist/build -stubdir dist/build -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id containers-0.4.2.1-cfc6420ecc2194c9ed977b06bdfd9e69 -package-id contravariant-0.4.4-62b69914af47179ed2fa5090f5c55e92 -package-id distributive-0.4-8ad4e27667daada523662e3bd1026075 -package-id mtl-2.1.2-0973d74bbf4cfd12f281b730fcc93be9 -package-id semigroups-0.12.2-a848794f43a950daf006258505f789d1 -package-id tagged-0.7-aa836ad5459c7a38ab1c4ce9984e857b -package-id transformers-0.3.0.0-b55e1ba0a2f0da13c35eec50d1253059 -O -Wall -XHaskell2010 -XCPP Control.Comonad Control.Comonad.Env Control.Comonad.Env.Class Control.Comonad.Hoist.Class Control.Comonad.Identity Control.Comonad.Store Control.Comonad.Store.Class Control.Comonad.Traced Control.Comonad.Traced.Class Control.Comonad.Trans.Class Control.Comonad.Trans.Env Control.Comonad.Trans.Identity Control.Comonad.Trans.Store Control.Comonad.Trans.Traced Data.Functor.Composition Data.Functor.Coproduct
+Registering comonad-4.0...
+/usr/local/bin/ghc-pkg-7.4.1 update - --global --user --package-conf=/home/massysett/multiarg/sunlight-29118/db
+Installed comonad-4.0
+Ready to install semigroupoids-4.0
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/semigroupoids/4.0/semigroupoids-4.0.tar.gz
+to /tmp/semigroupoids-4.0-29714...
+Updating semigroupoids.cabal with the latest revision from the index.
+Configuring semigroupoids-4.0...
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency comonad ==4.0: using comonad-4.0
+Dependency containers ==0.4.2.1: using containers-0.4.2.1
+Dependency contravariant ==0.4.4: using contravariant-0.4.4
+Dependency distributive ==0.4: using distributive-0.4
+Dependency semigroups ==0.12.2: using semigroups-0.12.2
+Dependency transformers ==0.3.0.0: using transformers-0.3.0.0
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1.2 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/semigroupoids-4.0
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/semigroupoids-4.0
+Configuration files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/etc
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building semigroupoids-4.0...
+Preprocessing library semigroupoids-4.0...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -isrc -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name semigroupoids-4.0 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id comonad-4.0-013f150d931a8f4915ad30f059be7e0c -package-id containers-0.4.2.1-cfc6420ecc2194c9ed977b06bdfd9e69 -package-id contravariant-0.4.4-62b69914af47179ed2fa5090f5c55e92 -package-id distributive-0.4-8ad4e27667daada523662e3bd1026075 -package-id semigroups-0.12.2-a848794f43a950daf006258505f789d1 -package-id transformers-0.3.0.0-b55e1ba0a2f0da13c35eec50d1253059 -XHaskell98 Data.Functor.Alt Data.Functor.Apply Data.Functor.Bind Data.Functor.Bind.Trans Data.Functor.Extend Data.Functor.Plus Data.Groupoid Data.Isomorphism Data.Semifunctor Data.Semifunctor.Associative Data.Semifunctor.Braided Data.Semigroup.Foldable Data.Semigroup.Traversable Data.Semigroupoid Data.Semigroupoid.Coproduct Data.Semigroupoid.Dual Data.Semigroupoid.Ob Data.Semigroupoid.Product Data.Semigroupoid.Static Data.Traversable.Instances -Wall
+[ 1 of 20] Compiling Data.Traversable.Instances ( src/Data/Traversable/Instances.hs, dist/build/Data/Traversable/Instances.o )
+[ 2 of 20] Compiling Data.Functor.Extend ( src/Data/Functor/Extend.hs, dist/build/Data/Functor/Extend.o )
+[ 3 of 20] Compiling Data.Functor.Bind ( src/Data/Functor/Bind.hs, dist/build/Data/Functor/Bind.o )
+[ 4 of 20] Compiling Data.Functor.Bind.Trans ( src/Data/Functor/Bind/Trans.hs, dist/build/Data/Functor/Bind/Trans.o )
+[ 5 of 20] Compiling Data.Semigroupoid ( src/Data/Semigroupoid.hs, dist/build/Data/Semigroupoid.o )
+[ 6 of 20] Compiling Data.Semigroupoid.Dual ( src/Data/Semigroupoid/Dual.hs, dist/build/Data/Semigroupoid/Dual.o )
+[ 7 of 20] Compiling Data.Groupoid    ( src/Data/Groupoid.hs, dist/build/Data/Groupoid.o )
+[ 8 of 20] Compiling Data.Isomorphism ( src/Data/Isomorphism.hs, dist/build/Data/Isomorphism.o )
+[ 9 of 20] Compiling Data.Semigroupoid.Product ( src/Data/Semigroupoid/Product.hs, dist/build/Data/Semigroupoid/Product.o )
+[10 of 20] Compiling Data.Semigroupoid.Coproduct ( src/Data/Semigroupoid/Coproduct.hs, dist/build/Data/Semigroupoid/Coproduct.o )
+[11 of 20] Compiling Data.Semigroupoid.Ob ( src/Data/Semigroupoid/Ob.hs, dist/build/Data/Semigroupoid/Ob.o )
+[12 of 20] Compiling Data.Functor.Apply ( src/Data/Functor/Apply.hs, dist/build/Data/Functor/Apply.o )
+[13 of 20] Compiling Data.Semigroup.Foldable ( src/Data/Semigroup/Foldable.hs, dist/build/Data/Semigroup/Foldable.o )
+[14 of 20] Compiling Data.Semigroup.Traversable ( src/Data/Semigroup/Traversable.hs, dist/build/Data/Semigroup/Traversable.o )
+[15 of 20] Compiling Data.Semifunctor ( src/Data/Semifunctor.hs, dist/build/Data/Semifunctor.o )
+[16 of 20] Compiling Data.Semifunctor.Associative ( src/Data/Semifunctor/Associative.hs, dist/build/Data/Semifunctor/Associative.o )
+[17 of 20] Compiling Data.Semifunctor.Braided ( src/Data/Semifunctor/Braided.hs, dist/build/Data/Semifunctor/Braided.o )
+[18 of 20] Compiling Data.Functor.Alt ( src/Data/Functor/Alt.hs, dist/build/Data/Functor/Alt.o )
+[19 of 20] Compiling Data.Functor.Plus ( src/Data/Functor/Plus.hs, dist/build/Data/Functor/Plus.o )
+[20 of 20] Compiling Data.Semigroupoid.Static ( src/Data/Semigroupoid/Static.hs, dist/build/Data/Semigroupoid/Static.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSsemigroupoids-4.0.a dist/build/Data/Functor/Alt.o dist/build/Data/Functor/Apply.o dist/build/Data/Functor/Bind.o dist/build/Data/Functor/Bind/Trans.o dist/build/Data/Functor/Extend.o dist/build/Data/Functor/Plus.o dist/build/Data/Groupoid.o dist/build/Data/Isomorphism.o dist/build/Data/Semifunctor.o dist/build/Data/Semifunctor/Associative.o dist/build/Data/Semifunctor/Braided.o dist/build/Data/Semigroup/Foldable.o dist/build/Data/Semigroup/Traversable.o dist/build/Data/Semigroupoid.o dist/build/Data/Semigroupoid/Coproduct.o dist/build/Data/Semigroupoid/Dual.o dist/build/Data/Semigroupoid/Ob.o dist/build/Data/Semigroupoid/Product.o dist/build/Data/Semigroupoid/Static.o dist/build/Data/Traversable/Instances.o
+In-place registering semigroupoids-4.0...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/semigroupoids does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/semigroupoids-4.0
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Functor
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Functor
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Functor/Bind
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semifunctor
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semigroup
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semigroupoid
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Traversable
+Installing dist/build/Data/Functor/Alt.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Functor/Alt.hi
+Installing dist/build/Data/Functor/Apply.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Functor/Apply.hi
+Installing dist/build/Data/Functor/Bind.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Functor/Bind.hi
+Installing dist/build/Data/Functor/Bind/Trans.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Functor/Bind/Trans.hi
+Installing dist/build/Data/Functor/Extend.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Functor/Extend.hi
+Installing dist/build/Data/Functor/Plus.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Functor/Plus.hi
+Installing dist/build/Data/Groupoid.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Groupoid.hi
+Installing dist/build/Data/Isomorphism.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Isomorphism.hi
+Installing dist/build/Data/Semifunctor.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semifunctor.hi
+Installing dist/build/Data/Semifunctor/Associative.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semifunctor/Associative.hi
+Installing dist/build/Data/Semifunctor/Braided.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semifunctor/Braided.hi
+Installing dist/build/Data/Semigroup/Foldable.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semigroup/Foldable.hi
+Installing dist/build/Data/Semigroup/Traversable.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semigroup/Traversable.hi
+Installing dist/build/Data/Semigroupoid.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semigroupoid.hi
+Installing dist/build/Data/Semigroupoid/Coproduct.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semigroupoid/Coproduct.hi
+Installing dist/build/Data/Semigroupoid/Dual.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semigroupoid/Dual.hi
+Installing dist/build/Data/Semigroupoid/Ob.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semigroupoid/Ob.hi
+Installing dist/build/Data/Semigroupoid/Product.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semigroupoid/Product.hi
+Installing dist/build/Data/Semigroupoid/Static.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Semigroupoid/Static.hi
+Installing dist/build/Data/Traversable/Instances.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/Data/Traversable/Instances.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0
+Installing dist/build/libHSsemigroupoids-4.0.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/semigroupoids-4.0/libHSsemigroupoids-4.0.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-isrc' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'semigroupoids-4.0' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/multiarg/sunlight-29118/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'comonad-4.0-013f150d931a8f4915ad30f059be7e0c' '-package-id' 'containers-0.4.2.1-cfc6420ecc2194c9ed977b06bdfd9e69' '-package-id' 'contravariant-0.4.4-62b69914af47179ed2fa5090f5c55e92' '-package-id' 'distributive-0.4-8ad4e27667daada523662e3bd1026075' '-package-id' 'semigroups-0.12.2-a848794f43a950daf006258505f789d1' '-package-id' 'transformers-0.3.0.0-b55e1ba0a2f0da13c35eec50d1253059' '-XHaskell98' 'Data.Functor.Alt' 'Data.Functor.Apply' 'Data.Functor.Bind' 'Data.Functor.Bind.Trans' 'Data.Functor.Extend' 'Data.Functor.Plus' 'Data.Groupoid' 'Data.Isomorphism' 'Data.Semifunctor' 'Data.Semifunctor.Associative' 'Data.Semifunctor.Braided' 'Data.Semigroup.Foldable' 'Data.Semigroup.Traversable' 'Data.Semigroupoid' 'Data.Semigroupoid.Coproduct' 'Data.Semigroupoid.Dual' 'Data.Semigroupoid.Ob' 'Data.Semigroupoid.Product' 'Data.Semigroupoid.Static' 'Data.Traversable.Instances' '-Wall'
+Registering semigroupoids-4.0...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db'
+Installed semigroupoids-4.0
+Ready to install bifunctors-4.1.1
+Waiting for install task to finish...
+Extracting
+/home/massysett/.cabal/packages/hackage.haskell.org/bifunctors/4.1.1/bifunctors-4.1.1.tar.gz
+to /tmp/bifunctors-4.1.1-29714...
+Updating bifunctors.cabal with the latest revision from the index.
+Configuring bifunctors-4.1.1...
+Dependency base ==4.5.0.0: using base-4.5.0.0
+Dependency semigroupoids ==4.0: using semigroupoids-4.0
+Dependency semigroups ==0.12.2: using semigroups-0.12.2
+Dependency tagged ==0.7: using tagged-0.7
+'/usr/local/bin/ghc-7.4.1' '--info'
+Using Cabal-1.18.1.2 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1
+Configuration files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/etc
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+Component build order: library
+creating dist/build
+creating dist/build/autogen
+Building bifunctors-4.1.1...
+Preprocessing library bifunctors-4.1.1...
+Building library...
+'/usr/local/bin/ghc-7.4.1' '--info'
+'/usr/local/bin/ghc-7.4.1' '--info'
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -outputdir dist/build -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -isrc -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name bifunctors-4.1.1 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id semigroupoids-4.0-578fb9bfe3afd5e45bcb69ca7e311906 -package-id semigroups-0.12.2-a848794f43a950daf006258505f789d1 -package-id tagged-0.7-aa836ad5459c7a38ab1c4ce9984e857b -XHaskell98 Data.Biapplicative Data.Bifunctor Data.Bifunctor.Apply Data.Bifunctor.Clown Data.Bifunctor.Flip Data.Bifunctor.Join Data.Bifunctor.Joker Data.Bifunctor.Product Data.Bifunctor.Wrapped Data.Bifoldable Data.Bitraversable Data.Semigroup.Bifoldable Data.Semigroup.Bitraversable -Wall
+[ 1 of 13] Compiling Data.Bifoldable  ( src/Data/Bifoldable.hs, dist/build/Data/Bifoldable.o )
+[ 2 of 13] Compiling Data.Semigroup.Bifoldable ( src/Data/Semigroup/Bifoldable.hs, dist/build/Data/Semigroup/Bifoldable.o )
+[ 3 of 13] Compiling Data.Bifunctor   ( src/Data/Bifunctor.hs, dist/build/Data/Bifunctor.o )
+[ 4 of 13] Compiling Data.Bifunctor.Apply ( src/Data/Bifunctor/Apply.hs, dist/build/Data/Bifunctor/Apply.o )
+[ 5 of 13] Compiling Data.Bitraversable ( src/Data/Bitraversable.hs, dist/build/Data/Bitraversable.o )
+[ 6 of 13] Compiling Data.Semigroup.Bitraversable ( src/Data/Semigroup/Bitraversable.hs, dist/build/Data/Semigroup/Bitraversable.o )
+[ 7 of 13] Compiling Data.Biapplicative ( src/Data/Biapplicative.hs, dist/build/Data/Biapplicative.o )
+[ 8 of 13] Compiling Data.Bifunctor.Clown ( src/Data/Bifunctor/Clown.hs, dist/build/Data/Bifunctor/Clown.o )
+[ 9 of 13] Compiling Data.Bifunctor.Flip ( src/Data/Bifunctor/Flip.hs, dist/build/Data/Bifunctor/Flip.o )
+[10 of 13] Compiling Data.Bifunctor.Join ( src/Data/Bifunctor/Join.hs, dist/build/Data/Bifunctor/Join.o )
+[11 of 13] Compiling Data.Bifunctor.Joker ( src/Data/Bifunctor/Joker.hs, dist/build/Data/Bifunctor/Joker.o )
+[12 of 13] Compiling Data.Bifunctor.Product ( src/Data/Bifunctor/Product.hs, dist/build/Data/Bifunctor/Product.o )
+[13 of 13] Compiling Data.Bifunctor.Wrapped ( src/Data/Bifunctor/Wrapped.hs, dist/build/Data/Bifunctor/Wrapped.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSbifunctors-4.1.1.a dist/build/Data/Biapplicative.o dist/build/Data/Bifunctor.o dist/build/Data/Bifunctor/Apply.o dist/build/Data/Bifunctor/Clown.o dist/build/Data/Bifunctor/Flip.o dist/build/Data/Bifunctor/Join.o dist/build/Data/Bifunctor/Joker.o dist/build/Data/Bifunctor/Product.o dist/build/Data/Bifunctor/Wrapped.o dist/build/Data/Bifoldable.o dist/build/Data/Bitraversable.o dist/build/Data/Semigroup/Bifoldable.o dist/build/Data/Semigroup/Bitraversable.o
+In-place registering bifunctors-4.1.1...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db' '--package-conf=dist/package.conf.inplace'
+directory dist/doc/html/bifunctors does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Bifunctor
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Semigroup
+Installing dist/build/Data/Biapplicative.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Biapplicative.hi
+Installing dist/build/Data/Bifunctor.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Bifunctor.hi
+Installing dist/build/Data/Bifunctor/Apply.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Bifunctor/Apply.hi
+Installing dist/build/Data/Bifunctor/Clown.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Bifunctor/Clown.hi
+Installing dist/build/Data/Bifunctor/Flip.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Bifunctor/Flip.hi
+Installing dist/build/Data/Bifunctor/Join.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Bifunctor/Join.hi
+Installing dist/build/Data/Bifunctor/Joker.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Bifunctor/Joker.hi
+Installing dist/build/Data/Bifunctor/Product.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Bifunctor/Product.hi
+Installing dist/build/Data/Bifunctor/Wrapped.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Bifunctor/Wrapped.hi
+Installing dist/build/Data/Bifoldable.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Bifoldable.hi
+Installing dist/build/Data/Bitraversable.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Bitraversable.hi
+Installing dist/build/Data/Semigroup/Bifoldable.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Semigroup/Bifoldable.hi
+Installing dist/build/Data/Semigroup/Bitraversable.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/Data/Semigroup/Bitraversable.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1
+Installing dist/build/libHSbifunctors-4.1.1.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/x86_64-linux-ghc-7.4.1/bifunctors-4.1.1/libHSbifunctors-4.1.1.a
+'/usr/local/bin/ghc-7.4.1' '--abi-hash' '-fbuilding-cabal-package' '-O' '-outputdir' 'dist/build' '-odir' 'dist/build' '-hidir' 'dist/build' '-stubdir' 'dist/build' '-i' '-idist/build' '-isrc' '-idist/build/autogen' '-Idist/build/autogen' '-Idist/build' '-optP-include' '-optPdist/build/autogen/cabal_macros.h' '-package-name' 'bifunctors-4.1.1' '-hide-all-packages' '-no-user-package-conf' '-package-conf' '/home/massysett/multiarg/sunlight-29118/db' '-package-id' 'base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e' '-package-id' 'semigroupoids-4.0-578fb9bfe3afd5e45bcb69ca7e311906' '-package-id' 'semigroups-0.12.2-a848794f43a950daf006258505f789d1' '-package-id' 'tagged-0.7-aa836ad5459c7a38ab1c4ce9984e857b' '-XHaskell98' 'Data.Biapplicative' 'Data.Bifunctor' 'Data.Bifunctor.Apply' 'Data.Bifunctor.Clown' 'Data.Bifunctor.Flip' 'Data.Bifunctor.Join' 'Data.Bifunctor.Joker' 'Data.Bifunctor.Product' 'Data.Bifunctor.Wrapped' 'Data.Bifoldable' 'Data.Bitraversable' 'Data.Semigroup.Bifoldable' 'Data.Semigroup.Bitraversable' '-Wall'
+Registering bifunctors-4.1.1...
+'/usr/local/bin/ghc-pkg-7.4.1' 'update' '-' '--global' '--no-user-package-conf' '--package-conf=/home/massysett/multiarg/sunlight-29118/db'
+Installed bifunctors-4.1.1
+
+Standard error:
+/usr/bin/ar: creating dist/build/libHSnats-0.1.2.a
+/usr/bin/ar: creating dist/build/libHStagged-0.7.a
+/usr/bin/ar: creating dist/build/libHStext-1.1.0.0.a
+/usr/bin/ar: creating dist/build/libHStransformers-0.3.0.0.a
+/usr/bin/ar: creating dist/build/libHShashable-1.2.1.0.a
+/usr/bin/ar: creating dist/build/libHSmtl-2.1.2.a
+/usr/bin/ar: creating dist/build/libHStransformers-compat-0.1.1.1.a
+/usr/bin/ar: creating dist/build/libHSunordered-containers-0.2.3.3.a
+/usr/bin/ar: creating dist/build/libHScontravariant-0.4.4.a
+/usr/bin/ar: creating dist/build/libHSdistributive-0.4.a
+/usr/bin/ar: creating dist/build/libHSsemigroups-0.12.2.a
+/usr/bin/ar: creating dist/build/libHScomonad-4.0.a
+/usr/bin/ar: creating dist/build/libHSsemigroupoids-4.0.a
+/usr/bin/ar: creating dist/build/libHSbifunctors-4.1.1.a
+
+ghc-pkg-7.4.1 ["list","--global","--package-conf=/home/massysett/multiarg/sunlight-29118/db"] succeeded with exit code 0
+Standard output:
+/opt/ghc/7.4.1/lib/ghc-7.4.1/package.conf.d:
+    Cabal-1.14.0
+    array-0.4.0.0
+    base-4.5.0.0
+    bin-package-db-0.0.0.0
+    binary-0.5.1.0
+    bytestring-0.9.2.1
+    containers-0.4.2.1
+    deepseq-1.3.0.0
+    directory-1.1.0.2
+    extensible-exceptions-0.1.1.4
+    filepath-1.3.0.0
+    (ghc-7.4.1)
+    ghc-prim-0.2.0.0
+    (haskell2010-1.1.0.1)
+    (haskell98-2.0.0.1)
+    hoopl-3.8.7.3
+    hpc-0.5.1.1
+    integer-gmp-0.4.0.0
+    old-locale-1.0.0.4
+    old-time-1.1.0.0
+    pretty-1.1.1.0
+    process-1.1.0.1
+    rts-1.0
+    template-haskell-2.7.0.0
+    time-1.4
+    unix-2.5.1.0
+
+/home/massysett/multiarg/sunlight-29118/db:
+    bifunctors-4.1.1
+    comonad-4.0
+    contravariant-0.4.4
+    distributive-0.4
+    hashable-1.2.1.0
+    mtl-2.1.2
+    nats-0.1.2
+    semigroupoids-4.0
+    semigroups-0.12.2
+    tagged-0.7
+    text-1.1.0.0
+    transformers-0.3.0.0
+    transformers-compat-0.1.1.1
+    unordered-containers-0.2.3.3
+
+
+Standard error:
+<empty>
+
+ghc ["--make","Setup.hs"] succeeded with exit code 0
+Standard output:
+[1 of 1] Compiling Main             ( Setup.hs, Setup.o )
+Linking Setup ...
+
+Standard error:
+<empty>
+
+./Setup ["configure","--verbose=2","--with-compiler=ghc-7.4.1","--with-hc-pkg=ghc-pkg-7.4.1","--prefix=/home/massysett/multiarg/sunlight-29118/prefix","--package-db=clear","--package-db=global","--package-db=/home/massysett/multiarg/sunlight-29118/db","--enable-tests"] succeeded with exit code 0
+Standard output:
+Configuring multiarg-0.26.0.0...
+Dependency base >=4.5.0.0 && <5: using base-4.5.0.0
+Dependency bifunctors >=0.1.3.1: using bifunctors-4.1.1
+Dependency containers >=0.4.2.1: using containers-0.4.2.1
+Using Cabal-1.16.0 compiled by ghc-7.6
+Using compiler: ghc-7.4.1
+Using install prefix: /home/massysett/multiarg/sunlight-29118/prefix
+Binaries installed in: /home/massysett/multiarg/sunlight-29118/prefix/bin
+Libraries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1
+Private binaries installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/libexec
+Data files installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/multiarg-0.26.0.0
+Documentation installed in:
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/multiarg-0.26.0.0
+No alex found
+Using ar found on system at: /usr/bin/ar
+No c2hs found
+Using cpphs version 1.16 found on system at: /home/massysett/.cabal/bin/cpphs
+No ffihugs found
+Using gcc version 4.7 found on system at: /usr/bin/gcc
+Using ghc version 7.4.1 given by user at: /usr/local/bin/ghc-7.4.1
+Using ghc-pkg version 7.4.1 given by user at: /usr/local/bin/ghc-pkg-7.4.1
+No greencard found
+Using haddock version 2.13.2 found on system at: /usr/local/bin/haddock
+Using happy version 1.19.2 found on system at:
+/home/massysett/.cabal/bin/happy
+No hmake found
+Using hpc version 0.6 found on system at: /usr/local/bin/hpc
+Using hsc2hs version 0.67 found on system at: /usr/local/bin/hsc2hs
+Using hscolour version 1.19 found on system at: /usr/bin/HsColour
+No hugs found
+No jhc found
+Using ld found on system at: /usr/bin/ld
+No lhc found
+No lhc-pkg found
+No nhc98 found
+Using pkg-config version 0.26 found on system at: /usr/bin/pkg-config
+Using ranlib found on system at: /usr/bin/ranlib
+Using strip found on system at: /usr/bin/strip
+Using tar found on system at: /bin/tar
+No uhc found
+
+Standard error:
+<empty>
+
+./Setup ["build","--verbose=2"] succeeded with exit code 0
+Standard output:
+creating dist/build
+creating dist/build/autogen
+Building multiarg-0.26.0.0...
+Preprocessing library multiarg-0.26.0.0...
+Building library...
+creating dist/build
+/usr/local/bin/ghc-7.4.1 --make -fbuilding-cabal-package -O -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -ilib -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name multiarg-0.26.0.0 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-conf dist/package.conf.inplace -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id bifunctors-4.1.1-f356af53ab9759c9457be323e987f6f8 -package-id containers-0.4.2.1-cfc6420ecc2194c9ed977b06bdfd9e69 -XHaskell98 System.Console.MultiArg System.Console.MultiArg.Combinator System.Console.MultiArg.CommandLine System.Console.MultiArg.Option System.Console.MultiArg.Prim System.Console.MultiArg.SampleParser -Wall
+[1 of 6] Compiling System.Console.MultiArg.Option ( lib/System/Console/MultiArg/Option.hs, dist/build/System/Console/MultiArg/Option.o )
+[2 of 6] Compiling System.Console.MultiArg.Prim ( lib/System/Console/MultiArg/Prim.hs, dist/build/System/Console/MultiArg/Prim.o )
+[3 of 6] Compiling System.Console.MultiArg.Combinator ( lib/System/Console/MultiArg/Combinator.hs, dist/build/System/Console/MultiArg/Combinator.o )
+[4 of 6] Compiling System.Console.MultiArg.CommandLine ( lib/System/Console/MultiArg/CommandLine.hs, dist/build/System/Console/MultiArg/CommandLine.o )
+[5 of 6] Compiling System.Console.MultiArg.SampleParser ( lib/System/Console/MultiArg/SampleParser.hs, dist/build/System/Console/MultiArg/SampleParser.o )
+[6 of 6] Compiling System.Console.MultiArg ( lib/System/Console/MultiArg.hs, dist/build/System/Console/MultiArg.o )
+Linking...
+/usr/bin/ar -r dist/build/libHSmultiarg-0.26.0.0.a dist/build/System/Console/MultiArg.o dist/build/System/Console/MultiArg/Combinator.o dist/build/System/Console/MultiArg/CommandLine.o dist/build/System/Console/MultiArg/Option.o dist/build/System/Console/MultiArg/Prim.o dist/build/System/Console/MultiArg/SampleParser.o
+/usr/bin/ld -x --hash-size=31 --reduce-memory-overheads -r -o dist/build/HSmultiarg-0.26.0.0.o dist/build/System/Console/MultiArg.o dist/build/System/Console/MultiArg/Combinator.o dist/build/System/Console/MultiArg/CommandLine.o dist/build/System/Console/MultiArg/Option.o dist/build/System/Console/MultiArg/Prim.o dist/build/System/Console/MultiArg/SampleParser.o
+In-place registering multiarg-0.26.0.0...
+/usr/local/bin/ghc-pkg-7.4.1 update - --global --no-user-package-conf --package-conf=/home/massysett/multiarg/sunlight-29118/db --package-conf=dist/package.conf.inplace
+
+Standard error:
+/usr/bin/ar: creating dist/build/libHSmultiarg-0.26.0.0.a
+
+./Setup ["install","--verbose=2"] succeeded with exit code 0
+Standard output:
+directory dist/doc/html/multiarg does exist: False
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/multiarg-0.26.0.0
+Installing LICENSE to
+/home/massysett/multiarg/sunlight-29118/prefix/share/doc/multiarg-0.26.0.0/LICENSE
+Installing library in
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/System/Console
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/System
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1
+creating /home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/System
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/System/Console
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/System/Console/MultiArg
+Installing dist/build/System/Console/MultiArg.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/System/Console/MultiArg.hi
+Installing dist/build/System/Console/MultiArg/Combinator.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/System/Console/MultiArg/Combinator.hi
+Installing dist/build/System/Console/MultiArg/CommandLine.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/System/Console/MultiArg/CommandLine.hi
+Installing dist/build/System/Console/MultiArg/Option.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/System/Console/MultiArg/Option.hi
+Installing dist/build/System/Console/MultiArg/Prim.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/System/Console/MultiArg/Prim.hi
+Installing dist/build/System/Console/MultiArg/SampleParser.hi to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/System/Console/MultiArg/SampleParser.hi
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1
+Installing dist/build/libHSmultiarg-0.26.0.0.a to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/libHSmultiarg-0.26.0.0.a
+creating
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1
+Installing dist/build/HSmultiarg-0.26.0.0.o to
+/home/massysett/multiarg/sunlight-29118/prefix/lib/multiarg-0.26.0.0/ghc-7.4.1/HSmultiarg-0.26.0.0.o
+/usr/local/bin/ghc-7.4.1 --abi-hash -fbuilding-cabal-package -O -odir dist/build -hidir dist/build -stubdir dist/build -i -idist/build -ilib -idist/build/autogen -Idist/build/autogen -Idist/build -optP-include -optPdist/build/autogen/cabal_macros.h -package-name multiarg-0.26.0.0 -hide-all-packages -no-user-package-conf -package-conf /home/massysett/multiarg/sunlight-29118/db -package-id base-4.5.0.0-6db966b4cf8c1a91188e66d354ba065e -package-id bifunctors-4.1.1-f356af53ab9759c9457be323e987f6f8 -package-id containers-0.4.2.1-cfc6420ecc2194c9ed977b06bdfd9e69 -XHaskell98 System.Console.MultiArg System.Console.MultiArg.Combinator System.Console.MultiArg.CommandLine System.Console.MultiArg.Option System.Console.MultiArg.Prim System.Console.MultiArg.SampleParser -Wall
+Registering multiarg-0.26.0.0...
+/usr/local/bin/ghc-pkg-7.4.1 update - --global --no-user-package-conf --package-conf=/home/massysett/multiarg/sunlight-29118/db
+
+Standard error:
+<empty>
+
+ghc-pkg-7.4.1 ["list","--global","--package-conf=/home/massysett/multiarg/sunlight-29118/db"] succeeded with exit code 0
+Standard output:
+/opt/ghc/7.4.1/lib/ghc-7.4.1/package.conf.d:
+    Cabal-1.14.0
+    array-0.4.0.0
+    base-4.5.0.0
+    bin-package-db-0.0.0.0
+    binary-0.5.1.0
+    bytestring-0.9.2.1
+    containers-0.4.2.1
+    deepseq-1.3.0.0
+    directory-1.1.0.2
+    extensible-exceptions-0.1.1.4
+    filepath-1.3.0.0
+    (ghc-7.4.1)
+    ghc-prim-0.2.0.0
+    (haskell2010-1.1.0.1)
+    (haskell98-2.0.0.1)
+    hoopl-3.8.7.3
+    hpc-0.5.1.1
+    integer-gmp-0.4.0.0
+    old-locale-1.0.0.4
+    old-time-1.1.0.0
+    pretty-1.1.1.0
+    process-1.1.0.1
+    rts-1.0
+    template-haskell-2.7.0.0
+    time-1.4
+    unix-2.5.1.0
+
+/home/massysett/multiarg/sunlight-29118/db:
+    bifunctors-4.1.1
+    comonad-4.0
+    contravariant-0.4.4
+    distributive-0.4
+    hashable-1.2.1.0
+    mtl-2.1.2
+    multiarg-0.26.0.0
+    nats-0.1.2
+    semigroupoids-4.0
+    semigroups-0.12.2
+    tagged-0.7
+    text-1.1.0.0
+    transformers-0.3.0.0
+    transformers-compat-0.1.1.1
+    unordered-containers-0.2.3.3
+
+
+Standard error:
+<empty>
+
