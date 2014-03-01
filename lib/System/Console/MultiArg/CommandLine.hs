@@ -22,7 +22,6 @@ module System.Console.MultiArg.CommandLine (
   -- * Types
   , ProgName
   , Opts(..)
-  , MapShortcuts(..)
   , OptsWithPosArgs(..)
   , Mode(..)
 
@@ -50,6 +49,7 @@ import System.Exit (exitFailure, exitSuccess)
 import qualified System.IO as IO
 import Control.Applicative ( many, (<|>), optional,
                              (<$), (<*>), (<*), (<$>))
+import Data.Bifunctor
 import Data.List (find)
 import Data.Maybe (catMaybes, fromJust)
 import qualified Data.Set as Set
@@ -77,11 +77,7 @@ data Intersperse =
 
 -- | Specifies a set of options.
 data Opts s a = Opts
-  { oOptions :: [C.OptSpec a]
-  -- ^ If the user does not specify any shortcut options, she may
-  -- specify any number of these options.
-
-  , oShortcuts :: [C.OptSpec s]
+  { oShortcuts :: [C.OptSpec s]
   -- ^ Shortcut options are commonly options such as @--help@ or
   -- @--version@. Such options must be specified alone on the command
   -- line.  The parser looks for one of these options first.  If it
@@ -91,7 +87,20 @@ data Opts s a = Opts
   -- option is found, the parser processes non-shortcut options
   -- instead.
 
+  , oOptions :: [C.OptSpec a]
+  -- ^ If the user does not specify any shortcut options, she may
+  -- specify any number of these options.
+
   }
+
+instance Bifunctor Opts where
+  bimap fa fc o = Opts
+    { oShortcuts = map (fmap fa) . oShortcuts $ o
+    , oOptions = map (fmap fc) . oOptions $ o
+    }
+
+instance Functor (Opts a) where
+  fmap f o = o { oOptions = fmap (fmap f) . oOptions $ o }
 
 -- | Creates an Opts with a help shortcut option.
 optsHelp
@@ -99,7 +108,7 @@ optsHelp
   -- ^ Whatever type you wish to use for help
   -> [C.OptSpec a]
   -> Opts h a
-optsHelp h os = Opts os [C.OptSpec ["help"] "h" (C.NoArg h)]
+optsHelp h = Opts [C.OptSpec ["help"] "h" (C.NoArg h)]
 
 -- | Creates an Opts with help and version shortcut options.
 optsHelpVersion
@@ -111,18 +120,8 @@ optsHelpVersion
 
   -> [C.OptSpec a]
   -> Opts h a
-optsHelpVersion h v os = Opts os [ C.OptSpec ["help"] "h" (C.NoArg h)
-                                 , C.OptSpec ["version"] "v" (C.NoArg v) ]
-
-instance Functor (Opts s) where
-  fmap f (Opts os ss) = Opts (map (fmap f) os) ss
-
--- | Things that contain shortcut options that can be changed.
-class MapShortcuts f where
-  smap :: (a -> b) -> f a o -> f b o
-
-instance MapShortcuts Opts where
-  smap f (Opts os ss) = Opts os (map (fmap f) ss)
+optsHelpVersion h v = Opts [ C.OptSpec ["help"] "h" (C.NoArg h)
+                            , C.OptSpec ["version"] "v" (C.NoArg v) ]
 
 -- | Specification for both options and positional arguments.
 data OptsWithPosArgs s a = OptsWithPosArgs
@@ -131,12 +130,18 @@ data OptsWithPosArgs s a = OptsWithPosArgs
   , opPosArg :: String -> Either C.InputError a
   }
 
-instance MapShortcuts OptsWithPosArgs where
-  smap f (OptsWithPosArgs os i p) = OptsWithPosArgs (smap f os) i p
+instance Bifunctor OptsWithPosArgs where
+  bimap fa fc o = OptsWithPosArgs
+    { opOpts = bimap fa fc . opOpts $ o
+    , opIntersperse = opIntersperse o
+    , opPosArg = fmap (fmap fc) . opPosArg $ o
+    }
 
 instance Functor (OptsWithPosArgs s) where
-  fmap f (OptsWithPosArgs os i p) =
-    OptsWithPosArgs (fmap f os) i (fmap (fmap f) p)
+  fmap f o = o
+    { opOpts = fmap f . opOpts $ o
+    , opPosArg = fmap (fmap f) . opPosArg $ o
+    }
 
 -- | Specifies a mode.
 data Mode s r = forall a. Mode
@@ -157,6 +162,16 @@ data Mode s r = forall a. Mode
   -- after that is specified here as an option or positional argument
   -- that is specific to this mode.
   }
+
+instance Bifunctor Mode where
+  bimap fa fc (Mode n r o) = Mode
+    { mModeName = n
+    , mGetResult = fmap fc r
+    , mOpts = first fa o
+    }
+
+instance Functor (Mode s) where
+  fmap f (Mode n gr os) = Mode n (fmap f gr) os
 
 -- | Creates a Mode with a help option (help specific to the mode.)
 modeHelp
@@ -184,15 +199,9 @@ modeHelp
   -> Mode h r
 
 modeHelp n h getR os i p =
-  Mode n getR (OptsWithPosArgs (Opts os ss) i p)
+  Mode n getR (OptsWithPosArgs (Opts ss os) i p)
   where
     ss = [C.OptSpec ["help"] "h" (C.NoArg h)]
-
-instance MapShortcuts Mode where
-  smap f (Mode n g o) = Mode n g (smap f o)
-
-instance Functor (Mode s) where
-  fmap f (Mode n gr os) = Mode n (fmap f gr) os
 
 parseOpts :: Opts s a -> P.Parser (Either s [a])
 parseOpts os = do
@@ -406,7 +415,7 @@ simpleHelp
   -- arguments are returned here.
 simpleHelp getHelp os ir getArg = do
   let shortcuts = [C.OptSpec ["help"] "h" (C.NoArg (displayAct getHelp))]
-      opts = OptsWithPosArgs (Opts os shortcuts) ir getArg
+      opts = OptsWithPosArgs (Opts shortcuts os) ir getArg
   ei <- simpleIOCustomError errorActDisplayHelp opts
   case ei of
     Left act -> act
@@ -445,7 +454,7 @@ simpleHelpVersion getHelp getVer os ir getArg = do
                       (C.NoArg (displayAct getHelp))
                   , C.OptSpec ["version"] ""
                       (C.NoArg (displayAct getVer)) ]
-      opts = OptsWithPosArgs (Opts os shortcuts) ir getArg
+      opts = OptsWithPosArgs (Opts shortcuts os) ir getArg
   ei <- simpleIOCustomError errorActDisplayHelp opts
   case ei of
     Left act -> act
