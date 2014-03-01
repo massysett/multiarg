@@ -1,7 +1,7 @@
 This package was tested to work with these dependency
 versions and compiler version.
 These are the default versions fetched by cabal install.
-Tested as of: 2014-02-24 12:12:58.625909 UTC
+Tested as of: 2014-03-01 19:02:06.081217 UTC
 Path to compiler: ghc-7.6.3
 Compiler description: 7.6.3
 
@@ -32,6 +32,20 @@ Compiler description: 7.6.3
     time-1.4.0.1
     unix-2.6.0.1
 
-/home/massysett/multiarg/sunlight-8428/db:
-    multiarg-0.24.0.4
+/home/massysett/multiarg/sunlight-26918/db:
+    bifunctors-4.1.1
+    comonad-4.0
+    contravariant-0.4.4
+    distributive-0.4
+    hashable-1.2.1.0
+    mtl-2.1.2
+    multiarg-0.25.0.0
+    nats-0.1.2
+    semigroupoids-4.0
+    semigroups-0.12.2
+    tagged-0.7
+    text-1.1.0.0
+    transformers-0.3.0.0
+    transformers-compat-0.1.1.1
+    unordered-containers-0.2.3.3
 
