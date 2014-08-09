@@ -1,3 +1,10 @@
+Release 0.28.0.0
+
+* Renamed everything from System.Console.MultiArg to Multiarg
+  (shorter; note also case change from MultiArg to Multiarg)
+
+* Removed existentials from Multiarg.CommandLine
+
 Release 0.24.0.4, February 24, 2014
 
 * Changed lower bound on base down to 4.5.0.0

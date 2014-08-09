@@ -1,4 +1,3 @@
-{-# LANGUAGE ExistentialQuantification #-}
 -- | Some pre-built command line parsers. One is a simple command line
 -- parser that can parse options that take an optional argument, one
 -- or two arguments, or a variable number of arguments. For sample
@@ -23,7 +22,12 @@ module Multiarg.CommandLine (
   , ProgName
   , Opts(..)
   , OptsWithPosArgs(..)
-  , Mode(..)
+
+  -- ** Modes
+  , Mode
+  , mode
+  , mModeName
+  , renameMode
 
   -- * Simple parsers
   , simplePure
@@ -143,35 +147,54 @@ instance Functor (OptsWithPosArgs s) where
     , opPosArg = fmap (fmap f) . opPosArg $ o
     }
 
--- | Specifies a mode.
-data Mode s r = forall a. Mode
-  { mModeName :: String
+-- | Creates a mode.
+mode
+  :: String
   -- ^ How the user specifies the mode on the command line.  For @git@
   -- for example this might be @commit@ or @log@.
 
-  , mGetResult :: [a] -> r
-  -- ^ This function is applied to a list of the results of parsing the
-  -- options that are specific to this mode.  The function returns a
-  -- type of your choosing (though all modes in the same parser will
-  -- have to return the same type.)
 
-  , mOpts :: OptsWithPosArgs s a
+  -> OptsWithPosArgs s a
   -- ^ Options and positional arguments that are specific to this
   -- mode.  For example, in the command line @git commit -a -m 'this
   -- is a log message'@, @commit@ is the mode name and everything
   -- after that is specified here as an option or positional argument
   -- that is specific to this mode.
+
+  -> ([a] -> r)
+  -- ^ This function is applied to a list of the results of parsing the
+  -- options that are specific to this mode.  The function returns a
+  -- type of your choosing (though all modes in the same parser will
+  -- have to return the same type.)
+
+  -> Mode s r
+mode n os f = Mode n (processMode f os)
+
+
+
+-- | Specifies a mode.
+data Mode s r = Mode
+  { mModeName :: String
+  -- ^ How the user specifies the mode on the command line.  For @git@
+  -- for example this might be @commit@ or @log@.
+
+  , mParser :: P.Parser (Either s r)
   }
 
 instance Bifunctor Mode where
-  bimap fa fc (Mode n r o) = Mode
-    { mModeName = n
-    , mGetResult = fmap fc r
-    , mOpts = first fa o
-    }
+  bimap fa fc (Mode n p) = Mode n (fmap (bimap fa fc) p)
 
 instance Functor (Mode s) where
-  fmap f (Mode n gr os) = Mode n (fmap f gr) os
+  fmap f (Mode n p) = Mode n (fmap (fmap f) p)
+
+-- | Changes the mode name that a user specifies on the command line.
+renameMode
+  :: (String -> String)
+  -- ^ This function is applied to the existing name of the mode.
+  -> Mode s r
+  -> Mode s r
+
+renameMode f (Mode n p) = Mode (f n) p
 
 -- | Creates a Mode with a help option (help specific to the mode.)
 modeHelp
@@ -198,8 +221,7 @@ modeHelp
 
   -> Mode h r
 
-modeHelp n h getR os i p =
-  Mode n getR (OptsWithPosArgs (Opts ss os) i p)
+modeHelp n h getR os i p = mode n (OptsWithPosArgs (Opts ss os) i p) getR
   where
     ss = [C.OptSpec ["help"] "h" (C.NoArg h)]
 
@@ -227,19 +249,24 @@ parseOptsWithPosArgs os = do
       in fmap Right $ f parser (opPosArg os)
     Just spec -> return . Left $ spec
 
+processMode
+  :: ([a] -> r)
+  -> OptsWithPosArgs s a
+  -> P.Parser (Either s r)
+processMode gr os = do
+  eiOpts <- parseOptsWithPosArgs os
+  return $ case eiOpts of
+    Left x -> Left x
+    Right opts -> Right (gr opts)
+
+
 parseModes
   :: [Mode s r]
   -> P.Parser (Either s r)
 parseModes ms = do
   let modeWords = Set.fromList . map mModeName $ ms
   (_, w) <- P.matchApproxWord modeWords
-  processMode (fromJust . find (\c -> mModeName c == w) $ ms)
-  where
-    processMode (Mode _ gr os) = do
-      eiOpts <- parseOptsWithPosArgs os
-      return $ case eiOpts of
-        Left x -> Left x
-        Right opts -> Right (gr opts)
+  mParser . fromJust . find (\c -> mModeName c == w) $ ms
 
 
 -- | A pure (non-IO) parser for simple command lines--that is, command
