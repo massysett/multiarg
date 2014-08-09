@@ -1,7 +1,7 @@
 -- | These types represent options. Option names cannot have a dash as
 -- their first or second character, and long option names cannot have
 -- an equals sign anywhere in the name.
-module System.Console.MultiArg.Option (
+module Multiarg.Option (
   ShortOpt,
   unShortOpt,
   makeShortOpt,

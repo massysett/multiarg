@@ -3,7 +3,7 @@
 -- parser that can parse options that take an optional argument, one
 -- or two arguments, or a variable number of arguments. For sample
 -- code that uses this parser, see
--- "System.Console.MultiArg.SampleParser".
+-- "Multiarg.SampleParser".
 --
 -- Another parser is provided for multi-mode programs that are similar
 -- to @git@ or @darcs@.
@@ -15,7 +15,7 @@
 -- fixed in base 4.4.0.0, which came with ghc 7.2.  Since this bug has
 -- been fixed for awhile, multiarg no longer has its own GetArgs
 -- module.
-module System.Console.MultiArg.CommandLine (
+module Multiarg.CommandLine (
   -- * Interspersion control
   Intersperse (Intersperse, StopOptions)
 
@@ -42,8 +42,8 @@ module System.Console.MultiArg.CommandLine (
 
   ) where
 
-import qualified System.Console.MultiArg.Combinator as C
-import qualified System.Console.MultiArg.Prim as P
+import qualified Multiarg.Combinator as C
+import qualified Multiarg.Prim as P
 import System.Environment (getArgs, getProgName)
 import System.Exit (exitFailure, exitSuccess)
 import qualified System.IO as IO

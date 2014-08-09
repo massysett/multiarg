@@ -1,5 +1,5 @@
 Name: multiarg
-Version: 0.26.0.1
+Version: 0.28.0.0
 Cabal-version: >=1.8
 Build-Type: Simple
 License: BSD3
@@ -30,7 +30,7 @@ description: multiarg is a parser combinator library to build command
  for many situtations and shields you from the underlying complexity
  if you don't need it.
  .
- See the documentation in the System.Console.MultiArg module for
+ See the documentation in the Multiarg module for
  details.
 
 source-repository head
@@ -46,12 +46,12 @@ Library
   hs-source-dirs: lib
 
   Exposed-modules:
-      System.Console.MultiArg
-    , System.Console.MultiArg.Combinator
-    , System.Console.MultiArg.CommandLine
-    , System.Console.MultiArg.Option
-    , System.Console.MultiArg.Prim
-    , System.Console.MultiArg.SampleParser
+      Multiarg
+    , Multiarg.Combinator
+    , Multiarg.CommandLine
+    , Multiarg.Option
+    , Multiarg.Prim
+    , Multiarg.SampleParser
 
   ghc-options: -Wall
 

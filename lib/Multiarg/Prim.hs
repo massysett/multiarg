@@ -1,14 +1,14 @@
 -- | Parser primitives. These are the only functions that have access
 -- to the internals of the parser. Use these functions if you want to
 -- build your own parser from scratch. If your needs are simpler, you
--- will want to look at "System.Console.MultiArg.SimpleParser" or
--- "System.Console.MultiArg.Combinator", which do a lot of grunt work
+-- will want to look at "Multiarg.SimpleParser" or
+-- "Multiarg.Combinator", which do a lot of grunt work
 -- for you.
 --
 -- Internal design, especially the error handling, is based in large
 -- part on Parsec, as described in the paper at
 -- <http://legacy.cs.uu.nl/daan/pubs.html#parsec>.
-module System.Console.MultiArg.Prim (
+module Multiarg.Prim (
     -- * Parser types
   Parser,
 
@@ -66,7 +66,7 @@ module System.Console.MultiArg.Prim (
   ) where
 
 
-import System.Console.MultiArg.Option
+import Multiarg.Option
   (ShortOpt,
     unShortOpt,
     LongOpt,
@@ -128,7 +128,7 @@ data Description = Unknown | General String | Expected String
   deriving (Eq, Show, Ord)
 
 -- | Error messages. To format error messages for nice display, see
--- 'System.Console.MultiArg.Combinator.formatError'.
+-- 'Multiarg.Combinator.formatError'.
 data Error = Error InputDesc [Description]
   deriving (Eq, Show, Ord)
 
@@ -299,7 +299,7 @@ parse
   -- ^ Command line arguments to parse. Presumably you got these from
   -- 'getArgs'. If there is any chance that you will be parsing
   -- Unicode strings, see the documentation in
-  -- "System.Console.MultiArg.GetArgs" before you use
+  -- "Multiarg.GetArgs" before you use
   -- 'System.Environment.getArgs'.
 
   -> Parser a

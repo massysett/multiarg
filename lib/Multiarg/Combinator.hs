@@ -1,8 +1,8 @@
 -- | Combinators that are useful for building command-line
 -- parsers. These build off the functions in
--- "System.Console.MultiArg.Prim". Unlike those functions, these
+-- "Multiarg.Prim". Unlike those functions, these
 -- functions have no access to the internals of the parser.
-module System.Console.MultiArg.Combinator (
+module Multiarg.Combinator (
   -- * Parser combinators
   notFollowedBy,
 
@@ -24,12 +24,12 @@ import qualified Data.Set as Set
 import Control.Applicative
        ((<*>), optional, (<$), (*>), (<|>), many)
 
-import System.Console.MultiArg.Prim
+import Multiarg.Prim
   ( Parser, try, approxLongOpt,
     nextWord, pendingShortOptArg, nonOptionPosArg,
     pendingShortOpt, nonPendingShortOpt, nextWord, (<?>),
     Error(..), Description(..))
-import System.Console.MultiArg.Option
+import Multiarg.Option
   ( LongOpt, ShortOpt, unLongOpt,
     makeLongOpt, makeShortOpt, unShortOpt )
 import qualified Data.Map as M
@@ -155,7 +155,7 @@ errorMsg badOpt ss err = arg ++ opt ++ msg
 -- different data constructors in an algebraic data type. Or you can
 -- have each ArgSpec yield a function that transforms a record. For an
 -- example that uses an algebraic data type, see
--- "System.Console.MultiArg.SampleParser".
+-- "Multiarg.SampleParser".
 --
 -- Most of these value constructors take as an argument a function
 -- that returns an Either.  The function should return a @Left
@@ -254,7 +254,7 @@ instance Functor ArgSpec where
 -- break the proper parsing of shortened long options.
 --
 -- For an example that uses this function, see
--- "System.Console.MultiArg.SimpleParser".
+-- "Multiarg.SimpleParser".
 parseOption :: [OptSpec a] -> Parser a
 parseOption os =
   let longs = longOptParser os
