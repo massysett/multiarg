@@ -16,8 +16,6 @@ extra-source-files: ChangeLog, README.md,
   minimum-versions.txt, current-versions.txt,
   sunlight-test.hs
 
-tested-with: GHC==7.4.1, GHC==7.6.3
-
 description: multiarg is a parser combinator library to build command
  line parsers. With it you can easily create parsers with options
  that take more than one option argument--for example, I created
