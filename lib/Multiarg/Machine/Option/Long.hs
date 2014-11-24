@@ -1,4 +1,6 @@
 module Multiarg.Machine.Option.Long where
 
-newtype T = T { toString :: String }
-  deriving (Eq, Ord, Show)
+data T = T
+  { toString :: String
+  , abbreviate :: Bool
+  } deriving (Eq, Ord, Show)

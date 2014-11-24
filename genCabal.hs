@@ -57,6 +57,7 @@ library ms = C.Library
   , C.hsSourceDirs [ "lib" ]
   , C.LibExposedModules ms
   , C.ghcOptions ["-Wall"]
+  , C.defaultLanguage C.Haskell2010
   ]
 
 cabal
