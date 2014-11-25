@@ -1,4 +1,4 @@
-module Multiarg.Machine.Arguments where
+module Multiarg.Maddash.Arguments where
 
 -- | Some of the functions return an @Either String a@.  In that case,
 -- return a Left String to indicate an error, or a Right a to indicate

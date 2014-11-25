@@ -1,0 +1,27 @@
+-- | Maddash is a Mealy finite state machine that processes options.
+-- The machine consists of the following parts:
+--
+-- * The set of states, in 'Multiarg.Maddash.State.T'
+--
+-- * The start state, which is 'Multiarg.Maddash.State.Empty'
+--
+-- * The input alphabet, which is all 'String's.  A 'String' is an
+-- input token from the command line.
+--
+-- * The output alphabet, which is 'Multiarg.Maddash.Pallet.T'.  A
+-- 'Multiarg.Maddash.Pallet.T' indicates whether its input is not an
+-- option at all with 'Multiarg.Maddash.Pallet.NotAnOption'.  This
+-- indicates that the input 'String' was not a short option and was
+-- not a long option; that is, it was not a single dash followed by a
+-- non-dash character and it was not a double dash followed by another
+-- character.  (Neither a single dash alone nor a double dash alone is
+-- an option.)  Anything else is an option and will return
+-- 'Multiarg.Maddash.Pallet.Full', which is a list of
+-- 'Multiarg.Maddash.Pallet.Output.T'.  Each
+-- 'Multiarg.Maddash.Output.T' indicates either an error or a good
+-- result.
+--
+-- * The transition function and the output function are combined into
+-- a single function, 'Multiarg.Maddash.Transducer.transduce'.
+
+module Multiarg.Maddash where

@@ -1,6 +1,6 @@
-module Multiarg.Machine.State where
+module Multiarg.Maddash.State where
 
-import qualified Multiarg.Machine.Output as Output
+import qualified Multiarg.Maddash.Output as Output
 
 data T a
   = Empty

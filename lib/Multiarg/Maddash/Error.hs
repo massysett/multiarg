@@ -1,4 +1,4 @@
-module Multiarg.Machine.Error where
+module Multiarg.Maddash.Error where
 
 data T
   = BadShortOption Char
@@ -8,5 +8,8 @@ data T
   | BadArgument2 String String String
   | BadArgument3 String String String String
   | LongOptionNotFound String
-  | AmbiguousLongOption String [String]
+  | LongArgumentForZeroArgumentOption String String
+  -- ^ The uesr gave an argument for a long option that does not take
+  -- an argument.  The first String is the name of the long option;
+  -- the second String is the argument given.
   deriving (Eq, Ord, Show)
