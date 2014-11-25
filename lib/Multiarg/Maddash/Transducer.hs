@@ -62,38 +62,38 @@ procShort
   :: Map Short.T (Arguments.T a)
   -> String
   -> Maybe ([Output.T a], State.T a)
-procShort shorts inp = fmap (procShortOpt shorts) (isShort inp)
+procShort shorts inp = fmap (getShortOpt shorts) (isShort inp)
 
-procShortOpt
+getShortOpt
   :: Map Short.T (Arguments.T a)
   -> (Char, String)
   -> ([Output.T a], State.T a)
-procShortOpt shorts (arg, rest) =
+getShortOpt shorts (arg, rest) =
   case M.lookup (Short.T arg) shorts of
     Nothing -> ( [Output.Error (Error.BadShortOption arg)]
                , State.Empty )
-    Just ag -> procShortArg shorts ag rest
+    Just ag -> procShortOpt shorts ag rest
 
-procShortArg
+procShortOpt
   :: Map Short.T (Arguments.T a)
   -> Arguments.T a
   -> String
   -- ^ The argument to process
   -> ([Output.T a], State.T a)
-procShortArg opts (Arguments.Zero r) inp = (this : rest, st)
+procShortOpt opts (Arguments.Zero r) inp = (this : rest, st)
   where
     this = Output.Good r
     (rest, st) = case inp of
       [] -> ([], State.Empty)
-      opt:arg -> procShortOpt opts (opt, arg)
+      opt:arg -> getShortOpt opts (opt, arg)
 
-procShortArg _ (Arguments.One f) inp = ([this], State.Empty)
+procShortOpt _ (Arguments.One f) inp = ([this], State.Empty)
   where
     this = case f inp of
       Left e -> Output.Error (Error.BadArgument1 inp e)
       Right g -> Output.Good g
 
-procShortArg _ (Arguments.Two f) inp = ([], State.Pending f')
+procShortOpt _ (Arguments.Two f) inp = ([], State.Pending f')
   where
     f' inp2 = ([this], State.Empty)
       where
@@ -101,7 +101,7 @@ procShortArg _ (Arguments.Two f) inp = ([], State.Pending f')
           Left e -> Output.Error (Error.BadArgument2 inp inp2 e)
           Right g -> Output.Good g
 
-procShortArg _ (Arguments.Three f) inp = ([], State.Pending f')
+procShortOpt _ (Arguments.Three f) inp = ([], State.Pending f')
   where
     f' inp2 = ([], State.Pending f'')
       where
