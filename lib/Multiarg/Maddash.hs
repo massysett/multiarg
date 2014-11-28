@@ -1,43 +1,40 @@
 -- | Maddash is a Mealy finite state machine that processes options.
 -- The machine consists of the following parts:
 --
--- * The set of states, in 'Multiarg.Maddash.State.T'
+-- * The set of states, in 'State'
 --
--- * The start state, which is 'Multiarg.Maddash.State.Empty'
+-- * The start state, which is 'Ready'
 --
--- * The input alphabet, which is all 'String's.  A 'String' is an
+-- * The input alphabet, which is all 'Token's.  A 'Token' is an
 -- input token from the command line.
 --
--- * The output alphabet, which is 'Multiarg.Maddash.Pallet.T'.  A
--- 'Multiarg.Maddash.Pallet.T' indicates whether its input is not an
--- option at all with 'Multiarg.Maddash.Pallet.NotAnOption'.  This
--- indicates that the input 'String' was not a short option and was
--- not a long option; that is, it was not a single dash followed by a
+-- * The output alphabet, which is 'Pallet'.  A 'Pallet' indicates
+-- whether its input is not an option at all with 'NotAnOption'.  This
+-- indicates that the input 'Token' was not a short option and was not
+-- a long option; that is, it was not a single dash followed by a
 -- non-dash character and it was not a double dash followed by another
 -- character.  (Neither a single dash alone nor a double dash alone is
--- an option.)  Anything else is an option and will return
--- 'Multiarg.Maddash.Pallet.Full', which is a list of
--- 'Multiarg.Maddash.Pallet.Output.T'.  Each
--- 'Multiarg.Maddash.Output.T' indicates either an error or a good
--- result.
+-- an option.)  Anything else is an option and will return 'Full',
+-- which is a list of 'Output'.  Each 'Output' indicates either an
+-- error or a good result.
 --
 -- * The transition function and the output function are combined into
--- a single function, 'Multiarg.Maddash.Transducer.transduce'.
+-- a single function, 'processToken'.
 
 module Multiarg.Maddash where
 
 import Data.Map (Map)
 import qualified Data.Map as M
+import Control.Applicative
 
 newtype Option = Option (Either Short Long)
   deriving (Eq, Ord, Show)
 
 data Error
-  = BadShortOption Char
+  = BadOption Option
   | BadArgument1 Option OptArg Diagnostic
   | BadArgument2 Option OptArg OptArg Diagnostic
   | BadArgument3 Option OptArg OptArg OptArg Diagnostic
-  | LongOptionNotFound Long
   | LongArgumentForZeroArgumentOption Long OptArg
   -- ^ The uesr gave an argument for a long option that does not take
   -- an argument.
@@ -94,7 +91,6 @@ data ArgSpec a
   | ThreeArg (OptArg -> OptArg -> OptArg -> Either Diagnostic a)
   -- ^ This option takes three arguments
 
-
 data State a
   = Ready
   -- ^ Accepting new tokens
@@ -102,6 +98,44 @@ data State a
   | Pending (Token -> ([Output a], State a))
   -- ^ In the middle of processing an option; this function will be
   -- applied to the next token to get a result
+
+data Pallet a
+  = NotAnOption
+  | Full [Output a]
+  deriving (Eq, Ord, Show)
+
+-- | Process a single token in the machine.
+processToken
+  :: Map Short (ArgSpec a)
+  -> Map Long (ArgSpec a)
+  -> State a
+  -> Token
+  -> (Pallet a, State a)
+processToken shorts longs st inp = case st of
+  Pending f -> (Full os, st')
+    where
+      (os, st') = f inp
+  Ready -> case procOpt of
+    Just (os, st') -> (Full os, st')
+    Nothing -> (NotAnOption, Ready)
+    where
+      procOpt = procShort shorts inp <|> procLong longs inp
+
+-- | Processes multiple tokens in the machine.  Processing ends with
+-- the first token that is 'NotAnOption'.  This first token that is
+-- 'NotAnOption', and all remaining tokens, are returned in the
+-- result.  A list of all lists of 'Output' are also returned, with
+-- one list for each input 'Token' that was processed.  Each of these
+-- lists may be of any length.  For instance, if the input token is
+-- the flag token for a long option that takes two arguments, the
+-- corresponding list will be empty.  If the input token is a short
+-- flag token, this list may have more than one element.
+processTokens
+  :: Map Short (ArgSpec a)
+  -> Map Long (ArgSpec a)
+  -> [Token]
+  -> ([[Output a]], [Token], Maybe (Token -> ([Output a], State a)))
+processTokens = undefined
 
 -- | Is this token an input for a long option?
 isLong
@@ -131,31 +165,98 @@ isShort (Token ('-':[])) = Nothing
 isShort (Token ('-':x:xs)) = Just (Short x, ShortTail xs)
 isShort _ = Nothing
 
+-- | Examines a token to determine if it is a short option.  If so,
+-- processes it; otherwise, returns Nothing.
+procShort
+  :: Map Short (ArgSpec a)
+  -> Token
+  -> Maybe ([Output a], State a)
+procShort shorts inp = fmap (getShortOpt shorts) (isShort inp)
+
 getShortOpt
   :: Map Short (ArgSpec a)
   -> (Short, ShortTail)
   -> ([Output a], State a)
-getShortOpt = undefined
+getShortOpt shorts (short, rest) = case M.lookup short shorts of
+  Nothing -> ( [Error (BadOption (Option (Left short))) ], Ready)
+  Just arg -> procShortOpt shorts short arg rest
 
 procShortOpt
   :: Map Short (ArgSpec a)
+  -> Short
   -> ArgSpec a
   -> ShortTail
   -> ([Output a], State a)
-procShortOpt opts (ZeroArg a) (ShortTail inp) = (this : rest, st)
+procShortOpt opts _ (ZeroArg a) (ShortTail inp) = (this : rest, st)
   where
     this = Good a
     (rest, st) = case inp of
       [] -> ([], Ready)
       opt : arg -> getShortOpt opts (Short opt, ShortTail arg)
 
-procShortOpt _ (OneArg f) (ShortTail inp) = case inp of
+procShortOpt _ shrt (OneArg f) (ShortTail inp) = case inp of
   [] -> ([], Pending g)
     where
       g tok = ([res], Ready)
         where
           res = case f arg of
-            Left e -> Error (BadArgument1 opt 
+            Left e -> Error (BadArgument1 opt arg e)
+            Right good -> Good good
+          arg = tokenToOptArg tok
+  xs -> ([res], Ready)
+    where
+      res = case f optArg of
+        Left e -> Error (BadArgument1 opt optArg e)
+        Right good -> Good good
+      optArg = OptArg xs
+  where
+    opt = Option (Left shrt)
+
+procShortOpt _ shrt (TwoArg f) (ShortTail inp) = ([], Pending g)
+  where
+    g tok1 = case inp of
+      [] -> ([], Pending h)
+        where
+          h tok2 = ([res], Ready)
+            where
+              oa2 = tokenToOptArg tok2
+              res = case f oa1 oa2 of
+                Left e -> Error (BadArgument2 opt oa1 oa2 e)
+                Right good -> Good good
+
+      xs -> ([res], Ready)
+        where
+          res = case f tokArg oa1 of
+            Left e -> Error (BadArgument2 opt tokArg oa1 e)
+            Right good -> Good good
+          tokArg = OptArg xs
+      where
+        oa1 = tokenToOptArg tok1
+    opt = Option (Left shrt)
+
+procShortOpt _ shrt (ThreeArg f) (ShortTail inp) = ([], Pending g)
+  where
+    opt = Option (Left shrt)
+    g tok1 = ([], Pending h)
+      where
+        oa1 = tokenToOptArg tok1
+        h tok2 = case inp of
+          [] -> ([], Pending i)
+            where
+              i tok3 = ([res], Ready)
+                where
+                  oa3 = tokenToOptArg tok3
+                  res = case f oa1 oa2 oa3 of
+                    Left e -> Error (BadArgument3 opt oa1 oa2 oa3 e)
+                    Right good -> Good good
+          tokInp -> ([res], Ready)
+            where
+              tokArg = tokenToOptArg (Token tokInp)
+              res = case f tokArg oa1 oa2 of
+                Left e -> Error (BadArgument3 opt tokArg oa1 oa2 e)
+                Right good -> Good good
+          where
+            oa2 = tokenToOptArg tok2
 
 procLong
   :: Map Long (ArgSpec a)
@@ -168,7 +269,7 @@ procLongOpt
   -> (Long, Maybe OptArg)
   -> ([Output a], State a)
 procLongOpt longs (inp, mayArg) = case M.lookup inp longs of
-  Nothing -> ( [Error (LongOptionNotFound inp)], Ready)
+  Nothing -> ( [Error (BadOption . Option . Right $ inp)], Ready)
   Just (ZeroArg r) -> ([result], Ready)
     where
       result = case mayArg of
