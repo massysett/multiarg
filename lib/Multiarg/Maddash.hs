@@ -45,6 +45,10 @@ data Output a
   | Error Error
   deriving (Eq, Ord, Show)
 
+instance Functor Output where
+  fmap f (Good a) = Good (f a)
+  fmap _ (Error e) = Error e
+
 -- | A long option.  This should NOT be prefixed with the double dash.
 newtype Long = Long String
   deriving (Eq, Ord, Show)
@@ -91,18 +95,40 @@ data ArgSpec a
   | ThreeArg (OptArg -> OptArg -> OptArg -> Either Diagnostic a)
   -- ^ This option takes three arguments
 
+instance Functor ArgSpec where
+  fmap f (ZeroArg a) = ZeroArg (f a)
+  fmap f (OneArg g) = OneArg $ \a -> fmap f (g a)
+  fmap f (TwoArg g) = TwoArg $ \a b -> fmap f (g a b)
+  fmap f (ThreeArg g) = ThreeArg $ \a b c -> fmap f (g a b c)
+
+instance Show (ArgSpec a) where
+  show (ZeroArg _) = "ZeroArg"
+  show (OneArg _) = "OneArg"
+  show (TwoArg _) = "TwoArg"
+  show (ThreeArg _) = "ThreeArg"
+
 data State a
   = Ready
   -- ^ Accepting new tokens
 
-  | Pending (Token -> ([Output a], State a))
+  | Pending Option (Token -> ([Output a], State a))
   -- ^ In the middle of processing an option; this function will be
   -- applied to the next token to get a result
+
+instance Functor State where
+  fmap _ Ready = Ready
+  fmap f (Pending o g)
+    = Pending o (\t -> let (os, st') = g t
+                       in (map (fmap f) os, fmap f st'))
 
 data Pallet a
   = NotAnOption
   | Full [Output a]
   deriving (Eq, Ord, Show)
+
+instance Functor Pallet where
+  fmap _ NotAnOption = NotAnOption
+  fmap f (Full os) = Full (map (fmap f) os)
 
 -- | Process a single token in the machine.
 processToken
@@ -112,7 +138,7 @@ processToken
   -> Token
   -> (Pallet a, State a)
 processToken shorts longs st inp = case st of
-  Pending f -> (Full os, st')
+  Pending _ f -> (Full os, st')
     where
       (os, st') = f inp
   Ready -> case procOpt of
@@ -134,8 +160,20 @@ processTokens
   :: Map Short (ArgSpec a)
   -> Map Long (ArgSpec a)
   -> [Token]
-  -> ([[Output a]], [Token], Maybe (Token -> ([Output a], State a)))
-processTokens = undefined
+  -> ([[Output a]], Either (Option, Token -> ([Output a], State a)) [Token])
+processTokens shorts longs = go Ready
+  where
+    go Ready [] = ([], Right [])
+    go (Pending opt f) [] = ([], Left (opt, f))
+    go st (t:ts) = (rs, eiToksPend)
+      where
+        (pallet, st') = processToken shorts longs st t
+        (rs, eiToksPend) = case pallet of
+          NotAnOption -> ([], Right (t:ts))
+          Full out -> (out : outRest, ei)
+            where
+              (outRest, ei) = go st' ts
+    
 
 -- | Is this token an input for a long option?
 isLong
@@ -195,7 +233,7 @@ procShortOpt opts _ (ZeroArg a) (ShortTail inp) = (this : rest, st)
       opt : arg -> getShortOpt opts (Short opt, ShortTail arg)
 
 procShortOpt _ shrt (OneArg f) (ShortTail inp) = case inp of
-  [] -> ([], Pending g)
+  [] -> ([], Pending opt g)
     where
       g tok = ([res], Ready)
         where
@@ -212,10 +250,10 @@ procShortOpt _ shrt (OneArg f) (ShortTail inp) = case inp of
   where
     opt = Option (Left shrt)
 
-procShortOpt _ shrt (TwoArg f) (ShortTail inp) = ([], Pending g)
+procShortOpt _ shrt (TwoArg f) (ShortTail inp) = ([], Pending opt g)
   where
     g tok1 = case inp of
-      [] -> ([], Pending h)
+      [] -> ([], Pending opt h)
         where
           h tok2 = ([res], Ready)
             where
@@ -234,14 +272,14 @@ procShortOpt _ shrt (TwoArg f) (ShortTail inp) = ([], Pending g)
         oa1 = tokenToOptArg tok1
     opt = Option (Left shrt)
 
-procShortOpt _ shrt (ThreeArg f) (ShortTail inp) = ([], Pending g)
+procShortOpt _ shrt (ThreeArg f) (ShortTail inp) = ([], Pending opt g)
   where
     opt = Option (Left shrt)
-    g tok1 = ([], Pending h)
+    g tok1 = ([], Pending opt h)
       where
         oa1 = tokenToOptArg tok1
         h tok2 = case inp of
-          [] -> ([], Pending i)
+          [] -> ([], Pending opt i)
             where
               i tok3 = ([res], Ready)
                 where
@@ -277,7 +315,7 @@ procLongOpt longs (inp, mayArg) = case M.lookup inp longs of
         Just arg -> Error (LongArgumentForZeroArgumentOption inp arg)
 
   Just (OneArg f) -> case mayArg of
-    Nothing -> ([], Pending run)
+    Nothing -> ([], Pending opt run)
       where
         run tok = ([out], Ready)
           where
@@ -291,7 +329,7 @@ procLongOpt longs (inp, mayArg) = case M.lookup inp longs of
           Left err -> Error (BadArgument1 opt arg err)
           Right g -> Good g
 
-  Just (TwoArg f) -> ([], Pending g)
+  Just (TwoArg f) -> ([], Pending opt g)
     where
       g gTok = case mayArg of
         Just arg1 -> ([out], Ready)
@@ -299,7 +337,7 @@ procLongOpt longs (inp, mayArg) = case M.lookup inp longs of
             out = case f arg1 gArg of
               Left err -> Error (BadArgument2 opt arg1 gArg err)
               Right good -> Good good
-        Nothing -> ([], Pending h)
+        Nothing -> ([], Pending opt h)
           where
             h hTok = ([out], Ready)
               where
@@ -310,9 +348,9 @@ procLongOpt longs (inp, mayArg) = case M.lookup inp longs of
         where
           gArg = tokenToOptArg gTok
 
-  Just (ThreeArg f) -> ([], Pending g)
+  Just (ThreeArg f) -> ([], Pending opt g)
     where
-      g gTok = ([], Pending h)
+      g gTok = ([], Pending opt h)
         where
           gArg = tokenToOptArg gTok
           h hTok = case mayArg of
@@ -322,7 +360,7 @@ procLongOpt longs (inp, mayArg) = case M.lookup inp longs of
                   Left err -> Error
                     (BadArgument3 opt arg1 gArg hArg err)
                   Right good -> Good good
-            Nothing -> ([], Pending i)
+            Nothing -> ([], Pending opt i)
               where
                 i iTok = ([out], Ready)
                   where
