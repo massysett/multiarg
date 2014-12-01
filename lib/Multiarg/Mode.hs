@@ -51,7 +51,9 @@ mode
   -> ([a] -> r)
   -- ^ Processes the result of all mode options
   -> Mode r
-mode = undefined
+mode name (OptsWithPosArgs os int fPos) fProc = Mode (ModeName name) prsr
+  where
+    prsr = undefined
 
 parseModeLine
   :: [OptSpec g]
