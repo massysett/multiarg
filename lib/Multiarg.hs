@@ -1,165 +1,98 @@
 -- | A combinator library for building command-line parsers.
+-- This parser was built because I could not find anything that would
+-- readily parse command lines where the options took more than one
+-- argument. For example, for the @tail@ command on GNU systems, the
+-- @--lines@ option takes one argument to specify how many lines you
+-- want to see. Well, what if you want to build a program with an
+-- option that takes /two/ arguments, like @--foo bar baz@? I found no
+-- such library so I built this one. Nevertheless, using this library
+-- you can build parsers to parse a variety of command line
+-- vocabularies, from simple to complex.
+--
+-- Some terms are used throughout multiarg:
+--
+-- [@word@] When you run your program from the Unix shell prompt,
+-- your shell is responsible for splitting the command line into
+-- words. Typically you separate words with spaces, although quoting
+-- can affect this. multiarg parses lists of words. Each word can
+-- consist of a single long option, a single long option and an
+-- accompanying option argument, a single short option, multiple
+-- short options, and even one or more multiple short options and an
+-- accompanying short option argument. Or, a word can be a
+-- positional argument or a stopper. All these are described below.
+--
+-- [@option@] Options allow a user to specify ways to tune the
+-- operation of a program. Typically options are indeed optional,
+-- although some programs do sport \"required options\" (a bit of an
+-- oxymoron). Options can be either short options or long
+-- options. Also, options can take arguments.
+--
+-- [@short option@] An option that is specified with a single hyphen
+-- and a single letter. For example, for the program @tail(1)@,
+-- possible short options include @n@ and @v@. With multiarg it is
+-- possible to easily parse short options that are specified in
+-- different words or in the same word. For example, if a user wants
+-- to run @tail@ with two options, he might type @tail -v -f@ or he
+-- might type @tail -vf@.
+--
+-- [@long option@] An option that is specified using two hyphens and
+-- what is usually a mnemonic word, though it could be as short as a
+-- single letter. For example, @tail(1)@ has long options including
+-- @follow@ and @verbose@. The user would specify these on the
+-- command line by typing @tail --follow --verbose@.
+--
+-- [@option argument@] Some options take additional arguments that
+-- are specific to the option and change what the option does. For
+-- instance, the @lines@ option to @tail(1)@ takes a single,
+-- optional argument, which is the number of lines to show. Option
+-- arguments can be optional or required, and a single option can
+-- take a mulitple, fixed number of arguments and it can take a
+-- variable number of arguments. Option arguments can be given in
+-- various ways. They can be specified in the same word as a long
+-- option by using an equals sign; they can also be specified in the
+-- same word as a short option simply by placing them in the same
+-- word, or they can be specified in the following word. For
+-- example, these different command lines all mean the same thing;
+-- @tail --verbose --lines=20@, @tail --verbose --lines 20@, @tail
+-- -vn 20@, @tail -v -n20@, @tail -vn20@, and @tail -v -n 20@, and
+-- numerous other combinations also have the same meaning.
+--
+-- [@GNU-style option argument@] A long option with an argument
+-- given with an equal sign, such as [@lines=20@].
+--
+-- [@positional argument@] A word on the command line that is not an
+-- option or an argument to an option. For instance, with @tail(1)@,
+-- you specify the files you want to see by using positional
+-- arguments. In the command @tail -n 10 myfile@, @myfile@ is a
+-- positional argument. For some programs, such as @git@ or @darcs@,
+-- a positional argument might be a \"command\" or a \"mode\", such
+-- as the @commit@ in @git commit@ or the @whatsnew@ in @darcs
+-- whatsnew@. multiarg has no primitive parsers that treat these
+-- positional arguments specially but it is trivial to build a
+-- parser for command lines such as this, too.
+--
+-- [@stopper@] A single word consisting solely of two hyphens,
+-- @--@. The user types this to indicate that all subsequent words
+-- on the command line are positional arguments, even if they begin
+-- with hyphens and therefore look like they might be options.
+--
+-- [@pending@] The user might specify more than one short option, or
+-- a short option and a short option argument, in a single word. For
+-- example, she might type @tail -vl20@. After parsing the @v@
+-- option, the Parser makes @l20@ into a \"pending\". The next
+-- parser can then treat @l20@ as an option argument to the @v@
+-- option (which is probably not what was wanted) or the next parser
+-- can parse @l@ as a short option. This would result in a
+-- \"pending\" of @20@. Then, the next parser can treat @20@ as an
+-- option argument. After that parse there will be no pendings.
 
-module Multiarg (
-
-  -- | To say this library is inspired by Parsec would probably insult the
-  -- creators of Parsec, as this library could not possibly be as
-  -- elegant or throughly considered as Parsec is. Nevertheless this
-  -- library can be used in a similar style as Parsec, but is
-  -- specialized for parsing command lines.
-  --
-  -- This parser was built because I could not find anything that would
-  -- readily parse command lines where the options took more than one
-  -- argument. For example, for the @tail@ command on GNU systems, the
-  -- --lines option takes one argument to specify how many lines you
-  -- want to see. Well, what if you want to build a program with an
-  -- option that takes /two/ arguments, like @--foo bar baz@? I found no
-  -- such library so I built this one. Nevertheless, using this library
-  -- you can build parsers to parse a variety of command line
-  -- vocabularies, from simple to complex.
-
-  -- * Terminology
-
-  -- | Some terms are used throughout multiarg:
-  --
-  -- [@word@] When you run your program from the Unix shell prompt,
-  -- your shell is responsible for splitting the command line into
-  -- words. Typically you separate words with spaces, although quoting
-  -- can affect this. multiarg parses lists of words. Each word can
-  -- consist of a single long option, a single long option and an
-  -- accompanying option argument, a single short option, multiple
-  -- short options, and even one or more multiple short options and an
-  -- accompanying short option argument. Or, a word can be a
-  -- positional argument or a stopper. All these are described below.
-  --
-  -- [@option@] Options allow a user to specify ways to tune the
-  -- operation of a program. Typically options are indeed optional,
-  -- although some programs do sport \"required options\" (a bit of an
-  -- oxymoron). Options can be either short options or long
-  -- options. Also, options can take arguments.
-  --
-  -- [@short option@] An option that is specified with a single hyphen
-  -- and a single letter. For example, for the program @tail(1)@,
-  -- possible short options include @n@ and @v@. With multiarg it is
-  -- possible to easily parse short options that are specified in
-  -- different words or in the same word. For example, if a user wants
-  -- to run @tail@ with two options, he might type @tail -v -f@ or he
-  -- might type @tail -vf@.
-  --
-  -- [@long option@] An option that is specified using two hyphens and
-  -- what is usually a mnemonic word, though it could be as short as a
-  -- single letter. For example, @tail(1)@ has long options including
-  -- @follow@ and @verbose@. The user would specify these on the
-  -- command line by typing @tail --follow --verbose@.
-  --
-  -- [@option argument@] Some options take additional arguments that
-  -- are specific to the option and change what the option does. For
-  -- instance, the @lines@ option to @tail(1)@ takes a single,
-  -- optional argument, which is the number of lines to show. Option
-  -- arguments can be optional or required, and a single option can
-  -- take a mulitple, fixed number of arguments and it can take a
-  -- variable number of arguments. Option arguments can be given in
-  -- various ways. They can be specified in the same word as a long
-  -- option by using an equals sign; they can also be specified in the
-  -- same word as a short option simply by placing them in the same
-  -- word, or they can be specified in the following word. For
-  -- example, these different command lines all mean the same thing;
-  -- @tail --verbose --lines=20@, @tail --verbose --lines 20@, @tail
-  -- -vn 20@, @tail -v -n20@, @tail -vn20@, and @tail -v -n 20@, and
-  -- numerous other combinations also have the same meaning.
-  --
-  -- [@GNU-style option argument@] A long option with an argument
-  -- given with an equal sign, such as [@lines=20@].
-  --
-  -- [@positional argument@] A word on the command line that is not an
-  -- option or an argument to an option. For instance, with @tail(1)@,
-  -- you specify the files you want to see by using positional
-  -- arguments. In the command @tail -n 10 myfile@, @myfile@ is a
-  -- positional argument. For some programs, such as @git@ or @darcs@,
-  -- a positional argument might be a \"command\" or a \"mode\", such
-  -- as the @commit@ in @git commit@ or the @whatsnew@ in @darcs
-  -- whatsnew@. multiarg has no primitive parsers that treat these
-  -- positional arguments specially but it is trivial to build a
-  -- parser for command lines such as this, too.
-  --
-  -- [@stopper@] A single word consisting solely of two hyphens,
-  -- @--@. The user types this to indicate that all subsequent words
-  -- on the command line are positional arguments, even if they begin
-  -- with hyphens and therefore look like they might be options.
-  --
-  -- [@pending@] The user might specify more than one short option, or
-  -- a short option and a short option argument, in a single word. For
-  -- example, she might type @tail -vl20@. After parsing the @v@
-  -- option, the Parser makes @l20@ into a \"pending\". The next
-  -- parser can then treat @l20@ as an option argument to the @v@
-  -- option (which is probably not what was wanted) or the next parser
-  -- can parse @l@ as a short option. This would result in a
-  -- \"pending\" of @20@. Then, the next parser can treat @20@ as an
-  -- option argument. After that parse there will be no pendings.
-
-  -- * Getting started
-
-  -- |If your needs are simple to moderately complicated just look at the
-  -- "Multiarg.CommandLine" module, which uses the
-  -- underlying combinators to build a simple parser for you. That
-  -- module is already exported from this module for easy usage.
-  --
-  -- "Multiarg.CommandLine" also has a parser that can
-  -- handle multi-mode commands (examples include @git@, @darcs@, and
-  -- @cvs@.)
-  --
-  -- For maximum flexibility you will want to start with the
-  -- "Multiarg.Prim" module. Using those parsers you
-  -- can easily build parsers that are quite complicated. The parsers
-  -- can check for errors along the way, simplifying the sometimes
-  -- complex task of ensuring that data a user supplied on the command
-  -- line is good. You can easily build parsers for programs that take
-  -- no options, take dozens of options, require that options be given
-  -- in a particular order, require that some options be given, or bar
-  -- some combinations of options. You might also require particular
-  -- positional arguments. Other helpful functions are in
-  -- "Multiarg.Combinator". You will also want to
-  -- examine the source code for "Multiarg.Combinator"
-  -- and "Multiarg.CommandLine" as these show some
-  -- ways to use the primitive parsers and combinators.
-
-  -- * Non-features and shortcomings
-  --
-  -- | multiarg isn't perfect; no software is. multiarg does not
-  -- automatically make online help for your command line
-  -- parsers. Getting this right would be tricky given the nature of
-  -- the code and I don't even want to bother trying, as I just write
-  -- my own online help in a text editor.
-  --
-  -- multiarg partially embraces \"The Tao of Option Parsing\" that
-  -- Python's Optik (<http://optik.sourceforge.net/>) follows. Read
-  -- \"The Tao of Option Parsing\" here:
-  --
-  -- <http://optik.sourceforge.net/doc/1.5/tao.html>
-  --
-  -- multiarg's philosophy is similar to that of Optik, which
-  -- means you won't be able to use multiarg to (easily) build a clone
-  -- to the UNIX @find(1)@ command. (You could do it, but multiarg won't
-  -- help you very much.)
-  --
-  -- multiarg can be complicated, although I'd like to believe this is
-  -- because it addresses a complicated problem in a flexible way.
-
-  -- * Projects usings multiarg
-
-  -- | * Penny, an extensible double-entry accounting
-  -- system. <http://hackage.haskell.org/package/penny-lib> The code
-  -- using multiarg is woven throughout the system; for example, see
-  -- the Penny.Liberty module.
-
-    OptSpec(..)
-  , CommandLineError(..)
-  , interspersed
-  , nonInterspersed
-
-  ) where
+module Multiarg where
 
 import Multiarg.Maddash
+import Multiarg.Limeline
+import System.Environment
+import qualified System.IO as IO
+import System.Exit
 
 data OptSpec a = OptSpec
   { shorts :: [Char]
@@ -170,23 +103,161 @@ data OptSpec a = OptSpec
 instance Functor OptSpec where
   fmap f (OptSpec s l p) = OptSpec s l (fmap f p)
 
+splitOptSpecs
+  :: [OptSpec a]
+  -> ([(Short, ArgSpec a)], [(Long, ArgSpec a)])
+splitOptSpecs = foldr f ([], [])
+  where
+    f (OptSpec so lo sp) (ss, ls) = (shrts ++ ss, lngs ++ ls)
+      where
+        shrts = map (\c -> (Short c, sp)) so
+        lngs = map (\l -> (Long l, sp)) lo
+
 data CommandLineError
   = CEOptionErrors OptionError [OptionError] (Maybe Option)
   | CEInsufficientOptArgs Option
 
-interspersed
-  :: [OptSpec a]
+limelineOutputToCommandLineError
+  :: ([Either [Output a] (PosArg a)], Maybe Option)
+  -> Either CommandLineError [a]
+
+limelineOutputToCommandLineError (ls, mayOpt) = case (outErrors, mayOpt) of
+  ([], Nothing) -> Right goods
+  (x:xs, Nothing) -> Left (CEOptionErrors x xs Nothing)
+  ([], Just err) -> Left (CEInsufficientOptArgs err)
+  (x:xs, Just err) -> Left (CEOptionErrors x xs (Just err))
+  where
+    (outErrors, goods) = foldr f ([], []) ls
+      where
+        f ei (ers, gds) = case ei of
+          Left outs -> foldr g (ers, gds) outs
+            where
+              g out (es, gs) = case out of
+                Good gd -> (es, gd : gs)
+                OptionError e -> (e : es, gs)
+          Right (PosArg g) -> (ers, g : gds)
+
+-- | What to do after encountering the first non-option,
+-- non-option-argument word on the command line? In either case, no
+-- more options are parsed after a stopper.
+data Intersperse =
+  Intersperse
+  -- ^ Additional options are allowed on the command line after
+  -- encountering the first positional argument. For example, if @a@
+  -- and @b@ are options, in the command line @-a posarg -b@, @b@ will
+  -- be parsed as an option. If @b@ is /not/ an option and the same
+  -- command line is entered, then @-b@ will result in an error
+  -- because @-b@ starts with a hyphen and therefore \"looks like\" an
+  -- option.
+
+  | StopOptions
+    -- ^ No additional options will be parsed after encountering the
+    -- first positional argument. For example, if @a@ and @b@ are
+    -- options, in the command line @-a posarg -b@, @b@ will be parsed
+    -- as a positional argument rather than as an option.
+  deriving (Eq, Ord, Show)
+
+parseCommandLine
+
+  :: Intersperse
+
+  -> [OptSpec a]
+  -- ^ All program options
+
+  -> (String -> a)
+  -- ^ Processes non-option positional arguments
+
+  -> [String]
+  -- ^ Input tokens from the command line, probably obtained from
+  -- 'getArgs'
+
+  -> Either CommandLineError [a]
+  -- ^ If there were one or more errors when parsing the command line,
+  -- these errors are returned; otherwise, returns the parsed result,
+  -- in the same order in which it appeared on the command line.
+
+parseCommandLine int os fPos inp = limelineOutputToCommandLineError limeOut
+  where
+    limeOut = fLime shrts lngs fPos (map Token inp)
+    (shrts, lngs) = splitOptSpecs os
+    fLime = case int of
+      Intersperse -> interspersed
+      StopOptions -> nonInterspersed
+
+parseCommandLineIO
+  :: (String -> String)
+  -- ^ Returns help for your command.  This function is applied to the
+  -- name of the program being run, which is obtained from
+  -- 'getProgName'.  The function should return a string that gives
+  -- help for how to use your command; this string is printed as-is.
+
+  -> Intersperse
+
+  -> [OptSpec a]
+  -- ^ All program options.  An option for @-h@ and for @--help@ is
+  -- added for you, using the help function given above.  If the user
+  -- asks for help, then it is printed and the program exits
+  -- successfully.  If the user gives a command line with one or more
+  -- errors in it, an error message is printed, along with something
+  -- like @Enter program-name --help for help@.
+
+  -> (String -> a)
+  -- ^ Processes positional arguments
+
+  -> IO [a]
+  -- ^ Fetches the command line arguments using 'getArgs' and
+  -- processes them.  If there is an error, prints an error message
+  -- and exits unsuccessfully.  Otherwise, returns the options parsed
+  -- in.
+parseCommandLineIO fHelp int os fPos = do
+  progName <- getProgName
+  args <- getArgs
+  case parseCommandLineHelp int os fPos args of
+    Left err -> do
+      IO.hPutStr IO.stderr (prettyCommandLineError progName err)
+      exitFailure
+    Right mayLs -> case mayLs of
+      Nothing -> do
+        putStr (fHelp progName)
+        exitSuccess
+      Just ls -> return ls
+
+
+-- | Automatically adds a @-h@ and @--help@ option.  Intended
+-- primarily for use by the 'parseCommandLineIO' function.
+parseCommandLineHelp
+  :: Intersperse
+  -> [OptSpec a]
   -> (String -> a)
   -> [String]
-  -- ^ Command line tokens
-  -> Either CommandLineError [a]
-interspersed = undefined
+  -> Either CommandLineError (Maybe [a])
+  -- ^ Returns an error if applicable; otherwise, returns a Maybe.
+  -- The Maybe is Nothing if the user asked for help; otherwise, the
+  -- parsed output is returned.
+parseCommandLineHelp int os fPos inp = fmap parsedOpts parsed
+  where
+    limeOut = fLime shrts lngs (fmap Right fPos) (map Token inp)
+    (shrts, lngs) = addHelpOption os
+    fLime = case int of
+      Intersperse -> interspersed
+      StopOptions -> nonInterspersed
+    parsed = limelineOutputToCommandLineError limeOut
 
-nonInterspersed
+
+parsedOpts :: [Either () a] -> Maybe [a]
+parsedOpts [] = Just []
+parsedOpts (Left _ : _) = Nothing
+parsedOpts (Right x : xs) = case parsedOpts xs of
+  Nothing -> Nothing
+  Just rest -> Just (x : rest)
+
+addHelpOption
   :: [OptSpec a]
-  -> (String -> a)
-  -> [String]
-  -> Either CommandLineError [a]
-nonInterspersed = undefined
+  -> ([(Short, ArgSpec (Either () a))], [(Long, ArgSpec (Either () a))])
+addHelpOption os = splitOptSpecs os'
+  where
+    os' = OptSpec "h" ["help"] (ZeroArg (Left ())) : map (fmap Right) os
 
-
+-- | Shows errors in a pretty way.
+prettyCommandLineError :: String -> CommandLineError -> String
+prettyCommandLineError = undefined

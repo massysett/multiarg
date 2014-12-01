@@ -1,3 +1,6 @@
+-- | Helps you build command-line parsers for programs that have more
+-- than one so-called /mode/; examples of such programs include @git@,
+-- @darcs@, and @ghc-pkg@.
 module Multiarg.Mode where
 
 import Multiarg.Maddash
@@ -29,26 +32,6 @@ data Mode a = Mode
 instance Functor Mode where
   fmap f (Mode s p) = Mode s (fmap (fmap f) p)
 
--- | What to do after encountering the first non-option,
--- non-option-argument word on the command line? In either case, no
--- more options are parsed after a stopper.
-data Intersperse =
-  Intersperse
-  -- ^ Additional options are allowed on the command line after
-  -- encountering the first positional argument. For example, if @a@
-  -- and @b@ are options, in the command line @-a posarg -b@, @b@ will
-  -- be parsed as an option. If @b@ is /not/ an option and the same
-  -- command line is entered, then @-b@ will result in an error
-  -- because @-b@ starts with a hyphen and therefore \"looks like\" an
-  -- option.
-
-  | StopOptions
-    -- ^ No additional options will be parsed after encountering the
-    -- first positional argument. For example, if @a@ and @b@ are
-    -- options, in the command line @-a posarg -b@, @b@ will be parsed
-    -- as a positional argument rather than as an option.
-  deriving (Eq, Ord, Show)
-
 data OptsWithPosArgs a = OptsWithPosArgs
   { opOpts :: [OptSpec a]
   , opIntersperse :: Intersperse
@@ -59,6 +42,7 @@ instance Functor OptsWithPosArgs where
   fmap f (OptsWithPosArgs o i p) = OptsWithPosArgs (map (fmap f) o) i
     (fmap f p)
 
+-- | Makes a new 'Mode'.
 mode
   :: String
   -- ^ Mode name
