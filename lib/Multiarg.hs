@@ -113,29 +113,36 @@ splitOptSpecs = foldr f ([], [])
         shrts = map (\c -> (Short c, sp)) so
         lngs = map (\l -> (Long l, sp)) lo
 
-data CommandLineError
-  = CEOptionErrors OptionError [OptionError] (Maybe Option)
-  | CEInsufficientOptArgs Option
+data CommandLineError = CommandLineError
+  { cleFirst :: [OptionError]
+  , cleLast :: Either OptionError Option
+  } deriving (Eq, Ord, Show)
+
+mayLast :: [a] -> Maybe ([a], a)
+mayLast [] = Nothing
+mayLast xs = Just (init xs, last xs)
 
 limelineOutputToCommandLineError
   :: ([Either [Output a] (PosArg a)], Maybe Option)
   -> Either CommandLineError [a]
 
-limelineOutputToCommandLineError (ls, mayOpt) = case (outErrors, mayOpt) of
-  ([], Nothing) -> Right goods
-  (x:xs, Nothing) -> Left (CEOptionErrors x xs Nothing)
-  ([], Just err) -> Left (CEInsufficientOptArgs err)
-  (x:xs, Just err) -> Left (CEOptionErrors x xs (Just err))
-  where
-    (outErrors, goods) = foldr f ([], []) ls
-      where
-        f ei (ers, gds) = case ei of
-          Left outs -> foldr g (ers, gds) outs
-            where
-              g out (es, gs) = case out of
-                Good gd -> (es, gd : gs)
-                OptionError e -> (e : es, gs)
-          Right (PosArg g) -> (ers, g : gds)
+limelineOutputToCommandLineError (ls, mayOpt) =
+  case (mayLast outErrors, mayOpt) of
+    (Nothing, Nothing) -> Right goods
+    (Just (xs, x), Nothing) -> Left (CommandLineError xs (Left x))
+    (Nothing, Just err) -> Left (CommandLineError [] (Right err))
+    (Just (xs, x), Just err) -> Left (CommandLineError (xs ++ [x])
+                                                       (Right err))
+    where
+      (outErrors, goods) = foldr f ([], []) ls
+        where
+          f ei (ers, gds) = case ei of
+            Left outs -> foldr g (ers, gds) outs
+              where
+                g out (es, gs) = case out of
+                  Good gd -> (es, gd : gs)
+                  OptionError e -> (e : es, gs)
+            Right (PosArg g) -> (ers, g : gds)
 
 -- | What to do after encountering the first non-option,
 -- non-option-argument word on the command line? In either case, no
