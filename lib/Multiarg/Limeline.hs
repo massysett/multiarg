@@ -1,6 +1,5 @@
 module Multiarg.Limeline where
 
-import Data.Map (Map)
 import Multiarg.Maddash
 
 data PosArg a = PosArg a
@@ -10,8 +9,8 @@ instance Functor PosArg where
   fmap f (PosArg a) = PosArg (f a)
 
 interspersed
-  :: Map Short (ArgSpec a)
-  -> Map Long (ArgSpec a)
+  :: [(Short, ArgSpec a)]
+  -> [(Long, ArgSpec a)]
   -> (String -> a)
   -> [Token]
   -> ([Either [Output a] (PosArg a)], Maybe Option)
@@ -27,8 +26,8 @@ interspersed shorts longs fTok = go
         (outs, ei) = processTokens shorts longs toks
         
 nonInterspersed
-  :: Map Short (ArgSpec a)
-  -> Map Long (ArgSpec a)
+  :: [(Short, ArgSpec a)]
+  -> [(Long, ArgSpec a)]
   -> (String -> a)
   -> [Token]
   -> ([Either [Output a] (PosArg a)], Maybe Option)

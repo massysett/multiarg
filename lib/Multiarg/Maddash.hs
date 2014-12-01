@@ -23,8 +23,6 @@
 
 module Multiarg.Maddash where
 
-import Data.Map (Map)
-import qualified Data.Map as M
 import Control.Applicative
 
 newtype Option = Option (Either Short Long)
@@ -125,8 +123,8 @@ instance Functor Pallet where
 
 -- | Process a single token in the machine.
 processToken
-  :: Map Short (ArgSpec a)
-  -> Map Long (ArgSpec a)
+  :: [(Short, ArgSpec a)]
+  -> [(Long, ArgSpec a)]
   -> State a
   -> Token
   -> (Pallet a, State a)
@@ -150,8 +148,8 @@ processToken shorts longs st inp = case st of
 -- corresponding list will be empty.  If the input token is a short
 -- flag token, this list may have more than one element.
 processTokens
-  :: Map Short (ArgSpec a)
-  -> Map Long (ArgSpec a)
+  :: [(Short, ArgSpec a)]
+  -> [(Long, ArgSpec a)]
   -> [Token]
   -> ([[Output a]], Either (Option, Token -> ([Output a], State a)) [Token])
 processTokens shorts longs = go Ready
@@ -199,21 +197,21 @@ isShort _ = Nothing
 -- | Examines a token to determine if it is a short option.  If so,
 -- processes it; otherwise, returns Nothing.
 procShort
-  :: Map Short (ArgSpec a)
+  :: [(Short, ArgSpec a)]
   -> Token
   -> Maybe ([Output a], State a)
 procShort shorts inp = fmap (getShortOpt shorts) (isShort inp)
 
 getShortOpt
-  :: Map Short (ArgSpec a)
+  :: [(Short, ArgSpec a)]
   -> (Short, ShortTail)
   -> ([Output a], State a)
-getShortOpt shorts (short, rest) = case M.lookup short shorts of
+getShortOpt shorts (short, rest) = case lookup short shorts of
   Nothing -> ( [OptionError (BadOption (Option (Left short))) ], Ready)
   Just arg -> procShortOpt shorts short arg rest
 
 procShortOpt
-  :: Map Short (ArgSpec a)
+  :: [(Short, ArgSpec a)]
   -> Short
   -> ArgSpec a
   -> ShortTail
@@ -280,16 +278,16 @@ procShortOpt _ shrt (ThreeArg f) (ShortTail inp) = ([], Pending opt g)
             oa2 = tokenToOptArg tok2
 
 procLong
-  :: Map Long (ArgSpec a)
+  :: [(Long, ArgSpec a)]
   -> Token
   -> Maybe ([Output a], State a)
 procLong longs inp = fmap (procLongOpt longs) (isLong inp)
 
 procLongOpt
-  :: Map Long (ArgSpec a)
+  :: [(Long, ArgSpec a)]
   -> (Long, Maybe OptArg)
   -> ([Output a], State a)
-procLongOpt longs (inp, mayArg) = case M.lookup inp longs of
+procLongOpt longs (inp, mayArg) = case lookup inp longs of
   Nothing -> ( [OptionError (BadOption . Option . Right $ inp)], Ready)
   Just (ZeroArg r) -> ([result], Ready)
     where

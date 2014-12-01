@@ -8,12 +8,6 @@ version = C.Version [0,30,0,0]
 base :: C.Package
 base = C.closedOpen "base" [4,5,0,0] [5]
 
-bifunctors :: C.Package
-bifunctors = C.Package "bifunctors" (Just $ C.gtEq [0,1,3,1])
-
-containers :: C.Package
-containers = C.Package "containers" (Just $ C.gtEq [0,4,2,1])
-
 properties :: C.Properties
 properties = C.empty
   { C.prName = "multiarg"
@@ -51,8 +45,6 @@ library
 library ms = C.Library
   [ C.buildDepends
     [ base
-    , bifunctors
-    , containers
     ]
   , C.hsSourceDirs [ "lib" ]
   , C.LibExposedModules ms
