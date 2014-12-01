@@ -152,16 +152,41 @@ module Multiarg (
   -- using multiarg is woven throughout the system; for example, see
   -- the Penny.Liberty module.
 
+    OptSpec(..)
+  , CommandLineError(..)
+  , interspersed
+  , nonInterspersed
 
-    module Multiarg.Combinator
-  , module Multiarg.CommandLine
-  , module Multiarg.Option
-  , module Multiarg.Prim
-  , module System.Environment
   ) where
 
-import Multiarg.Combinator
-import Multiarg.CommandLine
-import Multiarg.Option
-import Multiarg.Prim
-import System.Environment
+import Multiarg.Maddash
+
+data OptSpec a = OptSpec
+  { shorts :: [Char]
+  , longs :: [String]
+  , spec :: ArgSpec a
+  } deriving Show
+
+instance Functor OptSpec where
+  fmap f (OptSpec s l p) = OptSpec s l (fmap f p)
+
+data CommandLineError
+  = CEOptionErrors OptionError [OptionError] (Maybe Option)
+  | CEInsufficientOptArgs Option
+
+interspersed
+  :: [OptSpec a]
+  -> (String -> a)
+  -> [String]
+  -- ^ Command line tokens
+  -> Either CommandLineError [a]
+interspersed = undefined
+
+nonInterspersed
+  :: [OptSpec a]
+  -> (String -> a)
+  -> [String]
+  -> Either CommandLineError [a]
+nonInterspersed = undefined
+
+

@@ -3,24 +3,16 @@ module Multiarg.Limeline where
 import Data.Map (Map)
 import Multiarg.Maddash
 
-data PosArg a
-  = PosArgError Diagnostic
-  | GoodPosArg a
+data PosArg a = PosArg a
   deriving (Eq, Ord, Show)
 
-processPosArg :: (String -> Either String a) -> Token -> PosArg a
-processPosArg f (Token t) = case f t of
-  Left e -> PosArgError (Diagnostic e)
-  Right g -> GoodPosArg g
-
 instance Functor PosArg where
-  fmap _ (PosArgError d) = PosArgError d
-  fmap f (GoodPosArg a) = GoodPosArg (f a)
+  fmap f (PosArg a) = PosArg (f a)
 
 interspersed
   :: Map Short (ArgSpec a)
   -> Map Long (ArgSpec a)
-  -> (String -> Either String a)
+  -> (String -> a)
   -> [Token]
   -> ([Either [Output a] (PosArg a)], Maybe Option)
 interspersed shorts longs fTok = go
@@ -28,7 +20,7 @@ interspersed shorts longs fTok = go
     go toks = case ei of
       Left (opt, _) -> (map Left outs, Just opt)
       Right [] -> (map Left outs, Nothing)
-      Right (x:xs) -> (Right (processPosArg fTok x) : outRest, eiRest)
+      Right ((Token x):xs) -> ((Right . PosArg . fTok $ x) : outRest, eiRest)
         where
           (outRest, eiRest) = go xs
       where
@@ -37,7 +29,7 @@ interspersed shorts longs fTok = go
 nonInterspersed
   :: Map Short (ArgSpec a)
   -> Map Long (ArgSpec a)
-  -> (String -> Either String a)
+  -> (String -> a)
   -> [Token]
   -> ([Either [Output a] (PosArg a)], Maybe Option)
 nonInterspersed shorts longs fTok toks = (outs, mayOpt)
@@ -47,4 +39,4 @@ nonInterspersed shorts longs fTok toks = (outs, mayOpt)
       Left (o, _) -> (map Left outsOpts, Just o)
       Right tks -> (map Left outsOpts ++ outsPosArgs, Nothing)
         where
-          outsPosArgs = map (\o -> Right $ processPosArg fTok o) tks
+          outsPosArgs = map (\(Token x) -> Right . PosArg . fTok $ x) tks

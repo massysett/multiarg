@@ -30,11 +30,8 @@ import Control.Applicative
 newtype Option = Option (Either Short Long)
   deriving (Eq, Ord, Show)
 
-data Error
+data OptionError
   = BadOption Option
-  | BadArgument1 Option OptArg Diagnostic
-  | BadArgument2 Option OptArg OptArg Diagnostic
-  | BadArgument3 Option OptArg OptArg OptArg Diagnostic
   | LongArgumentForZeroArgumentOption Long OptArg
   -- ^ The uesr gave an argument for a long option that does not take
   -- an argument.
@@ -42,12 +39,12 @@ data Error
 
 data Output a
   = Good a
-  | Error Error
+  | OptionError OptionError
   deriving (Eq, Ord, Show)
 
 instance Functor Output where
   fmap f (Good a) = Good (f a)
-  fmap _ (Error e) = Error e
+  fmap _ (OptionError e) = OptionError e
 
 -- | A long option.  This should NOT be prefixed with the double dash.
 newtype Long = Long String
@@ -70,10 +67,6 @@ tokenToOptArg (Token t) = OptArg t
 newtype ShortTail = ShortTail String
   deriving (Eq, Ord, Show)
 
--- | A diagnostic string returned if an argument is rejected.
-newtype Diagnostic = Diagnostic String
-  deriving (Eq, Ord, Show)
-
 -- | A token supplied by the user on the command line.
 newtype Token = Token String
   deriving (Eq, Ord, Show)
@@ -88,18 +81,18 @@ newtype Token = Token String
 data ArgSpec a
   = ZeroArg a
   -- ^ This option takes no arguments
-  | OneArg (OptArg -> Either Diagnostic a)
+  | OneArg (OptArg -> a)
   -- ^ This option takes one argument
-  | TwoArg (OptArg -> OptArg -> Either Diagnostic a)
+  | TwoArg (OptArg -> OptArg -> a)
   -- ^ This option takes two arguments
-  | ThreeArg (OptArg -> OptArg -> OptArg -> Either Diagnostic a)
+  | ThreeArg (OptArg -> OptArg -> OptArg -> a)
   -- ^ This option takes three arguments
 
 instance Functor ArgSpec where
   fmap f (ZeroArg a) = ZeroArg (f a)
-  fmap f (OneArg g) = OneArg $ \a -> fmap f (g a)
-  fmap f (TwoArg g) = TwoArg $ \a b -> fmap f (g a b)
-  fmap f (ThreeArg g) = ThreeArg $ \a b c -> fmap f (g a b c)
+  fmap f (OneArg g) = OneArg $ \a -> f (g a)
+  fmap f (TwoArg g) = TwoArg $ \a b -> f (g a b)
+  fmap f (ThreeArg g) = ThreeArg $ \a b c -> f (g a b c)
 
 instance Show (ArgSpec a) where
   show (ZeroArg _) = "ZeroArg"
@@ -216,7 +209,7 @@ getShortOpt
   -> (Short, ShortTail)
   -> ([Output a], State a)
 getShortOpt shorts (short, rest) = case M.lookup short shorts of
-  Nothing -> ( [Error (BadOption (Option (Left short))) ], Ready)
+  Nothing -> ( [OptionError (BadOption (Option (Left short))) ], Ready)
   Just arg -> procShortOpt shorts short arg rest
 
 procShortOpt
@@ -237,15 +230,11 @@ procShortOpt _ shrt (OneArg f) (ShortTail inp) = case inp of
     where
       g tok = ([res], Ready)
         where
-          res = case f arg of
-            Left e -> Error (BadArgument1 opt arg e)
-            Right good -> Good good
+          res = Good . f $ arg
           arg = tokenToOptArg tok
   xs -> ([res], Ready)
     where
-      res = case f optArg of
-        Left e -> Error (BadArgument1 opt optArg e)
-        Right good -> Good good
+      res = Good . f $ optArg
       optArg = OptArg xs
   where
     opt = Option (Left shrt)
@@ -258,15 +247,11 @@ procShortOpt _ shrt (TwoArg f) (ShortTail inp) = ([], Pending opt g)
           h tok2 = ([res], Ready)
             where
               oa2 = tokenToOptArg tok2
-              res = case f oa1 oa2 of
-                Left e -> Error (BadArgument2 opt oa1 oa2 e)
-                Right good -> Good good
+              res = Good $ f oa1 oa2
 
       xs -> ([res], Ready)
         where
-          res = case f tokArg oa1 of
-            Left e -> Error (BadArgument2 opt tokArg oa1 e)
-            Right good -> Good good
+          res = Good $ f tokArg oa1
           tokArg = OptArg xs
       where
         oa1 = tokenToOptArg tok1
@@ -284,15 +269,11 @@ procShortOpt _ shrt (ThreeArg f) (ShortTail inp) = ([], Pending opt g)
               i tok3 = ([res], Ready)
                 where
                   oa3 = tokenToOptArg tok3
-                  res = case f oa1 oa2 oa3 of
-                    Left e -> Error (BadArgument3 opt oa1 oa2 oa3 e)
-                    Right good -> Good good
+                  res = Good $ f oa1 oa2 oa3
           tokInp -> ([res], Ready)
             where
               tokArg = tokenToOptArg (Token tokInp)
-              res = case f tokArg oa1 oa2 of
-                Left e -> Error (BadArgument3 opt tokArg oa1 oa2 e)
-                Right good -> Good good
+              res = Good $ f tokArg oa1 oa2
           where
             oa2 = tokenToOptArg tok2
 
@@ -307,43 +288,35 @@ procLongOpt
   -> (Long, Maybe OptArg)
   -> ([Output a], State a)
 procLongOpt longs (inp, mayArg) = case M.lookup inp longs of
-  Nothing -> ( [Error (BadOption . Option . Right $ inp)], Ready)
+  Nothing -> ( [OptionError (BadOption . Option . Right $ inp)], Ready)
   Just (ZeroArg r) -> ([result], Ready)
     where
       result = case mayArg of
         Nothing -> Good r
-        Just arg -> Error (LongArgumentForZeroArgumentOption inp arg)
+        Just arg -> OptionError (LongArgumentForZeroArgumentOption inp arg)
 
   Just (OneArg f) -> case mayArg of
     Nothing -> ([], Pending opt run)
       where
         run tok = ([out], Ready)
           where
-            out = case f arg1 of
-              Left err -> Error (BadArgument1 opt arg1 err)
-              Right good -> Good good
+            out = Good $ f arg1
             arg1 = tokenToOptArg tok
     Just arg -> ([out], Ready)
       where
-        out = case f arg of
-          Left err -> Error (BadArgument1 opt arg err)
-          Right g -> Good g
+        out = Good $ f arg
 
   Just (TwoArg f) -> ([], Pending opt g)
     where
       g gTok = case mayArg of
         Just arg1 -> ([out], Ready)
           where
-            out = case f arg1 gArg of
-              Left err -> Error (BadArgument2 opt arg1 gArg err)
-              Right good -> Good good
+            out = Good $ f arg1 gArg
         Nothing -> ([], Pending opt h)
           where
             h hTok = ([out], Ready)
               where
-                out = case f gArg hArg of
-                  Left err -> Error (BadArgument2 opt gArg hArg err)
-                  Right good -> Good good
+                out = Good $ f gArg hArg
                 hArg = tokenToOptArg hTok
         where
           gArg = tokenToOptArg gTok
@@ -356,19 +329,13 @@ procLongOpt longs (inp, mayArg) = case M.lookup inp longs of
           h hTok = case mayArg of
             Just arg1 -> ([out], Ready)
               where
-                out = case f arg1 gArg hArg of
-                  Left err -> Error
-                    (BadArgument3 opt arg1 gArg hArg err)
-                  Right good -> Good good
+                out = Good $ f arg1 gArg hArg
             Nothing -> ([], Pending opt i)
               where
                 i iTok = ([out], Ready)
                   where
                     iArg = tokenToOptArg iTok
-                    out = case f gArg hArg iArg of
-                      Left err -> Error
-                        (BadArgument3 opt gArg hArg iArg err)
-                      Right good -> Good good
+                    out = Good $ f gArg hArg iArg
             where
               hArg = tokenToOptArg hTok
   where
