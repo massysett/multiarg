@@ -69,7 +69,7 @@ mode
   -> Mode r
 mode = undefined
 
-parse
+parseModeLine
   :: [OptSpec g]
   -- ^ Global options
   -> [Mode a]
@@ -77,4 +77,4 @@ parse
   -> [String]
   -- ^ All command line tokens
   -> Either ModelineError ([g], Maybe a)
-parse = undefined
+parseModeLine = undefined

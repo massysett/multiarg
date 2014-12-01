@@ -55,7 +55,7 @@ newtype Short = Short Char
   deriving (Eq, Ord, Show)
 
 -- | An option argument.
-newtype OptArg = OptArg String
+newtype OptArg = OptArg { optArgToString :: String }
   deriving (Eq, Ord, Show)
 
 tokenToOptArg :: Token -> OptArg
@@ -81,11 +81,11 @@ newtype Token = Token String
 data ArgSpec a
   = ZeroArg a
   -- ^ This option takes no arguments
-  | OneArg (OptArg -> a)
+  | OneArg (String -> a)
   -- ^ This option takes one argument
-  | TwoArg (OptArg -> OptArg -> a)
+  | TwoArg (String -> String -> a)
   -- ^ This option takes two arguments
-  | ThreeArg (OptArg -> OptArg -> OptArg -> a)
+  | ThreeArg (String -> String -> String -> a)
   -- ^ This option takes three arguments
 
 instance Functor ArgSpec where
@@ -230,11 +230,11 @@ procShortOpt _ shrt (OneArg f) (ShortTail inp) = case inp of
     where
       g tok = ([res], Ready)
         where
-          res = Good . f $ arg
+          res = Good . f . optArgToString $ arg
           arg = tokenToOptArg tok
   xs -> ([res], Ready)
     where
-      res = Good . f $ optArg
+      res = Good . f . optArgToString $ optArg
       optArg = OptArg xs
   where
     opt = Option (Left shrt)
@@ -247,11 +247,11 @@ procShortOpt _ shrt (TwoArg f) (ShortTail inp) = ([], Pending opt g)
           h tok2 = ([res], Ready)
             where
               oa2 = tokenToOptArg tok2
-              res = Good $ f oa1 oa2
+              res = Good $ f (optArgToString oa1) (optArgToString oa2)
 
       xs -> ([res], Ready)
         where
-          res = Good $ f tokArg oa1
+          res = Good $ f (optArgToString tokArg) (optArgToString oa1)
           tokArg = OptArg xs
       where
         oa1 = tokenToOptArg tok1
@@ -269,11 +269,13 @@ procShortOpt _ shrt (ThreeArg f) (ShortTail inp) = ([], Pending opt g)
               i tok3 = ([res], Ready)
                 where
                   oa3 = tokenToOptArg tok3
-                  res = Good $ f oa1 oa2 oa3
+                  res = Good $ f (optArgToString oa1) (optArgToString oa2)
+                                 (optArgToString oa3)
           tokInp -> ([res], Ready)
             where
               tokArg = tokenToOptArg (Token tokInp)
-              res = Good $ f tokArg oa1 oa2
+              res = Good $ f (optArgToString tokArg) (optArgToString oa1)
+                             (optArgToString oa2)
           where
             oa2 = tokenToOptArg tok2
 
@@ -300,23 +302,24 @@ procLongOpt longs (inp, mayArg) = case M.lookup inp longs of
       where
         run tok = ([out], Ready)
           where
-            out = Good $ f arg1
+            out = Good $ f (optArgToString arg1)
             arg1 = tokenToOptArg tok
     Just arg -> ([out], Ready)
       where
-        out = Good $ f arg
+        out = Good $ f (optArgToString arg)
 
   Just (TwoArg f) -> ([], Pending opt g)
     where
       g gTok = case mayArg of
         Just arg1 -> ([out], Ready)
           where
-            out = Good $ f arg1 gArg
+            out = Good $ f (optArgToString arg1) (optArgToString gArg)
         Nothing -> ([], Pending opt h)
           where
             h hTok = ([out], Ready)
               where
-                out = Good $ f gArg hArg
+                out = Good $ f (optArgToString gArg)
+                               (optArgToString hArg)
                 hArg = tokenToOptArg hTok
         where
           gArg = tokenToOptArg gTok
@@ -329,13 +332,16 @@ procLongOpt longs (inp, mayArg) = case M.lookup inp longs of
           h hTok = case mayArg of
             Just arg1 -> ([out], Ready)
               where
-                out = Good $ f arg1 gArg hArg
+                out = Good $ f (optArgToString arg1) (optArgToString gArg)
+                               (optArgToString hArg)
             Nothing -> ([], Pending opt i)
               where
                 i iTok = ([out], Ready)
                   where
                     iArg = tokenToOptArg iTok
-                    out = Good $ f gArg hArg iArg
+                    out = Good $ f (optArgToString gArg)
+                                   (optArgToString hArg)
+                                   (optArgToString iArg)
             where
               hArg = tokenToOptArg hTok
   where
