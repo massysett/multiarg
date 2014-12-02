@@ -1,7 +1,23 @@
 -- | Helps you build command-line parsers for programs that have more
 -- than one so-called /mode/; examples of such programs include @git@,
 -- @darcs@, and @ghc-pkg@.
-module Multiarg.Mode where
+module Multiarg.Mode
+  ( -- * Creating a single 'Mode'
+    OptsWithPosArgs(..)
+  , ModeName(..)
+  , Mode(..)
+  , mode
+
+  -- * Parsing
+  , parseModeLine
+
+  -- * Errors
+  , LastGlobalError(..)
+  , ModeError(..)
+  , GlobalError(..)
+  , ModeCommandError(..)
+  , ModelineError(..)
+  ) where
 
 import Data.List (isPrefixOf)
 import Data.Either (partitionEithers)
@@ -18,15 +34,11 @@ data ModeError
   | ModeNotFound Token
   deriving (Eq, Ord, Show)
 
-data GlobalError = GlobalError
-  { geOptionErrors :: [OptionError]
-  , geLast :: LastGlobalError
-  } deriving (Eq, Ord, Show)
+data GlobalError = GlobalError [OptionError] LastGlobalError
+  deriving (Eq, Ord, Show)
 
-data ModeCommandError = ModeCommandError
-  { mcModeName :: ModeName
-  , mcModeError :: CommandLineError
-  } deriving (Eq, Ord, Show)
+data ModeCommandError = ModeCommandError ModeName CommandLineError
+  deriving (Eq, Ord, Show)
 
 data ModelineError
   = GlobalAndLocal GlobalError ModeCommandError
@@ -37,8 +49,8 @@ newtype ModeName = ModeName String
   deriving (Eq, Ord, Show)
 
 data Mode a = Mode
-  { mModeName :: ModeName
-  , mParser :: [Token] -> Either CommandLineError a
+  { modeToModeName :: ModeName
+  , modeToParser :: [Token] -> Either CommandLineError a
   }
 
 instance Functor Mode where
@@ -92,9 +104,9 @@ parseModeLine globals modes = pMode . pGlobals
 
       modeTok : restToks -> case selectMode modeTok modes of
         Left err -> Left (mergeLastGlobalError err mayGlblErr)
-        Right mde -> case mParser mde restToks of
+        Right mde -> case modeToParser mde restToks of
           Left cle ->
-            Left (mergeCommandLineError (mModeName mde) cle mayGlblErr)
+            Left (mergeCommandLineError (modeToModeName mde) cle mayGlblErr)
           Right r -> Right (glbls, Just r)
         
     pGlobals = parseGlobals globals . map Token
@@ -153,7 +165,7 @@ selectMode tok@(Token s) ms = case findExactMode tok ms of
   Nothing -> case filter f ms of
     [] -> Left (ModeNotFound tok)
     x:[] -> Right x
-    x:xs -> Left (AmbiguousMode tok (mModeName x) (map mModeName xs))
+    x:xs -> Left (AmbiguousMode tok (modeToModeName x) (map modeToModeName xs))
     where
       f (Mode (ModeName n) _) = s `isPrefixOf` n
 

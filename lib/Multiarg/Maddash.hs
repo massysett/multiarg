@@ -1,4 +1,8 @@
 -- | Maddash is a Mealy finite state machine that processes options.
+-- Ordinarily you will not need this module; instead, see "Multiarg"
+-- for most uses or "Multiarg.Mode" for commands that have more than
+-- one mode.
+--
 -- The machine consists of the following parts:
 --
 -- * The set of states, in 'State'

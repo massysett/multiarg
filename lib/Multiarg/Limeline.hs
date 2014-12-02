@@ -1,3 +1,8 @@
+-- | Processes both options and non-option positional arguments.
+-- Functions here return both any successful results and any errors.
+-- Ordinarily you will not need this module; instead, see "Multiarg"
+-- for most uses or "Multiarg.Mode" for commands that have more than
+-- one mode.
 module Multiarg.Limeline where
 
 import Multiarg.Maddash
