@@ -8,6 +8,20 @@ version = C.Version [0,30,0,0]
 base :: C.Package
 base = C.closedOpen "base" [4,5,0,0] [5]
 
+-- Note as of 2014-12-03
+--
+-- Do not use QuickCheck 2.7 features; this will
+-- cause problems with Stackage, which currently builds using
+-- QuickCheck 2.6 for older Haskell Platform versions and QuickCheck
+-- 2.7 for GHC 7.8.  Should such features become necessary to use, you
+-- will have to use shims to allow for compatibility with QuickCheck
+-- versions 2.6 and 2.7.x.
+quickCheck :: C.Package
+quickCheck = C.closedOpen "QuickCheck" [2,6] [2,8]
+
+quickpull :: C.Package
+quickpull = C.closedOpen "quickpull" [0,4,0,0] [0,5]
+
 properties :: C.Properties
 properties = C.empty
   { C.prName = "multiarg"
@@ -38,31 +52,54 @@ repo = C.empty
   { C.repoLocation = "git://github.com/massysett/multiarg.git"
   }
 
+commonOptions :: C.Field a => [a]
+commonOptions =
+  [ C.hsSourceDirs [ "lib" ]
+  , C.ghcOptions ["-Wall"]
+  , C.defaultLanguage C.Haskell2010
+  , C.buildDepends
+    [ base
+    ]
+  ]
+
 library
   :: [String]
   -- ^ List of all modules
   -> C.Library
-library ms = C.Library
-  [ C.buildDepends
-    [ base
+library ms = C.Library $ commonOptions ++
+  [ C.LibExposedModules ms
+  ]
+
+tests
+  :: [String]
+  -- ^ Test modules
+  -> C.TestSuite
+tests ms = C.TestSuite "multiarg-tests" $ commonOptions ++
+  [ C.TestType C.ExitcodeStdio
+  , C.TestMainIs "multiarg-tests.hs"
+  , C.otherModules ms
+  , C.hsSourceDirs [ "tests" ]
+  , C.buildDepends
+    [ quickCheck
+    , quickpull
     ]
-  , C.hsSourceDirs [ "lib" ]
-  , C.LibExposedModules ms
-  , C.ghcOptions ["-Wall"]
-  , C.defaultLanguage C.Haskell2010
   ]
 
 cabal
   :: [String]
   -- ^ List of all modules
+  -> [String]
+  -- ^ Test modules
   -> C.Cabal
-cabal ms = C.empty
+cabal ms ts = C.empty
   { C.cProperties = properties
   , C.cRepositories = [repo]
   , C.cLibrary = Just $ library ms
+  , C.cTestSuites = [tests ts]
   }
 
 main :: IO ()
 main = do
   ms <- C.modules "lib"
-  C.render "genCabal.hs" $ cabal ms
+  ts <- C.modules "tests"
+  C.render "genCabal.hs" $ cabal ms ts

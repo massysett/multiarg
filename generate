@@ -1,3 +1,7 @@
 #!/bin/sh
 
+# Cabal file
 runghc genCabal.hs > multiarg.cabal
+
+# Tests
+quickpull tests > tests/Decrees.hs

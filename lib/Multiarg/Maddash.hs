@@ -29,6 +29,14 @@ module Multiarg.Maddash where
 
 import Control.Applicative
 
+-- | A short option.
+newtype Short = Short Char
+  deriving (Eq, Ord, Show)
+
+-- | A long option.  This should NOT be prefixed with the double dash.
+newtype Long = Long String
+  deriving (Eq, Ord, Show)
+
 newtype Option = Option (Either Short Long)
   deriving (Eq, Ord, Show)
 
@@ -47,14 +55,6 @@ data Output a
 instance Functor Output where
   fmap f (Good a) = Good (f a)
   fmap _ (OptionError e) = OptionError e
-
--- | A long option.  This should NOT be prefixed with the double dash.
-newtype Long = Long String
-  deriving (Eq, Ord, Show)
-
--- | A short option.
-newtype Short = Short Char
-  deriving (Eq, Ord, Show)
 
 -- | An option argument.
 newtype OptArg = OptArg { optArgToString :: String }
