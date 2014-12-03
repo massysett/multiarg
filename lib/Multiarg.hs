@@ -86,41 +86,36 @@
 -- \"pending\" of @20@. Then, the next parser can treat @20@ as an
 -- option argument. After that parse there will be no pendings.
 
-module Multiarg where
+module Multiarg
+  ( ArgSpec(..)
+  , OptSpec(..)
+  , Intersperse(..)
+  , parseCommandLine
+  , parseCommandLineIO
+  , parseCommandLineHelp
+
+  -- * Errors
+  , Short(..)
+  , Long(..)
+  , Option(..)
+  , OptionError(..)
+  , CommandLineError(..)
+  , prettyCommandLineError
+  ) where
 
 import Multiarg.Maddash
 import Multiarg.Limeline
+import Multiarg.Types
+import Multiarg.Util
 import System.Environment
-import qualified System.IO as IO
 import System.Exit
+import qualified System.IO as IO
 
-data OptSpec a = OptSpec
-  { shorts :: [Char]
-  , longs :: [String]
-  , spec :: ArgSpec a
-  } deriving Show
-
-instance Functor OptSpec where
-  fmap f (OptSpec s l p) = OptSpec s l (fmap f p)
-
-splitOptSpecs
-  :: [OptSpec a]
-  -> ([(Short, ArgSpec a)], [(Long, ArgSpec a)])
-splitOptSpecs = foldr f ([], [])
-  where
-    f (OptSpec so lo sp) (ss, ls) = (shrts ++ ss, lngs ++ ls)
-      where
-        shrts = map (\c -> (Short c, sp)) so
-        lngs = map (\l -> (Long l, sp)) lo
 
 data CommandLineError = CommandLineError
   { cleFirst :: [OptionError]
   , cleLast :: Either OptionError Option
   } deriving (Eq, Ord, Show)
-
-mayLast :: [a] -> Maybe ([a], a)
-mayLast [] = Nothing
-mayLast xs = Just (init xs, last xs)
 
 limelineOutputToCommandLineError
   :: ([Either [Output a] (PosArg a)], Maybe Option)
@@ -250,20 +245,6 @@ parseCommandLineHelp int os fPos inp = fmap parsedOpts parsed
       StopOptions -> nonInterspersed
     parsed = limelineOutputToCommandLineError limeOut
 
-
-parsedOpts :: [Either () a] -> Maybe [a]
-parsedOpts [] = Just []
-parsedOpts (Left _ : _) = Nothing
-parsedOpts (Right x : xs) = case parsedOpts xs of
-  Nothing -> Nothing
-  Just rest -> Just (x : rest)
-
-addHelpOption
-  :: [OptSpec a]
-  -> ([(Short, ArgSpec (Either () a))], [(Long, ArgSpec (Either () a))])
-addHelpOption os = splitOptSpecs os'
-  where
-    os' = OptSpec "h" ["help"] (ZeroArg (Left ())) : map (fmap Right) os
 
 -- | Shows errors in a pretty way.
 prettyCommandLineError :: String -> CommandLineError -> String

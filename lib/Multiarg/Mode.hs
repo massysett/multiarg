@@ -3,7 +3,10 @@
 -- @darcs@, and @ghc-pkg@.
 module Multiarg.Mode
   ( -- * Creating a single 'Mode'
-    OptsWithPosArgs(..)
+    ArgSpec(..)
+  , OptSpec(..)
+  , Intersperse(..)
+  , OptsWithPosArgs(..)
   , ModeName(..)
   , Mode(..)
   , mode
@@ -12,6 +15,11 @@ module Multiarg.Mode
   , parseModeLine
 
   -- * Errors
+  , Short(..)
+  , Long(..)
+  , Option(..)
+  , OptionError(..)
+  , CommandLineError(..)
   , LastGlobalError(..)
   , ModeError(..)
   , GlobalError(..)
@@ -23,6 +31,7 @@ import Data.List (isPrefixOf)
 import Data.Either (partitionEithers)
 import Multiarg.Maddash
 import Multiarg
+import Multiarg.Util
 
 data LastGlobalError
   = LastWordError (Either Option ModeError)
