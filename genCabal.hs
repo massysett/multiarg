@@ -22,6 +22,9 @@ quickCheck = C.closedOpen "QuickCheck" [2,6] [2,8]
 quickpull :: C.Package
 quickpull = C.closedOpen "quickpull" [0,4,0,0] [0,5]
 
+barecheck :: C.Package
+barecheck = C.closedOpen "barecheck" [0,2,0,6] [0,3]
+
 properties :: C.Properties
 properties = C.empty
   { C.prName = "multiarg"
@@ -82,6 +85,7 @@ tests ms = C.TestSuite "multiarg-tests" $ commonOptions ++
   , C.buildDepends
     [ quickCheck
     , quickpull
+    , barecheck
     ]
   ]
 

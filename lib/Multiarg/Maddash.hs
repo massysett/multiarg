@@ -25,9 +25,31 @@
 -- * The transition function and the output function are combined into
 -- a single function, 'processToken'.
 
-module Multiarg.Maddash where
+module Multiarg.Maddash
+  ( -- * Options and option arguments
+    Option(..)
+  , ArgSpec(..)
+  , Short(..)
+  , Long(..)
+
+  -- * Machine components
+  , Token(..)
+  , Output(..)
+  , Pallet(..)
+  , State(..)
+  , processToken
+
+  -- * Multi-token processor
+  , processTokens
+
+  -- * Errors
+  , OptArg(..)
+  , OptionError(..)
+  ) where
 
 import Control.Applicative
+
+-- * Options and option arguments
 
 -- | A short option.
 newtype Short = Short Char
@@ -40,46 +62,6 @@ newtype Long = Long String
 newtype Option = Option (Either Short Long)
   deriving (Eq, Ord, Show)
 
-data OptionError
-  = BadOption Option
-  | LongArgumentForZeroArgumentOption Long OptArg
-  -- ^ The uesr gave an argument for a long option that does not take
-  -- an argument.
-  deriving (Eq, Ord, Show)
-
-data Output a
-  = Good a
-  | OptionError OptionError
-  deriving (Eq, Ord, Show)
-
-instance Functor Output where
-  fmap f (Good a) = Good (f a)
-  fmap _ (OptionError e) = OptionError e
-
--- | An option argument.
-newtype OptArg = OptArg { optArgToString :: String }
-  deriving (Eq, Ord, Show)
-
-tokenToOptArg :: Token -> OptArg
-tokenToOptArg (Token t) = OptArg t
-
--- | Characters after the first character in a short option; for
--- instance, if the user supplies @-afoobar@, then this will be
--- @foobar@.
-newtype ShortTail = ShortTail String
-  deriving (Eq, Ord, Show)
-
--- | A token supplied by the user on the command line.
-newtype Token = Token String
-  deriving (Eq, Ord, Show)
-
--- | Some of the functions return an @Either String a@.  In that case,
--- return a Left String to indicate an error, or a Right a to indicate
--- success.  The @String@ in the @Left String@ is an error message;
--- the faulty option is always indicated for you.  To supply
--- additional information in the rror, pass it in the @String@; if you
--- have no useful diagnostic information to add, just return an empty
--- @String@.
 data ArgSpec a
   = ZeroArg a
   -- ^ This option takes no arguments
@@ -102,6 +84,30 @@ instance Show (ArgSpec a) where
   show (TwoArg _) = "TwoArg"
   show (ThreeArg _) = "ThreeArg"
 
+-- * Machine components
+
+-- | A token supplied by the user on the command line.
+newtype Token = Token String
+  deriving (Eq, Ord, Show)
+
+data Output a
+  = Good a
+  | OptionError OptionError
+  deriving (Eq, Ord, Show)
+
+instance Functor Output where
+  fmap f (Good a) = Good (f a)
+  fmap _ (OptionError e) = OptionError e
+
+data Pallet a
+  = NotAnOption
+  | Full [Output a]
+  deriving (Eq, Ord, Show)
+
+instance Functor Pallet where
+  fmap _ NotAnOption = NotAnOption
+  fmap f (Full os) = Full (map (fmap f) os)
+
 data State a
   = Ready
   -- ^ Accepting new tokens
@@ -115,15 +121,6 @@ instance Functor State where
   fmap f (Pending o g)
     = Pending o (\t -> let (os, st') = g t
                        in (map (fmap f) os, fmap f st'))
-
-data Pallet a
-  = NotAnOption
-  | Full [Output a]
-  deriving (Eq, Ord, Show)
-
-instance Functor Pallet where
-  fmap _ NotAnOption = NotAnOption
-  fmap f (Full os) = Full (map (fmap f) os)
 
 -- | Process a single token in the machine.
 processToken
@@ -141,6 +138,8 @@ processToken shorts longs st inp = case st of
     Nothing -> (NotAnOption, Ready)
     where
       procOpt = procShort shorts inp <|> procLong longs inp
+
+-- * Multi-token processor
 
 -- | Processes multiple tokens in the machine.  Processing ends with
 -- the first token that is 'NotAnOption'.  This first token that is
@@ -168,7 +167,36 @@ processTokens shorts longs = go Ready
           Full out -> (out : outRest, ei)
             where
               (outRest, ei) = go st' ts
-    
+
+-- * Errors
+
+data OptionError
+  = BadOption Option
+  | LongArgumentForZeroArgumentOption Long OptArg
+  -- ^ The uesr gave an argument for a long option that does not take
+  -- an argument.
+  deriving (Eq, Ord, Show)
+
+
+-- * All exported types and functions above this line
+
+-- * Other types - not exported
+
+-- | An option argument.
+newtype OptArg = OptArg { optArgToString :: String }
+  deriving (Eq, Ord, Show)
+
+-- | Characters after the first character in a short option; for
+-- instance, if the user supplies @-afoobar@, then this will be
+-- @foobar@.
+newtype ShortTail = ShortTail String
+  deriving (Eq, Ord, Show)
+
+-- * Internal functions - not exported
+
+tokenToOptArg :: Token -> OptArg
+tokenToOptArg (Token t) = OptArg t
+
 
 -- | Is this token an input for a long option?
 isLong
@@ -349,3 +377,4 @@ procLongOpt longs (inp, mayArg) = case lookup inp longs of
   where
     opt = Option (Right inp)
 
+-- * end

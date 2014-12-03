@@ -10,5 +10,6 @@ import qualified Multiarg.Maddash.Tests
 decrees :: [Decree]
 decrees =
 
-  [ Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 13, qName = "prop_alwaysTrue"} ) ( Single Multiarg.Maddash.Tests.prop_alwaysTrue )
+  [ Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 83, qName = "prop_nonOptTokenNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_nonOptTokenNotAnOptionIfStateIsReady )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 91, qName = "prop_alwaysTrue"} ) ( Single Multiarg.Maddash.Tests.prop_alwaysTrue )
   ]
