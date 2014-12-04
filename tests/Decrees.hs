@@ -10,6 +10,10 @@ import qualified Multiarg.Maddash.Tests
 decrees :: [Decree]
 decrees =
 
-  [ Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 83, qName = "prop_nonOptTokenNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_nonOptTokenNotAnOptionIfStateIsReady )
-  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 91, qName = "prop_alwaysTrue"} ) ( Single Multiarg.Maddash.Tests.prop_alwaysTrue )
+  [ Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 93, qName = "prop_nonOptTokenNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_nonOptTokenNotAnOptionIfStateIsReady )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 102, qName = "prop_stopperNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_stopperNotAnOptionIfStateIsReady )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 110, qName = "prop_singleDashNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_singleDashNotAnOptionIfStateIsReady )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 117, qName = "prop_processTokenNeverReturnsNotAnOptionOnPending"} ) ( Single Multiarg.Maddash.Tests.prop_processTokenNeverReturnsNotAnOptionOnPending )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 126, qName = "prop_processTokenNotAnOptionWithReady"} ) ( Single Multiarg.Maddash.Tests.prop_processTokenNotAnOptionWithReady )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 136, qName = "prop_alwaysTrue"} ) ( Single Multiarg.Maddash.Tests.prop_alwaysTrue )
   ]

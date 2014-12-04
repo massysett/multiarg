@@ -37,6 +37,8 @@ module Multiarg.Maddash
   , Output(..)
   , Pallet(..)
   , State(..)
+  , isReady
+  , isPending
   , processToken
 
   -- * Multi-token processor
@@ -116,11 +118,24 @@ data State a
   -- ^ In the middle of processing an option; this function will be
   -- applied to the next token to get a result
 
+
 instance Functor State where
   fmap _ Ready = Ready
   fmap f (Pending o g)
     = Pending o (\t -> let (os, st') = g t
                        in (map (fmap f) os, fmap f st'))
+
+instance Show (State a) where
+  show Ready = "Ready"
+  show (Pending o _) = "Pending - " ++ show o
+
+isReady :: State a -> Bool
+isReady Ready = True
+isReady _ = False
+
+isPending :: State a -> Bool
+isPending (Pending _ _) = True
+isPending _ = False
 
 -- | Process a single token in the machine.
 processToken

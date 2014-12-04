@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Multiarg.Maddash.Tests where
 
 import Control.Applicative
@@ -27,10 +28,16 @@ genArgSpec = oneof
 genToken :: Gen Token
 genToken = fmap Token arbitrary
 
+singleDash :: Token
+singleDash = Token "-"
+
+stopper :: Token
+stopper = Token "--"
+
 genNonOptToken :: Gen Token
 genNonOptToken = oneof
-  [ return $ Token "-"
-  , return $ Token "--"
+  [ return singleDash
+  , return stopper
   , do
       c1 <- arbitrary `suchThat` (/= '-')
       cs <- listOf arbitrary
@@ -61,14 +68,17 @@ genPallet = oneof
   , fmap Full $ listOf genOutput
   ]
 
-genState :: Gen (State Int)
-genState = oneof
-  [ return Ready
-  , Pending <$> genOption <*> genF
-  ]
+genPending :: Gen (State Int)
+genPending = Pending <$> genOption <*> genF
   where
     genF = function1 coaToken
       ((,) <$> listOf genOutput <*> genState)
+
+genState :: Gen (State Int)
+genState = oneof
+  [ return Ready
+  , genPending
+  ]
 
 genShortArgSpecs :: Gen [(Short, ArgSpec Int)]
 genShortArgSpecs = listOf ((,) <$> genShort <*> genArgSpec)
@@ -86,6 +96,41 @@ prop_nonOptTokenNotAnOptionIfStateIsReady =
   forAll genNonOptToken $ \token ->
   let (pallet, _) = processToken shorts longs Ready token
   in pallet == NotAnOption
+
+-- | Stopper always returns NotAnOption if State is Ready
+prop_stopperNotAnOptionIfStateIsReady :: Property
+prop_stopperNotAnOptionIfStateIsReady =
+  forAll genShortArgSpecs $ \shorts ->
+  forAll genLongArgSpecs $ \longs ->
+  let (pallet, _) = processToken shorts longs Ready stopper
+  in pallet == NotAnOption
+
+-- | Single dash always returns NotAnOption if State is Ready
+prop_singleDashNotAnOptionIfStateIsReady :: Property
+prop_singleDashNotAnOptionIfStateIsReady =
+  forAll genShortArgSpecs $ \shorts ->
+  forAll genLongArgSpecs $ \longs ->
+  let (pallet, _) = processToken shorts longs Ready singleDash
+  in pallet == NotAnOption
+
+-- | processToken never returns NotAnOption when input is Pending
+prop_processTokenNeverReturnsNotAnOptionOnPending =
+  forAll genShortArgSpecs $ \shorts ->
+  forAll genLongArgSpecs $ \longs ->
+  forAll genPending $ \state ->
+  forAll genToken $ \token ->
+  let (pallet, _) = processToken shorts longs state token
+  in pallet /= NotAnOption
+
+-- | NotAnOption is always returned with Ready
+prop_processTokenNotAnOptionWithReady =
+  forAll genShortArgSpecs $ \shorts ->
+  forAll genLongArgSpecs $ \longs ->
+  forAll genState $ \state ->
+  forAll genToken $ \token ->
+  let (pallet, state') = processToken shorts longs state token
+  in pallet == NotAnOption ==> isReady state'
+
 
 prop_alwaysTrue :: Bool
 prop_alwaysTrue = True
