@@ -132,5 +132,3 @@ prop_processTokenNotAnOptionWithReady =
   in pallet == NotAnOption ==> isReady state'
 
 
-prop_alwaysTrue :: Bool
-prop_alwaysTrue = True
