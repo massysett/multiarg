@@ -6,6 +6,7 @@ import Multiarg.Maddash
 import Test.QuickCheck
 import Prelude.Generators
 import qualified Prelude.Generators as G
+import qualified Makeopt
 
 genShort :: Gen Short
 genShort = fmap Short arbitrary
