@@ -19,14 +19,25 @@ data StateK
   -- ^ In the middle of a short option
   deriving (Eq, Ord, Show)
 
-processOption
-  :: OptName
+data InputK
+  = InputOpt OptName Strings
+  | Eject
+  deriving (Eq, Ord, Show)
+
+processShortOptions
+  :: [ShortName]
+  -> (ShortName, Strings)
+  -> [[String]]
+processShortOptions = undefined
+
+processShortOption
+  :: ShortName
   -> Strings
   -- ^ Any option arguments
   -> StateK
   -> ([[String]], StateK)
 
-processOption (OptName (Left shrtName)) ss ReadyK = case ss of
+processShortOption shrtName ss ReadyK = case ss of
   NoStrings -> ([], PendingK shrt [])
   OneString s1 -> (lists s1 [], ReadyK)
   TwoStrings s1 s2 -> (lists s1 [s2], ReadyK)
@@ -39,38 +50,25 @@ processOption (OptName (Left shrtName)) ss ReadyK = case ss of
       | null a1 = [[single, a1] ++ as]
       | otherwise = [[combined a1] ++ as, [single, a1] ++ as]
 
-processOption (OptName (Right lngName)) ss ReadyK = (strings, ReadyK)
-  where
-    strings = case ss of
-      NoStrings -> lists []
-      OneString s1 -> lists [s1]
-      TwoStrings s1 s2 -> lists [s1,s2]
-      ThreeStrings s1 s2 s3 -> lists [s1,s2,s3]
-    lng = "--" ++ longNameToString lngName
-    lists [] = [[lng]]
-    lists (x:xs) = [ (lng ++ "=" ++ x) : xs
-                   , lng : x : xs
-                   ]
-
-processOption (OptName (Left shrtName)) ss (PendingK c1 cs) =
-  case ss of
-    NoStrings -> ([], PendingK c1 (cs ++ [shrt]))
-    OneString s1 -> (shortPartitions c1 cs shrt [s1], ReadyK)
-    TwoStrings s1 s2 -> (shortPartitions c1 cs shrt [s1, s2], ReadyK)
-    ThreeStrings s1 s2 s3 ->
-      (shortPartitions c1 cs shrt [s1, s2, s3], ReadyK)
+processShortOption shrtName ss (PendingK c1 cs) = case ss of
+  NoStrings -> ([], PendingK c1 (cs ++ [shrt]))
+  OneString s1 -> (shortPartitions c1 cs shrt [s1], ReadyK)
+  TwoStrings s1 s2 -> (shortPartitions c1 cs shrt [s1, s2], ReadyK)
+  ThreeStrings s1 s2 s3 ->
+    (shortPartitions c1 cs shrt [s1, s2, s3], ReadyK)
   where
     shrt = shortNameToChar shrtName
 
-processOption (OptName (Right lngName)) ss (PendingK c1 cs) =
-  (shorts ++ res, ReadyK)
+processLongOption
+  :: LongName
+  -> Strings
+  -> [[String]]
+processLongOption lngName ss = case ss of
+  NoStrings -> lists []
+  OneString s1 -> lists [s1]
+  TwoStrings s1 s2 -> lists [s1,s2]
+  ThreeStrings s1 s2 s3 -> lists [s1,s2,s3]
   where
-    res = case ss of
-      NoStrings -> lists []
-      OneString s1 -> lists [s1]
-      TwoStrings s1 s2 -> lists [s1,s2]
-      ThreeStrings s1 s2 s3 -> lists [s1,s2,s3]
-    shorts = ejectShortFlags c1 cs
     lng = "--" ++ longNameToString lngName
     lists [] = [[lng]]
     lists (x:xs) = [ (lng ++ "=" ++ x) : xs
