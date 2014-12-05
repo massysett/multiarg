@@ -61,3 +61,42 @@ processOption (Option (Right (Long lng))) ss ReadyK = (strings, ReadyK)
         , ["--" ++ lng, s1, s2, s3]
         ]
 
+processOption (Option (Left (Short shrt))) ss (PendingK c1 cs) =
+  case ss of
+    NoStrings -> ([], PendingK c1 (cs ++ [shrt]))
+    OneString s1 -> (shortPartitions c1 cs shrt [s1], ReadyK)
+    TwoStrings s1 s2 -> (shortPartitions c1 cs shrt [s1, s2], ReadyK)
+    ThreeStrings s1 s2 s3 ->
+      (shortPartitions c1 cs shrt [s1, s2, s3], ReadyK)
+
+processOption (Option (Right (Long long))) ss (PendingK c1 cs) =
+  (shorts ++ res, ReadyK)
+  where
+    res = case ss of
+      NoStrings -> [[longOpt]]
+      OneString s1 -> [[eqOpt s1], [longOpt, s1]]
+      TwoStrings s1 s2 -> [[eqOpt s1, s2], [longOpt, s1, s2]]
+      ThreeStrings s1 s2 s3 -> [[eqOpt s1, s2, s3], [longOpt, s1, s2, s3]]
+    shorts = ejectShortFlags c1 cs
+    longOpt = "--" ++ long
+    eqOpt s = "--" ++ long ++ "=" ++ s
+
+ejectShortFlags
+  :: Char
+  -- ^ First flag
+  -> String
+  -- ^ Remaining flags
+  -> [[String]]
+ejectShortFlags = undefined
+
+shortPartitions
+  :: Char
+  -- ^ First flag
+  -> String
+  -- ^ Remaining flags
+  -> Char
+  -- ^ Last flag
+  -> [String] 
+  -- ^ Arguments
+  -> [[String]]
+shortPartitions = undefined
