@@ -15,9 +15,9 @@ module Multiarg.Mode
   , parseModeLine
 
   -- * Errors
-  , Short(..)
-  , Long(..)
-  , Option(..)
+  , ShortName(..)
+  , LongName(..)
+  , OptName(..)
   , OptionError(..)
   , CommandLineError(..)
   , LastGlobalError(..)
@@ -34,7 +34,7 @@ import Multiarg
 import Multiarg.Util
 
 data LastGlobalError
-  = LastWordError (Either Option ModeError)
+  = LastWordError (Either OptName ModeError)
   | LastGlobalOptsError OptionError
   deriving (Eq, Ord, Show)
 
@@ -123,7 +123,7 @@ parseModeLine globals modes = pMode . pGlobals
 mergeCommandLineError
   :: ModeName
   -> CommandLineError
-  -> Maybe ([OptionError], Either OptionError Option)
+  -> Maybe ([OptionError], Either OptionError OptName)
   -> ModelineError
 mergeCommandLineError name cle mayErr = case mayErr of
   Nothing -> GlobalOrLocal . Right
@@ -137,7 +137,7 @@ mergeCommandLineError name cle mayErr = case mayErr of
 
 mergeLastGlobalError
   :: ModeError
-  -> Maybe ([OptionError], Either OptionError Option)
+  -> Maybe ([OptionError], Either OptionError OptName)
   -> ModelineError
 mergeLastGlobalError me may = case may of
   Nothing -> GlobalOrLocal . Left . GlobalError [] . LastWordError
@@ -150,7 +150,7 @@ mergeLastGlobalError me may = case may of
 parseGlobals
   :: [OptSpec g]
   -> [Token]
-  -> ([Token], [g], Maybe ([OptionError], Either OptionError Option))
+  -> ([Token], [g], Maybe ([OptionError], Either OptionError OptName))
 parseGlobals os toks =
   maddashOutToGlobalOut $ processTokens shrts lngs toks
   where
@@ -179,8 +179,8 @@ selectMode tok@(Token s) ms = case findExactMode tok ms of
       f (Mode (ModeName n) _) = s `isPrefixOf` n
 
 maddashOutToGlobalOut
-  :: ([[Output a]], Either (Option, Token -> ([Output a], State a)) [Token])
-  -> ([Token], [a], Maybe ([OptionError], Either OptionError Option))
+  :: ([[Output a]], Either (OptName, Token -> ([Output a], State a)) [Token])
+  -> ([Token], [a], Maybe ([OptionError], Either OptionError OptName))
 maddashOutToGlobalOut (outs, ei) = (toksLeft, rslts, mayOptErrs)
   where
     toksLeft = case ei of

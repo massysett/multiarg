@@ -27,10 +27,14 @@
 
 module Multiarg.Maddash
   ( -- * Options and option arguments
-    Option(..)
+    OptName(..)
   , ArgSpec(..)
-  , Short(..)
-  , Long(..)
+  , ShortName
+  , LongName
+  , shortName
+  , longName
+  , shortNameToChar
+  , longNameToString
 
   -- * Machine components
   , Token(..)
@@ -53,15 +57,32 @@ import Control.Applicative
 
 -- * Options and option arguments
 
--- | A short option.
-newtype Short = Short Char
+-- | A short option name.
+newtype ShortName = ShortName { shortNameToChar ::  Char }
   deriving (Eq, Ord, Show)
 
--- | A long option.  This should NOT be prefixed with the double dash.
-newtype Long = Long String
+-- | A long option name.
+newtype LongName = LongName { longNameToString :: String }
   deriving (Eq, Ord, Show)
 
-newtype Option = Option (Either Short Long)
+-- | Creates a short option name.  Any character other than a single
+-- hyphen will succeed.
+shortName :: Char -> Maybe ShortName
+shortName '-' = Nothing
+shortName x = Just $ ShortName x
+
+-- | Creates a long option name.  The string may not be empty, and the
+-- first character may not be a hyphen.  In addition, no character may
+-- be an equal sign.
+longName :: String -> Maybe LongName
+longName s = case s of
+  [] -> Nothing
+  '-':_ -> Nothing
+  xs | '=' `elem` xs -> Nothing
+     | otherwise -> Just $ LongName xs
+
+-- | The name of an option (either short or long).
+newtype OptName = OptName (Either ShortName LongName)
   deriving (Eq, Ord, Show)
 
 data ArgSpec a
@@ -114,7 +135,7 @@ data State a
   = Ready
   -- ^ Accepting new tokens
 
-  | Pending Option (Token -> ([Output a], State a))
+  | Pending OptName (Token -> ([Output a], State a))
   -- ^ In the middle of processing an option; this function will be
   -- applied to the next token to get a result
 
@@ -139,8 +160,8 @@ isPending _ = False
 
 -- | Process a single token in the machine.
 processToken
-  :: [(Short, ArgSpec a)]
-  -> [(Long, ArgSpec a)]
+  :: [(ShortName, ArgSpec a)]
+  -> [(LongName, ArgSpec a)]
   -> State a
   -> Token
   -> (Pallet a, State a)
@@ -166,10 +187,10 @@ processToken shorts longs st inp = case st of
 -- corresponding list will be empty.  If the input token is a short
 -- flag token, this list may have more than one element.
 processTokens
-  :: [(Short, ArgSpec a)]
-  -> [(Long, ArgSpec a)]
+  :: [(ShortName, ArgSpec a)]
+  -> [(LongName, ArgSpec a)]
   -> [Token]
-  -> ([[Output a]], Either (Option, Token -> ([Output a], State a)) [Token])
+  -> ([[Output a]], Either (OptName, Token -> ([Output a], State a)) [Token])
 processTokens shorts longs = go Ready
   where
     go Ready [] = ([], Right [])
@@ -186,8 +207,8 @@ processTokens shorts longs = go Ready
 -- * Errors
 
 data OptionError
-  = BadOption Option
-  | LongArgumentForZeroArgumentOption Long OptArg
+  = BadOption OptName
+  | LongArgumentForZeroArgumentOption LongName OptArg
   -- ^ The uesr gave an argument for a long option that does not take
   -- an argument.
   deriving (Eq, Ord, Show)
@@ -216,7 +237,7 @@ tokenToOptArg (Token t) = OptArg t
 -- | Is this token an input for a long option?
 isLong
   :: Token
-  -> Maybe (Long, Maybe OptArg)
+  -> Maybe (LongName, Maybe OptArg)
   -- ^ Nothing if the option does not begin with a double dash and is
   -- not at least three characters long.  Otherwise, returns the
   -- characters following the double dash to the left of any equal
@@ -224,7 +245,7 @@ isLong
   -- sign, or Just followed by characters following the equal sign if
   -- there is one.
 isLong (Token ('-':'-':[])) = Nothing
-isLong (Token ('-':'-':xs)) = Just (Long optName, arg)
+isLong (Token ('-':'-':xs)) = Just (LongName optName, arg)
   where
     (optName, end) = span (/= '=') xs
     arg = case end of
@@ -235,31 +256,31 @@ isLong _ = Nothing
 -- | Is this the input token for a short argument?
 isShort
   :: Token
-  -> Maybe (Short, ShortTail)
+  -> Maybe (ShortName, ShortTail)
 isShort (Token ('-':'-':_)) = Nothing
 isShort (Token ('-':[])) = Nothing
-isShort (Token ('-':x:xs)) = Just (Short x, ShortTail xs)
+isShort (Token ('-':x:xs)) = Just (ShortName x, ShortTail xs)
 isShort _ = Nothing
 
 -- | Examines a token to determine if it is a short option.  If so,
 -- processes it; otherwise, returns Nothing.
 procShort
-  :: [(Short, ArgSpec a)]
+  :: [(ShortName, ArgSpec a)]
   -> Token
   -> Maybe ([Output a], State a)
 procShort shorts inp = fmap (getShortOpt shorts) (isShort inp)
 
 getShortOpt
-  :: [(Short, ArgSpec a)]
-  -> (Short, ShortTail)
+  :: [(ShortName, ArgSpec a)]
+  -> (ShortName, ShortTail)
   -> ([Output a], State a)
 getShortOpt shorts (short, rest) = case lookup short shorts of
-  Nothing -> ( [OptionError (BadOption (Option (Left short))) ], Ready)
+  Nothing -> ( [OptionError (BadOption (OptName (Left short))) ], Ready)
   Just arg -> procShortOpt shorts short arg rest
 
 procShortOpt
-  :: [(Short, ArgSpec a)]
-  -> Short
+  :: [(ShortName, ArgSpec a)]
+  -> ShortName
   -> ArgSpec a
   -> ShortTail
   -> ([Output a], State a)
@@ -268,7 +289,7 @@ procShortOpt opts _ (ZeroArg a) (ShortTail inp) = (this : rest, st)
     this = Good a
     (rest, st) = case inp of
       [] -> ([], Ready)
-      opt : arg -> getShortOpt opts (Short opt, ShortTail arg)
+      opt : arg -> getShortOpt opts (ShortName opt, ShortTail arg)
 
 procShortOpt _ shrt (OneArg f) (ShortTail inp) = case inp of
   [] -> ([], Pending opt g)
@@ -282,7 +303,7 @@ procShortOpt _ shrt (OneArg f) (ShortTail inp) = case inp of
       res = Good . f . optArgToString $ optArg
       optArg = OptArg xs
   where
-    opt = Option (Left shrt)
+    opt = OptName (Left shrt)
 
 procShortOpt _ shrt (TwoArg f) (ShortTail inp) = ([], Pending opt g)
   where
@@ -300,11 +321,11 @@ procShortOpt _ shrt (TwoArg f) (ShortTail inp) = ([], Pending opt g)
           tokArg = OptArg xs
       where
         oa1 = tokenToOptArg tok1
-    opt = Option (Left shrt)
+    opt = OptName (Left shrt)
 
 procShortOpt _ shrt (ThreeArg f) (ShortTail inp) = ([], Pending opt g)
   where
-    opt = Option (Left shrt)
+    opt = OptName (Left shrt)
     g tok1 = ([], Pending opt h)
       where
         oa1 = tokenToOptArg tok1
@@ -325,17 +346,17 @@ procShortOpt _ shrt (ThreeArg f) (ShortTail inp) = ([], Pending opt g)
             oa2 = tokenToOptArg tok2
 
 procLong
-  :: [(Long, ArgSpec a)]
+  :: [(LongName, ArgSpec a)]
   -> Token
   -> Maybe ([Output a], State a)
 procLong longs inp = fmap (procLongOpt longs) (isLong inp)
 
 procLongOpt
-  :: [(Long, ArgSpec a)]
-  -> (Long, Maybe OptArg)
+  :: [(LongName, ArgSpec a)]
+  -> (LongName, Maybe OptArg)
   -> ([Output a], State a)
 procLongOpt longs (inp, mayArg) = case lookup inp longs of
-  Nothing -> ( [OptionError (BadOption . Option . Right $ inp)], Ready)
+  Nothing -> ( [OptionError (BadOption . OptName . Right $ inp)], Ready)
   Just (ZeroArg r) -> ([result], Ready)
     where
       result = case mayArg of
@@ -390,6 +411,6 @@ procLongOpt longs (inp, mayArg) = case lookup inp longs of
             where
               hArg = tokenToOptArg hTok
   where
-    opt = Option (Right inp)
+    opt = OptName (Right inp)
 
 -- * end

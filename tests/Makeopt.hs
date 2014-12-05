@@ -19,13 +19,13 @@ data StateK
   -- ^ In the middle of a short option
 
 processOption
-  :: Option
+  :: OptName
   -> Strings
   -- ^ Any option arguments
   -> StateK
   -> ([[String]], StateK)
 
-processOption (Option (Left (Short shrt))) ss ReadyK = case ss of
+processOption (OptName (Left shrtName)) ss ReadyK = case ss of
   NoStrings -> ([], PendingK shrt [])
   OneString s1 -> ([['-' : shrt : s1], [['-', shrt], s1]], ReadyK)
   TwoStrings s1 s2 ->
@@ -40,8 +40,10 @@ processOption (Option (Left (Short shrt))) ss ReadyK = case ss of
       ]
     , ReadyK
     )
+  where
+    shrt = shortNameToChar shrtName
 
-processOption (Option (Right (Long lng))) ss ReadyK = (strings, ReadyK)
+processOption (OptName (Right lngName)) ss ReadyK = (strings, ReadyK)
   where
     strings = case ss of
       NoStrings -> [["--" ++ lng]]
@@ -60,16 +62,19 @@ processOption (Option (Right (Long lng))) ss ReadyK = (strings, ReadyK)
         [ ["--" ++ lng ++ "=" ++ s1]
         , ["--" ++ lng, s1, s2, s3]
         ]
+    lng = longNameToString lngName
 
-processOption (Option (Left (Short shrt))) ss (PendingK c1 cs) =
+processOption (OptName (Left shrtName)) ss (PendingK c1 cs) =
   case ss of
     NoStrings -> ([], PendingK c1 (cs ++ [shrt]))
     OneString s1 -> (shortPartitions c1 cs shrt [s1], ReadyK)
     TwoStrings s1 s2 -> (shortPartitions c1 cs shrt [s1, s2], ReadyK)
     ThreeStrings s1 s2 s3 ->
       (shortPartitions c1 cs shrt [s1, s2, s3], ReadyK)
+  where
+    shrt = shortNameToChar shrtName
 
-processOption (Option (Right (Long long))) ss (PendingK c1 cs) =
+processOption (OptName (Right lngName)) ss (PendingK c1 cs) =
   (shorts ++ res, ReadyK)
   where
     res = case ss of
@@ -80,6 +85,7 @@ processOption (Option (Right (Long long))) ss (PendingK c1 cs) =
     shorts = ejectShortFlags c1 cs
     longOpt = "--" ++ long
     eqOpt s = "--" ++ long ++ "=" ++ s
+    long = longNameToString lngName
 
 ejectShortFlags
   :: Char

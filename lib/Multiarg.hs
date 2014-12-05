@@ -35,6 +35,11 @@
 -- to run @tail@ with two options, he might type @tail -v -f@ or he
 -- might type @tail -vf@.
 --
+-- [@short option name@] A short option consists of a /name/, which is
+-- a single character, and an /argspec/, which specifies how many
+-- arguments the option takes.  A /short option name/ is never a
+-- single hyphen.
+--
 -- [@long option@] An option that is specified using two hyphens and
 -- what is usually a mnemonic word, though it could be as short as a
 -- single letter. For example, @tail(1)@ has long options including
@@ -95,9 +100,9 @@ module Multiarg
   , parseCommandLineHelp
 
   -- * Errors
-  , Short(..)
-  , Long(..)
-  , Option(..)
+  , ShortName(..)
+  , LongName(..)
+  , OptName(..)
   , OptionError(..)
   , CommandLineError(..)
   , prettyCommandLineError
@@ -114,11 +119,11 @@ import qualified System.IO as IO
 
 data CommandLineError = CommandLineError
   { cleFirst :: [OptionError]
-  , cleLast :: Either OptionError Option
+  , cleLast :: Either OptionError OptName
   } deriving (Eq, Ord, Show)
 
 limelineOutputToCommandLineError
-  :: ([Either [Output a] (PosArg a)], Maybe Option)
+  :: ([Either [Output a] (PosArg a)], Maybe OptName)
   -> Either CommandLineError [a]
 
 limelineOutputToCommandLineError (ls, mayOpt) =

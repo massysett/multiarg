@@ -16,18 +16,19 @@ parsedOpts (Right x : xs) = case parsedOpts xs of
 
 splitOptSpecs
   :: [OptSpec a]
-  -> ([(Short, ArgSpec a)], [(Long, ArgSpec a)])
+  -> ([(ShortName, ArgSpec a)], [(LongName, ArgSpec a)])
 splitOptSpecs = foldr f ([], [])
   where
-    f (OptSpec so lo sp) (ss, ls) = (shrts ++ ss, lngs ++ ls)
+    f (OptSpec so lo sp) (ss, ls) = (so' ++ ss, lo' ++ ls)
       where
-        shrts = map (\c -> (Short c, sp)) so
-        lngs = map (\l -> (Long l, sp)) lo
+        so' = map (\o -> (o, sp)) so
+        lo' = map (\o -> (o, sp)) lo
 
 addHelpOption
   :: [OptSpec a]
-  -> ([(Short, ArgSpec (Either () a))], [(Long, ArgSpec (Either () a))])
+  -> ( [(ShortName, ArgSpec (Either () a))]
+     , [(LongName, ArgSpec (Either () a))] )
 addHelpOption os = splitOptSpecs os'
   where
-    os' = OptSpec "h" ["help"] (ZeroArg (Left ())) : map (fmap Right) os
+    os' = optSpec "h" ["help"] (ZeroArg (Left ())) : map (fmap Right) os
 

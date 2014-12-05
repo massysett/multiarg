@@ -18,11 +18,11 @@ instance Functor PosArg where
 -- tokens after a stopper are treated as non-option positional
 -- arguments.
 interspersed
-  :: [(Short, ArgSpec a)]
-  -> [(Long, ArgSpec a)]
+  :: [(ShortName, ArgSpec a)]
+  -> [(LongName, ArgSpec a)]
   -> (String -> a)
   -> [Token]
-  -> ([Either [Output a] (PosArg a)], Maybe Option)
+  -> ([Either [Output a] (PosArg a)], Maybe OptName)
 interspersed shorts longs fTok = go
   where
     go toks = case ei of
@@ -42,11 +42,11 @@ interspersed shorts longs fTok = go
 -- returned; all tokens after a stopper are treated as non-option
 -- positional arguments.
 nonInterspersed
-  :: [(Short, ArgSpec a)]
-  -> [(Long, ArgSpec a)]
+  :: [(ShortName, ArgSpec a)]
+  -> [(LongName, ArgSpec a)]
   -> (String -> a)
   -> [Token]
-  -> ([Either [Output a] (PosArg a)], Maybe Option)
+  -> ([Either [Output a] (PosArg a)], Maybe OptName)
 nonInterspersed shorts longs fTok toks = (outs, mayOpt)
   where
     (outsOpts, ei) = processTokens shorts longs toks

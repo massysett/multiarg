@@ -8,14 +8,23 @@ import Prelude.Generators
 import qualified Prelude.Generators as G
 import qualified Makeopt
 
-genShort :: Gen Short
-genShort = fmap Short arbitrary
+genShortName :: Gen ShortName
+genShortName = do
+  c <- arbitrary
+  case shortName c of
+    Nothing -> genShortName
+    Just n -> return n
 
-genLong :: Gen Long
-genLong = fmap Long arbitrary
+genLongName :: Gen LongName
+genLongName = do
+  c1 <- arbitrary `suchThat` (/= '-')
+  cs <- listOf (arbitrary `suchThat` (/= '='))
+  case longName (c1 : cs) of
+    Nothing -> error "could not generate long name"
+    Just n -> return n
 
-genOption :: Gen Option
-genOption = fmap Option $ G.either genShort genLong
+genOptName :: Gen OptName
+genOptName = fmap OptName $ G.either genShortName genLongName
 
 genArgSpec :: Gen (ArgSpec Int)
 genArgSpec = oneof
@@ -53,8 +62,8 @@ genOptArg = fmap OptArg arbitrary
 
 genOptionError :: Gen OptionError
 genOptionError = oneof
-  [ fmap BadOption genOption
-  , LongArgumentForZeroArgumentOption <$> genLong <*> genOptArg
+  [ fmap BadOption genOptName
+  , LongArgumentForZeroArgumentOption <$> genLongName <*> genOptArg
   ]
 
 genOutput :: Gen (Output Int)
@@ -70,7 +79,7 @@ genPallet = oneof
   ]
 
 genPending :: Gen (State Int)
-genPending = Pending <$> genOption <*> genF
+genPending = Pending <$> genOptName <*> genF
   where
     genF = function1 coaToken
       ((,) <$> listOf genOutput <*> genState)
@@ -81,11 +90,11 @@ genState = oneof
   , genPending
   ]
 
-genShortArgSpecs :: Gen [(Short, ArgSpec Int)]
-genShortArgSpecs = listOf ((,) <$> genShort <*> genArgSpec)
+genShortArgSpecs :: Gen [(ShortName, ArgSpec Int)]
+genShortArgSpecs = listOf ((,) <$> genShortName <*> genArgSpec)
 
-genLongArgSpecs :: Gen [(Long, ArgSpec Int)]
-genLongArgSpecs = listOf ((,) <$> genLong <*> genArgSpec)
+genLongArgSpecs :: Gen [(LongName, ArgSpec Int)]
+genLongArgSpecs = listOf ((,) <$> genLongName <*> genArgSpec)
 
 -- * Properties
 
