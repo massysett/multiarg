@@ -5,47 +5,16 @@ module Makeopt where
 
 import Multiarg.Maddash
 
-data StateK
-  = ReadyK
-  -- ^ Accepting new options
-  | PendingK Char [Char]
-  -- ^ In the middle of a short option
-  deriving (Eq, Ord, Show)
-
-data InputK
-  = InputOpt OptName [String]
-  | Eject
-  deriving (Eq, Ord, Show)
-
 processShortOptions
   :: [ShortName]
   -> (ShortName, [String])
   -> [[String]]
-processShortOptions = undefined
-
-processShortOption
-  :: ShortName
-  -> [String]
-  -- ^ Any option arguments
-  -> StateK
-  -> ([[String]], StateK)
-
-processShortOption shrtName ss ReadyK = case ss of
-  [] -> ([], PendingK shrt [])
-  x:xs -> (lists x xs, ReadyK)
+processShortOptions firstNames (inLast, args)
+  = shortPartitions firstName restNames args
   where
-    shrt = shortNameToChar shrtName
-    single = '-':shrt:[]
-    combined s = '-':shrt:s
-    lists a1 as
-      | null a1 = [[single, a1] ++ as]
-      | otherwise = [[combined a1] ++ as, [single, a1] ++ as]
-
-processShortOption shrtName ss (PendingK c1 cs) = case ss of
-  [] -> ([], PendingK c1 (cs ++ [shrt]))
-  xs -> (shortPartitions c1 cs shrt xs, ReadyK)
-  where
-    shrt = shortNameToChar shrtName
+    (firstName, restNames) = case firstNames of
+      [] -> (shortNameToChar inLast, [])
+      (x:xs) -> (shortNameToChar x, map shortNameToChar $ xs ++ [inLast])
 
 processLongOption
   :: LongName
@@ -64,28 +33,20 @@ partitions [] = [[]]
 partitions (x:xs) = [[x]:p | p <- partitions xs]
   ++ [(x:ys):yss | (ys:yss) <- partitions xs]
 
-ejectShortFlags
-  :: Char
-  -- ^ First flag
-  -> String
-  -- ^ Remaining flags
-  -> [[String]]
-ejectShortFlags c1 cs =
-  map (map ('-':)) $ partitions (c1 : cs)
 
 shortPartitions
   :: Char
   -- ^ First flag
   -> String
   -- ^ Remaining flags
-  -> Char
-  -- ^ Last flag
   -> [String] 
   -- ^ Arguments
   -> [[String]]
-shortPartitions c1 cs cLast args = case args of
+shortPartitions c1 cs args = case args of
   [] -> flags
-  x:xs -> together ++ separate
+  x:xs
+    | null x -> separate
+    | otherwise -> together ++ separate
     where
       separate = [ list ++ (x:xs) | list <- flags ]
       together = do
@@ -94,7 +55,7 @@ shortPartitions c1 cs cLast args = case args of
           Nothing -> error "shortPartitions: error"
           Just r -> return $ r ++ xs
   where
-    flags = ejectShortFlags c1 (cs ++ [cLast])
+    flags = map (map ('-':)) $ partitions (c1 : cs)
       
 addToEnd :: [[a]] -> [a] -> Maybe [[a]]
 addToEnd [] _ = Nothing

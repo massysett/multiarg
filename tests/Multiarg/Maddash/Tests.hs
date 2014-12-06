@@ -4,9 +4,24 @@ module Multiarg.Maddash.Tests where
 import Control.Applicative
 import Multiarg.Maddash
 import Test.QuickCheck
-import Prelude.Generators
+  ( Gen, Arbitrary(..), CoArbitrary(..),
+    suchThat, listOf, oneof, forAll, Property,
+    (==>), choose, vectorOf )
+import Prelude.Generators (function1, function2, function3)
 import qualified Prelude.Generators as G
-import qualified Makeopt
+import Makeopt
+
+genInt :: Gen Int
+genInt = arbitrary
+
+genStringF1 :: Gen (String -> Int)
+genStringF1 = function1 coarbitrary arbitrary
+
+genStringF2 :: Gen (String -> String -> Int)
+genStringF2 = function2 coarbitrary coarbitrary arbitrary
+
+genStringF3 :: Gen (String -> String -> String -> Int)
+genStringF3 = function3 coarbitrary coarbitrary coarbitrary arbitrary
 
 genShortName :: Gen ShortName
 genShortName = do
@@ -17,10 +32,10 @@ genShortName = do
 
 genLongName :: Gen LongName
 genLongName = do
-  c1 <- arbitrary `suchThat` (/= '-')
+  c1 <- arbitrary `suchThat` (\c -> c /= '-' && c /= '=')
   cs <- listOf (arbitrary `suchThat` (/= '='))
   case longName (c1 : cs) of
-    Nothing -> error "could not generate long name"
+    Nothing -> error $ "could not generate long name: " ++ (c1:cs)
     Just n -> return n
 
 genOptName :: Gen OptName
@@ -141,4 +156,50 @@ prop_processTokenNotAnOptionWithReady =
   let (pallet, state') = processToken shorts longs state token
   in pallet == NotAnOption ==> isReady state'
 
+pickOne :: [a] -> Gen a
+pickOne ls
+  | null ls = error "pickOne: null list"
+  | otherwise = fmap (\ix -> ls !! ix) (choose (0, length ls - 1))
+
+data OptionWithToks = OptionWithToks
+  { owtOptName :: OptName
+  , owtArgSpec :: ArgSpec Int
+  , owtArgs :: [String]
+  , owtTokens :: [Token]
+  , owtResultOuts :: [[Output Int]]
+  , owtResultToks :: Maybe [Token]
+  , owtExpected :: Int
+  } deriving Show
+
+instance Arbitrary OptionWithToks where
+  arbitrary = do
+    OptName on <- genOptName
+    as <- genArgSpec
+    (args, expected) <- case as of
+      ZeroArg a -> return ([], a)
+      OneArg f -> do
+        s <- arbitrary
+        return ([s], f s)
+      TwoArg f -> do
+        s1:s2:[] <- vectorOf 2 arbitrary
+        return ([s1,s2], f s1 s2)
+      ThreeArg f -> do
+        s1:s2:s3:[] <- vectorOf 3 arbitrary
+        return ([s1,s2,s3], f s1 s2 s3)
+    let strings = case on of
+          Left shrt -> processShortOptions [] (shrt, args)
+          Right lng -> processLongOption lng args
+    toks <- fmap (map Token) $ pickOne strings
+    let (shrts, lngs) = case on of
+          Left shrt -> ([(shrt, as)], [])
+          Right lng -> ([], [(lng, as)])
+        (procRslts, procEi) = processTokens shrts lngs toks
+        mayToks = either (const Nothing) Just procEi
+    return $ OptionWithToks (OptName on) as args toks procRslts
+      mayToks expected
+
+prop_optionWithToksResultToksEmpty = (== Just []) . owtResultToks
+
+prop_optionWithToksResultIsExpected owt
+  = concat (owtResultOuts owt) == [Good . owtExpected $ owt]
 
