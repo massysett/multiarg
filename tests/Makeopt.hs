@@ -5,13 +5,6 @@ module Makeopt where
 
 import Multiarg.Maddash
 
-data Strings
-  = NoStrings
-  | OneString String
-  | TwoStrings String String
-  | ThreeStrings String String String
-  deriving (Eq, Ord, Show)
-
 data StateK
   = ReadyK
   -- ^ Accepting new options
@@ -20,28 +13,26 @@ data StateK
   deriving (Eq, Ord, Show)
 
 data InputK
-  = InputOpt OptName Strings
+  = InputOpt OptName [String]
   | Eject
   deriving (Eq, Ord, Show)
 
 processShortOptions
   :: [ShortName]
-  -> (ShortName, Strings)
+  -> (ShortName, [String])
   -> [[String]]
 processShortOptions = undefined
 
 processShortOption
   :: ShortName
-  -> Strings
+  -> [String]
   -- ^ Any option arguments
   -> StateK
   -> ([[String]], StateK)
 
 processShortOption shrtName ss ReadyK = case ss of
-  NoStrings -> ([], PendingK shrt [])
-  OneString s1 -> (lists s1 [], ReadyK)
-  TwoStrings s1 s2 -> (lists s1 [s2], ReadyK)
-  ThreeStrings s1 s2 s3 -> (lists s1 [s2, s3], ReadyK)
+  [] -> ([], PendingK shrt [])
+  x:xs -> (lists x xs, ReadyK)
   where
     shrt = shortNameToChar shrtName
     single = '-':shrt:[]
@@ -51,23 +42,16 @@ processShortOption shrtName ss ReadyK = case ss of
       | otherwise = [[combined a1] ++ as, [single, a1] ++ as]
 
 processShortOption shrtName ss (PendingK c1 cs) = case ss of
-  NoStrings -> ([], PendingK c1 (cs ++ [shrt]))
-  OneString s1 -> (shortPartitions c1 cs shrt [s1], ReadyK)
-  TwoStrings s1 s2 -> (shortPartitions c1 cs shrt [s1, s2], ReadyK)
-  ThreeStrings s1 s2 s3 ->
-    (shortPartitions c1 cs shrt [s1, s2, s3], ReadyK)
+  [] -> ([], PendingK c1 (cs ++ [shrt]))
+  xs -> (shortPartitions c1 cs shrt xs, ReadyK)
   where
     shrt = shortNameToChar shrtName
 
 processLongOption
   :: LongName
-  -> Strings
+  -> [String]
   -> [[String]]
-processLongOption lngName ss = case ss of
-  NoStrings -> lists []
-  OneString s1 -> lists [s1]
-  TwoStrings s1 s2 -> lists [s1,s2]
-  ThreeStrings s1 s2 s3 -> lists [s1,s2,s3]
+processLongOption lngName ss = lists ss
   where
     lng = "--" ++ longNameToString lngName
     lists [] = [[lng]]
