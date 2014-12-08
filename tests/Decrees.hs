@@ -6,11 +6,13 @@ module Decrees where
 
 import Quickpull
 import qualified Multiarg.Maddash.Tests
+import qualified Telly
 
 decrees :: [Decree]
 decrees =
 
-  [ Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 118, qName = "prop_nonOptTokenNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_nonOptTokenNotAnOptionIfStateIsReady )
+  [ Decree ( Meta {modDesc = ModDesc {modPath = "tests/Telly.hs", modName = ["Telly"]}, linenum = 61, qName = "prop_alwaysTrue"} ) ( Single Telly.prop_alwaysTrue )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 118, qName = "prop_nonOptTokenNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_nonOptTokenNotAnOptionIfStateIsReady )
   , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 127, qName = "prop_stopperNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_stopperNotAnOptionIfStateIsReady )
   , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 135, qName = "prop_singleDashNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_singleDashNotAnOptionIfStateIsReady )
   , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 142, qName = "prop_processTokenNeverReturnsNotAnOptionOnPending"} ) ( Single Multiarg.Maddash.Tests.prop_processTokenNeverReturnsNotAnOptionOnPending )

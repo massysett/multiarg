@@ -59,10 +59,6 @@ import Multiarg.Types
 
 -- * Machine components
 
--- | A token supplied by the user on the command line.
-newtype Token = Token String
-  deriving (Eq, Ord, Show)
-
 data Output a
   = Good a
   | OptionError OptionError
@@ -168,49 +164,9 @@ data OptionError
 
 -- * Other types - not exported
 
--- | An option argument.
-newtype OptArg = OptArg { optArgToString :: String }
-  deriving (Eq, Ord, Show)
-
--- | Characters after the first character in a short option; for
--- instance, if the user supplies @-afoobar@, then this will be
--- @foobar@.
-newtype ShortTail = ShortTail String
-  deriving (Eq, Ord, Show)
-
 -- * Internal functions - not exported
 
-tokenToOptArg :: Token -> OptArg
-tokenToOptArg (Token t) = OptArg t
 
-
--- | Is this token an input for a long option?
-isLong
-  :: Token
-  -> Maybe (LongName, Maybe OptArg)
-  -- ^ Nothing if the option does not begin with a double dash and is
-  -- not at least three characters long.  Otherwise, returns the
-  -- characters following the double dash to the left of any equal
-  -- sign.  The Maybe in the tuple is Nothing if there is no equal
-  -- sign, or Just followed by characters following the equal sign if
-  -- there is one.
-isLong (Token ('-':'-':[])) = Nothing
-isLong (Token ('-':'-':xs)) = Just (LongName optName, arg)
-  where
-    (optName, end) = span (/= '=') xs
-    arg = case end of
-      [] -> Nothing
-      _:rs -> Just . OptArg $ rs
-isLong _ = Nothing
-
--- | Is this the input token for a short argument?
-isShort
-  :: Token
-  -> Maybe (ShortName, ShortTail)
-isShort (Token ('-':'-':_)) = Nothing
-isShort (Token ('-':[])) = Nothing
-isShort (Token ('-':x:xs)) = Just (ShortName x, ShortTail xs)
-isShort _ = Nothing
 
 -- | Examines a token to determine if it is a short option.  If so,
 -- processes it; otherwise, returns Nothing.
@@ -234,12 +190,12 @@ procShortOpt
   -> ArgSpec a
   -> ShortTail
   -> ([Output a], State a)
-procShortOpt opts _ (ZeroArg a) (ShortTail inp) = (this : rest, st)
+procShortOpt opts _ (ZeroArg a) inp = (this : rest, st)
   where
     this = Good a
-    (rest, st) = case inp of
-      [] -> ([], Ready)
-      opt : arg -> getShortOpt opts (ShortName opt, ShortTail arg)
+    (rest, st) = case splitShortTail inp of
+      Nothing -> ([], Ready)
+      Just (opt,arg) -> getShortOpt opts (opt, arg)
 
 procShortOpt _ shrt (OneArg f) (ShortTail inp) = case inp of
   [] -> ([], Pending opt g)
