@@ -37,24 +37,3 @@ interspersed shorts longs fTok = go
       where
         (outs, ei) = processTokens shorts longs toks
         
--- | Processes a command line where option processing terminates with
--- the first non-option positional argument.  A stopper is not
--- returned; all tokens after a stopper are treated as non-option
--- positional arguments.
-nonInterspersed
-  :: [(ShortName, ArgSpec a)]
-  -> [(LongName, ArgSpec a)]
-  -> (String -> a)
-  -> [Token]
-  -> ([Either [Output a] (PosArg a)], Maybe OptName)
-nonInterspersed shorts longs fTok toks = (outs, mayOpt)
-  where
-    (outsOpts, ei) = processTokens shorts longs toks
-    (outs, mayOpt) = case ei of
-      Left (o, _) -> (map Left outsOpts, Just o)
-      Right [] -> (map Left outsOpts, Nothing)
-      Right (ls@(Token x : xs))
-        | x == "--" -> (map Left outsOpts ++ map toPosArg xs, Nothing)
-        | otherwise -> (map Left outsOpts ++ map toPosArg ls, Nothing)
-        where
-          toPosArg (Token tok) = Right . PosArg . fTok $ tok

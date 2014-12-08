@@ -1,12 +1,29 @@
 module Multiarg.Types where
 
-import Multiarg.Maddash
+data ArgSpec a
+  = ZeroArg a
+  -- ^ This option takes no arguments
+  | OneArg (String -> a)
+  -- ^ This option takes one argument
+  | TwoArg (String -> String -> a)
+  -- ^ This option takes two arguments
+  | ThreeArg (String -> String -> String -> a)
+  -- ^ This option takes three arguments
 
-data OptSpec a = OptSpec
-  { shorts :: [ShortName]
-  , longs :: [LongName]
-  , spec :: ArgSpec a
-  } deriving Show
+instance Functor ArgSpec where
+  fmap f (ZeroArg a) = ZeroArg (f a)
+  fmap f (OneArg g) = OneArg $ \a -> f (g a)
+  fmap f (TwoArg g) = TwoArg $ \a b -> f (g a b)
+  fmap f (ThreeArg g) = ThreeArg $ \a b c -> f (g a b c)
+
+instance Show (ArgSpec a) where
+  show (ZeroArg _) = "ZeroArg"
+  show (OneArg _) = "OneArg"
+  show (TwoArg _) = "TwoArg"
+  show (ThreeArg _) = "ThreeArg"
+
+data OptSpec a = OptSpec [ShortName] [LongName] (ArgSpec a)
+  deriving Show
 
 instance Functor OptSpec where
   fmap f (OptSpec s l p) = OptSpec s l (fmap f p)
@@ -40,3 +57,33 @@ optSpec ss ls = OptSpec (map mkShort ss) (map mkLong ls)
     mkLong s = case longName s of
       Nothing -> error $ "invalid long option name: " ++ s
       Just n -> n
+
+
+-- | A short option name.
+newtype ShortName = ShortName { shortNameToChar ::  Char }
+  deriving (Eq, Ord, Show)
+
+-- | A long option name.
+newtype LongName = LongName { longNameToString :: String }
+  deriving (Eq, Ord, Show)
+
+-- | Creates a short option name.  Any character other than a single
+-- hyphen will succeed.
+shortName :: Char -> Maybe ShortName
+shortName '-' = Nothing
+shortName x = Just $ ShortName x
+
+-- | Creates a long option name.  The string may not be empty, and the
+-- first character may not be a hyphen.  In addition, no character may
+-- be an equal sign.
+longName :: String -> Maybe LongName
+longName s = case s of
+  [] -> Nothing
+  '-':_ -> Nothing
+  xs | '=' `elem` xs -> Nothing
+     | otherwise -> Just $ LongName xs
+
+-- | The name of an option (either short or long).
+newtype OptName = OptName (Either ShortName LongName)
+  deriving (Eq, Ord, Show)
+

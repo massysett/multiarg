@@ -94,7 +94,7 @@
 module Multiarg
   ( ArgSpec(..)
   , OptSpec(..)
-  , Intersperse(..)
+  , optSpec
   , parseCommandLine
   , parseCommandLineIO
   , parseCommandLineHelp
@@ -144,31 +144,9 @@ limelineOutputToCommandLineError (ls, mayOpt) =
                   OptionError e -> (e : es, gs)
             Right (PosArg g) -> (ers, g : gds)
 
--- | What to do after encountering the first non-option,
--- non-option-argument word on the command line? In either case, no
--- more options are parsed after a stopper.
-data Intersperse =
-  Intersperse
-  -- ^ Additional options are allowed on the command line after
-  -- encountering the first positional argument. For example, if @a@
-  -- and @b@ are options, in the command line @-a posarg -b@, @b@ will
-  -- be parsed as an option. If @b@ is /not/ an option and the same
-  -- command line is entered, then @-b@ will result in an error
-  -- because @-b@ starts with a hyphen and therefore \"looks like\" an
-  -- option.
-
-  | StopOptions
-    -- ^ No additional options will be parsed after encountering the
-    -- first positional argument. For example, if @a@ and @b@ are
-    -- options, in the command line @-a posarg -b@, @b@ will be parsed
-    -- as a positional argument rather than as an option.
-  deriving (Eq, Ord, Show)
-
 parseCommandLine
 
-  :: Intersperse
-
-  -> [OptSpec a]
+  :: [OptSpec a]
   -- ^ All program options
 
   -> (String -> a)
@@ -183,13 +161,10 @@ parseCommandLine
   -- these errors are returned; otherwise, returns the parsed result,
   -- in the same order in which it appeared on the command line.
 
-parseCommandLine int os fPos inp = limelineOutputToCommandLineError limeOut
+parseCommandLine os fPos inp = limelineOutputToCommandLineError limeOut
   where
-    limeOut = fLime shrts lngs fPos (map Token inp)
+    limeOut = interspersed shrts lngs fPos (map Token inp)
     (shrts, lngs) = splitOptSpecs os
-    fLime = case int of
-      Intersperse -> interspersed
-      StopOptions -> nonInterspersed
 
 parseCommandLineIO
   :: (String -> String)
@@ -197,8 +172,6 @@ parseCommandLineIO
   -- name of the program being run, which is obtained from
   -- 'getProgName'.  The function should return a string that gives
   -- help for how to use your command; this string is printed as-is.
-
-  -> Intersperse
 
   -> [OptSpec a]
   -- ^ All program options.  An option for @-h@ and for @--help@ is
@@ -216,10 +189,10 @@ parseCommandLineIO
   -- processes them.  If there is an error, prints an error message
   -- and exits unsuccessfully.  Otherwise, returns the options parsed
   -- in.
-parseCommandLineIO fHelp int os fPos = do
+parseCommandLineIO fHelp os fPos = do
   progName <- getProgName
   args <- getArgs
-  case parseCommandLineHelp int os fPos args of
+  case parseCommandLineHelp os fPos args of
     Left err -> do
       IO.hPutStr IO.stderr (prettyCommandLineError progName err)
       exitFailure
@@ -233,21 +206,17 @@ parseCommandLineIO fHelp int os fPos = do
 -- | Automatically adds a @-h@ and @--help@ option.  Intended
 -- primarily for use by the 'parseCommandLineIO' function.
 parseCommandLineHelp
-  :: Intersperse
-  -> [OptSpec a]
+  :: [OptSpec a]
   -> (String -> a)
   -> [String]
   -> Either CommandLineError (Maybe [a])
   -- ^ Returns an error if applicable; otherwise, returns a Maybe.
   -- The Maybe is Nothing if the user asked for help; otherwise, the
   -- parsed output is returned.
-parseCommandLineHelp int os fPos inp = fmap parsedOpts parsed
+parseCommandLineHelp os fPos inp = fmap parsedOpts parsed
   where
-    limeOut = fLime shrts lngs (fmap Right fPos) (map Token inp)
+    limeOut = interspersed shrts lngs (fmap Right fPos) (map Token inp)
     (shrts, lngs) = addHelpOption os
-    fLime = case int of
-      Intersperse -> interspersed
-      StopOptions -> nonInterspersed
     parsed = limelineOutputToCommandLineError limeOut
 
 

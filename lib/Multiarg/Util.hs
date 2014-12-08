@@ -1,7 +1,6 @@
 module Multiarg.Util where
 
 import Multiarg.Types
-import Multiarg.Maddash
 
 mayLast :: [a] -> Maybe ([a], a)
 mayLast [] = Nothing
