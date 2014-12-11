@@ -5,6 +5,7 @@ module Telly where
 
 import Multiarg
 import Multiarg.Types
+import Makeopt
 import Test.QuickCheck
 import Control.Applicative
 
@@ -136,14 +137,58 @@ startsWithNonHyphen = (:) <$> (arbitrary `suchThat` (/= '-'))
 optArg :: Gen String
 optArg = oneof [ startsWithOneHyphen, startsWithNonHyphen ]
 
-short :: Char -> ShortName
-short = maybe
-  (error "Telly.hs: error: could not create short name")
-  id . shortName
+short :: Char -> [String] -> [[String]]
+short c os = case shortName c of
+  Nothing -> error "Telly.hs: error: could not create short name"
+  Just o -> processShortOptions [] (o, os)
 
-long :: String -> LongName
-long = maybe
-  (error "Telly.hs: error: could not create long name")
-  id . longName
+long :: String -> [String] -> [[String]]
+long s os = case longName s of
+  Nothing -> error "Telly.hs: error: could not create long name"
+  Just o -> processLongOption o os
+
+tellyToNestedList :: Telly -> [[String]]
+tellyToNestedList telly = case telly of
+  PosArg s -> [[s]]
+  Empty -> long "empty" [] ++ short 'e' []
+  Single s -> long "single" [s] ++ short 's' [s]
+  Double s1 s2 -> long "double" [s1, s2] ++ short 'd' [s1, s2]
+  Triple s1 s2 s3 -> long "triple" [s1, s2, s3]
+    ++ short 't' [s1, s2, s3]
+
+  Zero -> short '0' []
+  One s -> short '1' [s]
+  Two s1 s2 -> short '2' [s1, s2]
+  Three s1 s2 s3 -> short '3' [s1, s2, s3]
+
+  Cero -> long "cero" []
+  Uno s -> long "uno" [s]
+  Dos s1 s2 -> long "dos" [s1, s2]
+  Tres s1 s2 s3 -> long "tres" [s1, s2, s3]
+
+pickItem :: [a] -> Gen a
+pickItem a
+  | null a = fail "pickItem: empty list"
+  | otherwise = fmap (a !!) (choose (0, length a - 1))
+
+tellyToStrings :: Telly -> Gen [String]
+tellyToStrings = pickItem . tellyToNestedList
+
+validTellyStrings :: Gen ([Telly], [String])
+validTellyStrings = do
+  unneededStopper <- arbitrary
+  (start, end) <- validTellies
+  let startStrings = map tellyToNestedList start
+      endStrings = map tellyToNestedList end
+  startList <- fmap concat $ mapM pickItem startStrings
+  endList <- fmap concat $ mapM pickItem endStrings
+  let endList'
+        | null end && not unneededStopper = endList
+        | otherwise = "--" : endList
+  return (start ++ end, startList ++ endList')
+
+prop_parseStringsYieldsTellies
+  = forAll validTellyStrings $ \(tellies, strings) ->
 
 prop_alwaysTrue = True
+
