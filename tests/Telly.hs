@@ -189,6 +189,6 @@ validTellyStrings = do
 
 prop_parseStringsYieldsTellies
   = forAll validTellyStrings $ \(tellies, strings) ->
-
-prop_alwaysTrue = True
-
+  case parseCommandLine optSpecs PosArg strings of
+    Left e -> counterexample (show e) $ property False
+    Right g -> g === tellies

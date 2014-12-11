@@ -25,15 +25,18 @@ interspersed
   -> ([Either [Output a] (PosArg a)], Maybe OptName)
 interspersed shorts longs fTok = go
   where
-    go toks = case ei of
-      Left (opt, _) -> (map Left outs, Just opt)
-      Right [] -> (map Left outs, Nothing)
-      Right ((Token x):xs)
-        | x == "--" -> (posArgsRest, Nothing)
-        | otherwise -> ((Right . PosArg . fTok $ x) : outRest, mayRest)
-        where
-          (outRest, mayRest) = go xs
-          posArgsRest = map (\(Token a) -> Right . PosArg . fTok $ a) xs
+    go toks = (map Left outs ++ outsRest, err)
       where
         (outs, ei) = processTokens shorts longs toks
-        
+        (outsRest, err) = case ei of
+          Left (opt, _) -> ([], Just opt)
+          Right [] -> ([], Nothing)
+          Right ((Token x):xs)
+            | x == "--" ->
+                ( map (\(Token t) -> Right . PosArg . fTok $ t) xs
+                , Nothing )
+            | otherwise -> ( (Right . PosArg . fTok $ x) : rest
+                           , mayErrRest )
+            where
+              (rest, mayErrRest) = go xs
+

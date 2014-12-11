@@ -5,7 +5,7 @@ module Multiarg.Mode
   ( -- * Creating a single 'Mode'
     ArgSpec(..)
   , OptSpec(..)
-  , OptsWithPosArgs(..)
+  , optSpec
   , ModeName(..)
   , Mode(..)
   , mode
@@ -64,25 +64,18 @@ data Mode a = Mode
 instance Functor Mode where
   fmap f (Mode s p) = Mode s (fmap (fmap f) p)
 
-data OptsWithPosArgs a = OptsWithPosArgs
-  { opOpts :: [OptSpec a]
-  , opPosArg :: String -> a
-  }
-
-instance Functor OptsWithPosArgs where
-  fmap f (OptsWithPosArgs o p) = OptsWithPosArgs (map (fmap f) o)
-    (fmap f p)
-
 -- | Makes a new 'Mode'.
 mode
   :: String
   -- ^ Mode name
-  -> OptsWithPosArgs a
+  -> [OptSpec a]
   -- ^ Mode options
+  -> (String -> a)
+  -- ^ Parses non-option positional arguments
   -> ([a] -> r)
   -- ^ Processes the result of all mode options
   -> Mode r
-mode name (OptsWithPosArgs os fPos) fProc = Mode (ModeName name) prsr
+mode name os fPos fProc = Mode (ModeName name) prsr
   where
     prsr toks = case parseCommandLine os fPos strings of
       Left e -> Left e
