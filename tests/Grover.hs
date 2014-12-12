@@ -23,6 +23,14 @@ data GroverOpt a
   | PosArg String
   deriving (Eq, Ord, Show)
 
+instance Functor GroverOpt where
+  fmap f g = case g of
+    Zero -> Zero
+    Single a -> Single (f a)
+    Double a b -> Double (f a) (f b)
+    Triple a b c -> Triple (f a) (f b) (f c)
+    PosArg a -> PosArg a
+
 globalOptSpecs :: [OptSpec (Either String Global)]
 globalOptSpecs =
   [ optSpec "h" ["help"] . ZeroArg . return $ Help
@@ -45,14 +53,14 @@ modeOptSpecs =
 
 data Result
   = Ints [Either String (GroverOpt Int)]
-  | Doubles [Either String (GroverOpt Double)]
+  | Strings [Either String (GroverOpt String)]
   | Maybes [Either String (GroverOpt (Maybe Int))]
   deriving (Eq, Ord, Show)
 
 modes :: [Mode Result]
 modes =
   [ mode "int" modeOptSpecs (return . PosArg) Ints
-  , mode "double" modeOptSpecs (return . PosArg) Doubles
+  , mode "string" modeOptSpecs (return . PosArg) Strings
   , mode "maybe" modeOptSpecs (return . PosArg) Maybes
   ]
 
@@ -65,5 +73,3 @@ parseGrover
   :: [String]
   -> Either ModelineError ([Either String Global], Maybe Result)
 parseGrover = parseModeLine globalOptSpecs modes
-
-prop_alwaysTrue = True

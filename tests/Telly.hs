@@ -4,10 +4,9 @@
 module Telly where
 
 import Multiarg
-import Multiarg.Types
-import Makeopt
 import Test.QuickCheck
 import Control.Applicative
+import Ernie
 
 -- | A data type to hold the result of command line parsing.
 data Telly
@@ -63,29 +62,6 @@ optSpecs =
 parse :: [String] -> Either CommandLineError [Telly]
 parse = parseCommandLine optSpecs PosArg
 
--- | Generates a valid list of Telly options; that is, a list that the
--- user could have entered in the command line.  This list may be
--- transformed into strings, which can then be parsed and compared
--- against this original value.
---
--- Returns a pair @(a, b)@, where @a@ is everything to the left of the
--- stopper, and @b@ (if non-empty) is everything to the right of the
--- stopper.
-
-validTellies :: Gen ([Telly], [Telly])
-validTellies = (,) <$> preStopper <*> postStopper
-
--- | Generates options, 'PosArg' that are a single hyphen only, and
--- 'PosArg' that do not start with a hyphen; these may appear to the
--- left of a stopper.
-preStopper :: Gen [Telly]
-preStopper = listOf (oneof [ option, posArgLeft ])
-
--- | Generates any word at all, with a healthy mix of empty lists
--- (stoppers are unusual.)
-postStopper :: Gen [Telly]
-postStopper = oneof [ return [], listOf posArgRight ]
-
 -- | Generates any option.
 option :: Gen Telly
 option = oneof
@@ -104,48 +80,6 @@ option = oneof
   , Dos <$> optArg <*> optArg
   , Tres <$> optArg <*> optArg <*> optArg
   ]
-
--- | Generates non-option positional arguments that appear to the left
--- of the stopper.  Cannot be preceded by a dash; can, however, be a
--- single hyphen only.
-posArgLeft :: Gen Telly
-posArgLeft = PosArg <$>
-  frequency [ (5, startsWithNonHyphen)
-            , (1, return "-") ]
-
--- | Generates non-option positional arguments that appear to the
--- right of the stopper.  This can be any word at all.
-posArgRight :: Gen Telly
-posArgRight = PosArg <$> oneof
-  [ arbitrary, startsWithOneHyphen, startsWithTwoHyphens ]
-
--- | Generates words that start with a single hyphen.
-startsWithOneHyphen :: Gen String
-startsWithOneHyphen = fmap ('-':) (listOf1 arbitrary)
-
--- | Generates words that start with two hyphens.
-startsWithTwoHyphens :: Gen String
-startsWithTwoHyphens = fmap ("--" ++) arbitrary
-
--- | Generates words that do not start with a hyphen.
-startsWithNonHyphen :: Gen String
-startsWithNonHyphen = (:) <$> (arbitrary `suchThat` (/= '-'))
-  <*> arbitrary
-
--- | Generates words for option arguments.  Ensures that some start
--- with hyphens (these are valid option arguments.)
-optArg :: Gen String
-optArg = oneof [ startsWithOneHyphen, startsWithNonHyphen ]
-
-short :: Char -> [String] -> [[String]]
-short c os = case shortName c of
-  Nothing -> error "Telly.hs: error: could not create short name"
-  Just o -> processShortOptions [] (o, os)
-
-long :: String -> [String] -> [[String]]
-long s os = case longName s of
-  Nothing -> error "Telly.hs: error: could not create long name"
-  Just o -> processLongOption o os
 
 tellyToNestedList :: Telly -> [[String]]
 tellyToNestedList telly = case telly of
@@ -166,18 +100,13 @@ tellyToNestedList telly = case telly of
   Dos s1 s2 -> long "dos" [s1, s2]
   Tres s1 s2 s3 -> long "tres" [s1, s2, s3]
 
-pickItem :: [a] -> Gen a
-pickItem a
-  | null a = fail "pickItem: empty list"
-  | otherwise = fmap (a !!) (choose (0, length a - 1))
-
 tellyToStrings :: Telly -> Gen [String]
 tellyToStrings = pickItem . tellyToNestedList
 
 validTellyStrings :: Gen ([Telly], [String])
 validTellyStrings = do
   unneededStopper <- arbitrary
-  (start, end) <- validTellies
+  (start, end) <- interspersedLine option PosArg
   let startStrings = map tellyToNestedList start
       endStrings = map tellyToNestedList end
   startList <- fmap concat $ mapM pickItem startStrings
