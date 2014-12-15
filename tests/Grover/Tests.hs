@@ -5,6 +5,7 @@ import Ernie
 import Grover
 import Control.Applicative
 import Test.QuickCheck hiding (Result)
+import Data.List (inits)
 
 genGlobal :: Gen Global
 genGlobal = oneof
@@ -12,6 +13,19 @@ genGlobal = oneof
   , Verbose <$> arbitrary
   , return Version
   ]
+
+data GroverOpts
+  = GOInts [GroverOpt Int]
+  | GOStrings [GroverOpt String]
+  | GOMaybes [GroverOpt (Maybe Int)]
+  deriving (Eq, Ord, Show)
+
+instance Arbitrary GroverOpts where
+  arbitrary = oneof
+    [ fmap GOInts . listOf . genGroverOpt $ arbitrary
+    , fmap GOStrings . listOf . genGroverOpt $ arbitrary
+    , fmap GOMaybes . listOf . genGroverOpt $ arbitrary
+    ]
 
 -- | Generates a mode option.  Does not generate positional arguments.
 genGroverOpt
@@ -23,15 +37,6 @@ genGroverOpt g = oneof
   , Single <$> g
   , Double <$> g <*> g
   , Triple <$> g <*> g <*> g
-  ]
-
--- | Generates a Result, which incorporates the result from the
--- parsing of a mode.
-genResult :: Gen Result
-genResult = oneof
-  [ Ints <$> listOf (fmap Right $ genGroverOpt arbitrary)
-  , Strings <$> listOf (fmap Right $ genGroverOpt arbitrary)
-  , Maybes <$> listOf (fmap Right $ genGroverOpt arbitrary)
   ]
 
 globalToNestedList :: Global -> [[String]]

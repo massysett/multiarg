@@ -33,13 +33,11 @@ import Multiarg
 import Multiarg.Util
 
 data LastGlobalError
-  = LastWordError (Either OptName ModeError)
+  = LastWordError (Either OptName Token)
+  -- ^ A Left indicates that a bad option was passed.  A Right
+  -- indicates that the last word was not an option, but was not
+  -- recognized as a valid mode.
   | LastGlobalOptsError OptionError
-  deriving (Eq, Ord, Show)
-
-data ModeError
-  = AmbiguousMode Token ModeName [ModeName]
-  | ModeNotFound Token
   deriving (Eq, Ord, Show)
 
 data GlobalError = GlobalError [OptionError] LastGlobalError
@@ -91,7 +89,7 @@ parseModeLine
   -> [String]
   -- ^ All command line tokens
   -> Either ModelineError ([g], Maybe a)
-parseModeLine globals modes = pMode . pGlobals
+parseModeLine globals modes = pMode . parseGlobals globals . map Token
   where
     pMode (toks, glbls, mayGlblErr) = case toks of
       [] -> case mayGlblErr of
@@ -102,15 +100,14 @@ parseModeLine globals modes = pMode . pGlobals
               Left oe -> LastGlobalOptsError oe
               Right opt -> LastWordError . Left $ opt
 
-      modeTok : restToks -> case selectMode modeTok modes of
+      modeTok : restToks -> case findExactMode modeTok modes of
         Left err -> Left (mergeLastGlobalError err mayGlblErr)
         Right mde -> case modeToParser mde restToks of
           Left cle ->
             Left (mergeCommandLineError (modeToModeName mde) cle mayGlblErr)
           Right r -> Right (glbls, Just r)
-        
-    pGlobals = parseGlobals globals . map Token
 
+        
 mergeCommandLineError
   :: ModeName
   -> CommandLineError
@@ -126,6 +123,23 @@ mergeCommandLineError name cle mayErr = case mayErr of
     (GlobalError oes (LastWordError . Left $ opt))
     . ModeCommandError name $ cle
 
+-- | Adds an appropriate error for a bad mode.
+addBadModeError
+  :: Token
+  -- ^ Token that purportedly was for the mode, but did not match any
+  -- available mode
+  -> Maybe ([OptionError], Either OptionError OptName)
+  -- ^ Any errors that have arisen so far
+  -> ModelineError
+addBadModeError tok may = case may of
+  Nothing -> GlobalOrLocal . Left . GlobalError [] . LastWordError
+    . Right $ tok
+  Just (oes, Left oe) -> GlobalOrLocal . Left . GlobalError (oes ++ [oe])
+    . LastWordError . Right $ tok
+  Just (oes, Right opt) -> GlobalOrLocal . Left . GlobalError oes
+    . LastWordError . Left $ opt
+
+{-
 mergeLastGlobalError
   :: ModeError
   -> Maybe ([OptionError], Either OptionError OptName)
@@ -137,16 +151,40 @@ mergeLastGlobalError me may = case may of
     . LastWordError . Right $ me
   Just (oes, Right opt) -> GlobalOrLocal . Left . GlobalError oes
     . LastWordError . Left $ opt
+-}
 
+data GlobalResult
+  = 
+
+-- | Parses global options.
 parseGlobals
   :: [OptSpec g]
+  -- ^ Specification for global options.
   -> [Token]
+  -- ^ All tokens present on the command line.
   -> ([Token], [g], Maybe ([OptionError], Either OptionError OptName))
+  -- ^ Returns a triple @(a, b, c)@, where:
+  --
+  -- @a@ is all remaining tokens that were not parsed.  Because
+  -- parsing stops with the first token that is NotAnOption, this
+  -- list will include the mode token if there is one.
+  --
+  -- @b@ is the list of global options that were parsed.
+  --
+  -- @c@ indicates any errors.  If Nothing, there were no errors.  If
+  -- @Just (d, e)@ then there were errors; @d@ indicates zero or more
+  -- OptionError that may occur, while @e@ is the last error to occur.
+  -- The last error is necessarily either a @Left OptionError@,
+  -- indicating that the last error is a bad option or an option that
+  -- erroneously has a long option, or a @Right OptName@, indicating
+  -- that the last option did not have sufficient option arguments.
 parseGlobals os toks =
   maddashOutToGlobalOut $ processTokens shrts lngs toks
   where
     (shrts, lngs) = splitOptSpecs os
 
+-- | Takes a token and a list of all modes; returns the matching mode
+-- if there is one, or Nothing if there is no match.
 findExactMode
   :: Token
   -> [Mode a]
@@ -155,19 +193,6 @@ findExactMode _ [] = Nothing
 findExactMode tok@(Token s) (m@(Mode (ModeName n) _) : ms)
   | s == n = Just m
   | otherwise = findExactMode tok ms
-
-selectMode
-  :: Token
-  -> [Mode a]
-  -> Either ModeError (Mode a)
-selectMode tok@(Token s) ms = case findExactMode tok ms of
-  Just m -> Right m
-  Nothing -> case filter f ms of
-    [] -> Left (ModeNotFound tok)
-    x:[] -> Right x
-    x:xs -> Left (AmbiguousMode tok (modeToModeName x) (map modeToModeName xs))
-    where
-      f (Mode (ModeName n) _) = s `isPrefixOf` n
 
 maddashOutToGlobalOut
   :: ([[Output a]], Either (OptName, Token -> ([Output a], State a)) [Token])

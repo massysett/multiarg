@@ -155,18 +155,14 @@ processTokens shorts longs = go Ready
 data OptionError
   = BadOption OptName
   | LongArgumentForZeroArgumentOption LongName OptArg
-  -- ^ The uesr gave an argument for a long option that does not take
+  -- ^ The user gave an argument for a long option that does not take
   -- an argument.
   deriving (Eq, Ord, Show)
 
 
 -- * All exported types and functions above this line
 
--- * Other types - not exported
-
 -- * Internal functions - not exported
-
-
 
 -- | Examines a token to determine if it is a short option.  If so,
 -- processes it; otherwise, returns Nothing.

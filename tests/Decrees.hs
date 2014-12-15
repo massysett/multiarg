@@ -12,8 +12,8 @@ import qualified Telly
 decrees :: [Decree]
 decrees =
 
-  [ Decree ( Meta {modDesc = ModDesc {modPath = "tests/Telly.hs", modName = ["Telly"]}, linenum = 190, qName = "prop_parseStringsYieldsTellies"} ) ( Single Telly.prop_parseStringsYieldsTellies )
-  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Grover/Tests.hs", modName = ["Grover","Tests"]}, linenum = 5, qName = "prop_alwaysTrue"} ) ( Single Grover.Tests.prop_alwaysTrue )
+  [ Decree ( Meta {modDesc = ModDesc {modPath = "tests/Telly.hs", modName = ["Telly"]}, linenum = 119, qName = "prop_parseStringsYieldsTellies"} ) ( Single Telly.prop_parseStringsYieldsTellies )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Grover/Tests.hs", modName = ["Grover","Tests"]}, linenum = 55, qName = "prop_alwaysTrue"} ) ( Single Grover.Tests.prop_alwaysTrue )
   , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 118, qName = "prop_nonOptTokenNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_nonOptTokenNotAnOptionIfStateIsReady )
   , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 127, qName = "prop_stopperNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_stopperNotAnOptionIfStateIsReady )
   , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 135, qName = "prop_singleDashNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_singleDashNotAnOptionIfStateIsReady )
