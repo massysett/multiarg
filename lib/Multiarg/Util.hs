@@ -25,9 +25,9 @@ splitOptSpecs = foldr f ([], [])
 
 addHelpOption
   :: [OptSpec a]
-  -> ( [(ShortName, ArgSpec (Either () a))]
-     , [(LongName, ArgSpec (Either () a))] )
+  -> ( [(ShortName, ArgSpec (Maybe a))]
+     , [(LongName, ArgSpec (Maybe a))] )
 addHelpOption os = splitOptSpecs os'
   where
-    os' = optSpec "h" ["help"] (ZeroArg (Left ())) : map (fmap Right) os
+    os' = optSpec "h" ["help"] (ZeroArg Nothing) : map (fmap Just) os
 

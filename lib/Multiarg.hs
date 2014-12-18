@@ -104,8 +104,7 @@ module Multiarg
   , LongName(..)
   , OptName(..)
   , OptionError(..)
-  , CommandLineError(..)
-  , prettyCommandLineError
+  , ParsedCommandLine(..)
   ) where
 
 import Multiarg.Maddash
@@ -116,33 +115,45 @@ import System.Environment
 import System.Exit
 import qualified System.IO as IO
 
+limelineOutputToParsedCommandLine
+  :: ([Either [Output a] (PosArg a)], Maybe OptName)
+  -> ParsedCommandLine a
+limelineOutputToParsedCommandLine (ls, mayOpt) =
+  ParsedCommandLine (concatMap f ls) mayOpt
+  where
+    f ei = case ei of
+      Left os -> map g os
+        where
+          g o = case o of
+            Good a -> Right a
+            OptionError oe -> Left oe
+      Right (PosArg pa) -> [Right pa]
 
-data CommandLineError = CommandLineError
-  { cleFirst :: [OptionError]
-  , cleLast :: Either OptionError OptName
+
+-- | Indicates the result of parsing a command line.
+data ParsedCommandLine a = ParsedCommandLine
+  { pclOutput :: [Either OptionError a]
+  -- ^ A list of errors and results, in the original order in which
+  -- they appeared on the command line.
+
+  , pclInsufficientOptArgs :: Maybe OptName
+  -- ^ 'Just' if the user included an option at the end of the command
+  -- line and there were not enough following words to provide the
+  -- option with its necessary arguments; otherwise 'Nothing'.
   } deriving (Eq, Ord, Show)
 
-limelineOutputToCommandLineError
-  :: ([Either [Output a] (PosArg a)], Maybe OptName)
-  -> Either CommandLineError [a]
+instance Functor ParsedCommandLine where
+  fmap f (ParsedCommandLine ls m) = ParsedCommandLine
+    (map (fmap f) ls) m
 
-limelineOutputToCommandLineError (ls, mayOpt) =
-  case (mayLast outErrors, mayOpt) of
-    (Nothing, Nothing) -> Right goods
-    (Just (xs, x), Nothing) -> Left (CommandLineError xs (Left x))
-    (Nothing, Just err) -> Left (CommandLineError [] (Right err))
-    (Just (xs, x), Just err) -> Left (CommandLineError (xs ++ [x])
-                                                       (Right err))
-    where
-      (outErrors, goods) = foldr f ([], []) ls
-        where
-          f ei (ers, gds) = case ei of
-            Left outs -> foldr g (ers, gds) outs
-              where
-                g out (es, gs) = case out of
-                  Good gd -> (es, gd : gs)
-                  OptionError e -> (e : es, gs)
-            Right (PosArg g) -> (ers, g : gds)
+-- | Gets the results from a parsed command line.  If there were
+-- errors, returns a 'Left' with an error message; otherwise, returns
+-- a 'Right' with a list of the results.
+parsedResults
+  :: ParsedCommandLine a
+  -> Either String [a]
+parsedResults = undefined
+
 
 parseCommandLine
 
@@ -156,12 +167,9 @@ parseCommandLine
   -- ^ Input tokens from the command line, probably obtained from
   -- 'getArgs'
 
-  -> Either CommandLineError [a]
-  -- ^ If there were one or more errors when parsing the command line,
-  -- these errors are returned; otherwise, returns the parsed result,
-  -- in the same order in which it appeared on the command line.
+  -> ParsedCommandLine a
 
-parseCommandLine os fPos inp = limelineOutputToCommandLineError limeOut
+parseCommandLine os fPos inp = limelineOutputToParsedCommandLine limeOut
   where
     limeOut = interspersed shrts lngs fPos (map Token inp)
     (shrts, lngs) = splitOptSpecs os
@@ -192,11 +200,14 @@ parseCommandLineIO
 parseCommandLineIO fHelp os fPos = do
   progName <- getProgName
   args <- getArgs
-  case parseCommandLineHelp os fPos args of
+  case parsedResults $ parseCommandLineHelp os fPos args of
     Left err -> do
-      IO.hPutStr IO.stderr (prettyCommandLineError progName err)
+      IO.hPutStrLn IO.stderr $ progName ++ ": error"
+      IO.hPutStr IO.stderr err
+      IO.hPutStrLn IO.stderr $ "enter \"" ++ progName ++ " --help\" "
+        ++ "for help."
       exitFailure
-    Right mayLs -> case mayLs of
+    Right mayResults -> case sequence mayResults of
       Nothing -> do
         putStr (fHelp progName)
         exitSuccess
@@ -209,17 +220,10 @@ parseCommandLineHelp
   :: [OptSpec a]
   -> (String -> a)
   -> [String]
-  -> Either CommandLineError (Maybe [a])
-  -- ^ Returns an error if applicable; otherwise, returns a Maybe.
-  -- The Maybe is Nothing if the user asked for help; otherwise, the
-  -- parsed output is returned.
-parseCommandLineHelp os fPos inp = fmap parsedOpts parsed
+  -> ParsedCommandLine (Maybe a)
+parseCommandLineHelp os fPos inp =
+  limelineOutputToParsedCommandLine
+  $ interspersed shrts lngs (fmap Just fPos) (map Token inp)
   where
-    limeOut = interspersed shrts lngs (fmap Right fPos) (map Token inp)
     (shrts, lngs) = addHelpOption os
-    parsed = limelineOutputToCommandLineError limeOut
 
-
--- | Shows errors in a pretty way.
-prettyCommandLineError :: String -> CommandLineError -> String
-prettyCommandLineError = undefined
