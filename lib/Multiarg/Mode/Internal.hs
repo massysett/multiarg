@@ -2,8 +2,9 @@ module Multiarg.Mode.Internal where
 
 import Data.Either (partitionEithers)
 import Multiarg.Maddash
-import Multiarg
+import Multiarg.Internal
 import Multiarg.Util
+import Multiarg.Types
 
 newtype ModeName = ModeName String
   deriving (Eq, Ord, Show)
