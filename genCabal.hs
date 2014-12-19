@@ -75,23 +75,46 @@ library ms = C.Library $ commonOptions ++
 
 tests
   :: [String]
+  -- ^ Library modules
+  -> [String]
   -- ^ Test modules
   -> C.TestSuite
-tests ms = C.TestSuite "multiarg-tests" $ commonOptions ++
+tests ms ts = C.TestSuite "multiarg-tests" $ commonOptions ++
   [ C.TestType C.ExitcodeStdio
   , C.TestMainIs "multiarg-tests.hs"
-  , C.otherModules ms
+  , C.otherModules (ms ++ ts)
   , C.hsSourceDirs [ "tests" ]
-  , C.buildDepends
-    [ quickCheck
-    , quickpull
-    , barecheck
-    ]
+  , testDepends
   ]
+
+testDepends :: C.Field a => a
+testDepends = C.buildDepends [ quickCheck, quickpull, barecheck ]
+
+grover
+  :: [String]
+  -- ^ Library modules
+  -> [String]
+  -- ^ Test modules
+  -> C.Executable
+grover ms ts = C.Executable "grover"
+  [ C.ExeMainIs "grover-main.hs"
+  , C.cif (C.flag "programs") (commonOptions ++
+    [ testDepends
+    , C.buildable True
+    , C.otherModules (ms ++ ts)
+    , C.hsSourceDirs ["tests"]
+    ])
+    [ C.buildable False ]
+  ]
+
+programs :: C.Flag
+programs = C.Flag "programs"
+  "Build test programs."
+  False True
 
 cabal
   :: [String]
-  -- ^ List of all modules
+  -- ^ List of all library modules
   -> [String]
   -- ^ Test modules
   -> C.Cabal
@@ -99,7 +122,9 @@ cabal ms ts = C.empty
   { C.cProperties = properties
   , C.cRepositories = [repo]
   , C.cLibrary = Just $ library ms
-  , C.cTestSuites = [tests ts]
+  , C.cTestSuites = [tests ms ts]
+  , C.cExecutables = [ grover ms ts ]
+  , C.cFlags = [ programs ]
   }
 
 main :: IO ()

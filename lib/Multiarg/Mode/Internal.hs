@@ -187,7 +187,7 @@ eiToError ei = case ei of
 
 labeledInsufficientOptArgs :: String -> OptName -> String
 labeledInsufficientOptArgs lbl on = "insufficient option arguments "
-  ++ "given for " ++ lbl ++ "  option: " ++ optNameToString on
+  ++ "given for " ++ lbl ++ " option: " ++ optNameToString on
 
 
 -- | Parses a command line that may contain modes.
