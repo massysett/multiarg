@@ -135,10 +135,10 @@ combine
 
   -> Either (String, [String]) (ModeResult g r)
 combine (Left (oe1, oes)) (Left (me1, mes)) =
-  Left ( optErrorToString oe1
-       , map optErrorToString oes ++ (me1 : mes) )
+  Left ( globalOptErrorToString oe1
+       , map globalOptErrorToString oes ++ (me1 : mes) )
 combine (Left (oe1, oes)) (Right _) =
-  Left (optErrorToString oe1, map optErrorToString oes)
+  Left (globalOptErrorToString oe1, map globalOptErrorToString oes)
 combine (Right _) (Left (me1, mes)) = Left (me1, mes)
 combine (Right glbls) (Right r) =
   Right (ModeResult glbls r)
@@ -147,7 +147,8 @@ endToModeResult
   :: GlobalLocalEnd a
   -> Either (String, [String]) (Either [String] a)
 endToModeResult end = case end of
-  GlobalInsufficientOptArgs on -> Left (optNameToError on, [])
+  GlobalInsufficientOptArgs on -> Left
+    (labeledInsufficientOptArgs "global" on, [])
   ModeNotFound s ss -> Right (Left $ s:ss)
   NoMode -> Right (Left [])
   ModeFound pm -> extractParsedMode pm
@@ -159,17 +160,34 @@ extractParsedMode (ModeGood g) = Right . Right $ g
 extractParsedMode (ModeError es lst) = Left $ case es of
   [] -> (eiToError lst, [])
   (x:xs) ->
-    ( optErrorToString x
-    , (map optErrorToString xs) ++ [eiToError lst] )
+    ( modeOptErrorToString x
+    , (map modeOptErrorToString xs) ++ [eiToError lst] )
 
-optErrorToString :: OptionError -> String
-optErrorToString = undefined
+globalOptErrorToString :: OptionError -> String
+globalOptErrorToString = optErrorToString "global"
+
+modeOptErrorToString :: OptionError -> String
+modeOptErrorToString = optErrorToString "mode"
+
+optErrorToString :: String -> OptionError -> String
+optErrorToString lbl oe = case oe of
+  BadOption opt ->
+    "unrecognized " ++ lbl ++ "  option: " ++ optNameToString opt
+  LongArgumentForZeroArgumentOption lng arg ->
+    "argument given for " ++ lbl ++ " option that takes no arguments. "
+    ++ "option: --" ++ longNameToString lng
+    ++ " argument: " ++ optArgToString arg
+
 
 eiToError :: Either OptionError OptName -> String
-eiToError = undefined
+eiToError ei = case ei of
+  Left oe -> modeOptErrorToString oe
+  Right on -> labeledInsufficientOptArgs "mode" on
 
-optNameToError :: OptName -> String
-optNameToError = undefined
+
+labeledInsufficientOptArgs :: String -> OptName -> String
+labeledInsufficientOptArgs lbl on = "insufficient option arguments "
+  ++ "given for " ++ lbl ++ "  option: " ++ optNameToString on
 
 
 -- | Parses a command line that may contain modes.

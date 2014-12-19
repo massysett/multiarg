@@ -10,6 +10,7 @@ module Multiarg.Types
   , longName
   , Token(..)
   , OptName(..)
+  , optNameToString
   , OptArg(..)
   , ShortTail(..)
   , isLong
@@ -108,6 +109,11 @@ longName s = case s of
 -- | The name of an option (either short or long).
 newtype OptName = OptName (Either ShortName LongName)
   deriving (Eq, Ord, Show)
+
+optNameToString :: OptName -> String
+optNameToString (OptName ei) = case ei of
+  Left shrt -> '-' : shortNameToChar shrt : []
+  Right lng -> "--" ++ longNameToString lng
 
 -- | A token supplied by the user on the command line.
 newtype Token = Token String

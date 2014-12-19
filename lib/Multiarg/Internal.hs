@@ -11,6 +11,7 @@ import Multiarg.Maddash
 import Multiarg.Limeline
 import Multiarg.Types
 import Multiarg.Util
+import Data.Either (partitionEithers)
 import System.Environment
 import System.Exit
 import qualified System.IO as IO
@@ -53,8 +54,29 @@ instance Functor ParsedCommandLine where
 -- a 'Right' with a list of the results.
 parsedResults
   :: ParsedCommandLine a
-  -> Either String [a]
-parsedResults = undefined
+  -> Either (String, [String]) [a]
+parsedResults (ParsedCommandLine ls mayOpt) =
+  let (ers, gds) = partitionEithers ls
+  in case (ers, mayOpt) of
+      ([], Nothing) -> Right gds
+      ([], Just opt) -> Left (insufficientOptArgs opt, [])
+      (x:xs, Just opt) -> Left
+        (optError x, map optError xs ++ [insufficientOptArgs opt])
+      (x:xs, Nothing) -> Left
+        (optError x, map optError xs)
+
+insufficientOptArgs :: OptName -> String
+insufficientOptArgs n = "not enough arguments given for option: "
+  ++ optNameToString n
+
+optError :: OptionError -> String
+optError oe = case oe of
+  BadOption opt ->
+    "unrecognized option: " ++ optNameToString opt
+  LongArgumentForZeroArgumentOption lng arg ->
+    "argument given for option that takes no arguments. "
+    ++ "option: --" ++ longNameToString lng
+    ++ " argument: " ++ optArgToString arg
 
 
 -- | Parses a command line; a pure function (unlike
@@ -120,9 +142,9 @@ parseCommandLineIO fHelp os fPos = do
   progName <- getProgName
   args <- getArgs
   case parsedResults $ parseCommandLineHelp os fPos args of
-    Left err -> do
+    Left (e1, es) -> do
       IO.hPutStrLn IO.stderr $ progName ++ ": error"
-      IO.hPutStr IO.stderr err
+      _ <- mapM (IO.hPutStrLn IO.stderr) $ e1 : es
       IO.hPutStrLn IO.stderr $ "enter \"" ++ progName ++ " --help\" "
         ++ "for help."
       exitFailure

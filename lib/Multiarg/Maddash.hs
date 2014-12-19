@@ -159,7 +159,6 @@ data OptionError
   -- an argument.
   deriving (Eq, Ord, Show)
 
-
 -- * All exported types and functions above this line
 
 -- * Internal functions - not exported
