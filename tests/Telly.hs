@@ -3,7 +3,8 @@
 
 module Telly where
 
-import Multiarg
+import Multiarg.Internal
+import Multiarg.Types
 import Test.QuickCheck
 import Control.Applicative
 import Ernie
@@ -59,7 +60,7 @@ optSpecs =
   , optSpec "" ["tres"] (ThreeArg Tres)
   ]
 
-parse :: [String] -> Either CommandLineError [Telly]
+parse :: [String] -> ParsedCommandLine Telly
 parse = parseCommandLine optSpecs PosArg
 
 -- | Generates any option.
@@ -118,6 +119,12 @@ validTellyStrings = do
 
 prop_parseStringsYieldsTellies
   = forAll validTellyStrings $ \(tellies, strings) ->
-  case parseCommandLine optSpecs PosArg strings of
-    Left e -> counterexample (show e) $ property False
-    Right g -> g === tellies
+  let ParsedCommandLine ls _
+        = parseCommandLine optSpecs PosArg strings
+  in map Right tellies === ls
+
+prop_parseStringsYieldsNoEndError
+  = forAll validTellyStrings $ \(_, strings) ->
+  let ParsedCommandLine _ mayOpt
+        = parseCommandLine optSpecs PosArg strings
+  in mayOpt === Nothing

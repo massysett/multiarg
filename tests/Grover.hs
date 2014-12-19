@@ -71,5 +71,6 @@ readErr s = case readMaybe s of
 
 parseGrover
   :: [String]
-  -> Either ModelineError ([Either String Global], Maybe Result)
+  -> Either (String, [String])
+            (ModeResult (Either String Global) Result)
 parseGrover = parseModeLine globalOptSpecs modes

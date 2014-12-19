@@ -1,18 +1,16 @@
+-- | Grab bag of miscellaneous functions.
 module Multiarg.Util where
 
 import Multiarg.Types
 
+-- | Returns a list of the first items in a list and the last item, or
+-- Nothing if the list is empty.
 mayLast :: [a] -> Maybe ([a], a)
 mayLast [] = Nothing
 mayLast xs = Just (init xs, last xs)
 
-parsedOpts :: [Either () a] -> Maybe [a]
-parsedOpts [] = Just []
-parsedOpts (Left _ : _) = Nothing
-parsedOpts (Right x : xs) = case parsedOpts xs of
-  Nothing -> Nothing
-  Just rest -> Just (x : rest)
-
+-- | Partitions a list of 'OptSpec' into the short flags and long
+-- flags.
 splitOptSpecs
   :: [OptSpec a]
   -> ([(ShortName, ArgSpec a)], [(LongName, ArgSpec a)])
@@ -23,6 +21,9 @@ splitOptSpecs = foldr f ([], [])
         so' = map (\o -> (o, sp)) so
         lo' = map (\o -> (o, sp)) lo
 
+-- | Adds an option for @h@ and @help@.  The resulting 'ArgSpec'
+-- return 'Nothing' if help was requested, or 'Just' with the original
+-- argument for any other option.
 addHelpOption
   :: [OptSpec a]
   -> ( [(ShortName, ArgSpec (Maybe a))]

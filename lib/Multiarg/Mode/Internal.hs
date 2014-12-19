@@ -1,3 +1,9 @@
+-- | Internal functions used by "Multiarg.Mode".  You don't have to
+-- worry about \"breaking\" anything by using this module; it is
+-- separate from "Multiarg.Mode" primarily to tidy up the
+-- documentation in that module.  The functions in "Multiarg.Mode"
+-- should satisfy most use cases.  However, if you want more control
+-- over error handling, you can use this module.
 module Multiarg.Mode.Internal where
 
 import Data.Either (partitionEithers)
@@ -23,6 +29,11 @@ instance Functor ParsedMode where
   fmap f (ModeGood a) = ModeGood (f a)
   fmap _ (ModeError ls ei) = ModeError ls ei
 
+-- | A 'Mode' represents a single command line mode, such as @check@
+-- for @ghc-pkg check@.  It contains the name of the mode, as well as
+-- a parser that handles all options and positional arguments for the
+-- mode.  Ordinarily you will create a 'Mode' using the 'mode'
+-- function rather than by using the constructor directly.
 data Mode r = Mode ModeName ([Token] -> ParsedMode r)
 
 instance Functor Mode where
@@ -41,9 +52,11 @@ parsedCommandLineToParsedMode fMode (ParsedCommandLine ls mayOpt)
   where
     (errs, goods) = partitionEithers ls
 
+-- | Creates a new 'Mode'.
 mode
   :: String
-  -- ^ Mode name
+  -- ^ Mode name.  For instance, for the @check@ mode of @ghc-pkg@,
+  -- this would be @check@.
   -> [OptSpec a]
   -- ^ Mode options
   -> (String -> a)
@@ -68,7 +81,29 @@ data GlobalLocal g r
   = GlobalLocal [Either OptionError g] (GlobalLocalEnd r)
   deriving (Eq, Ord, Show)
 
-data ModeResult g r = ModeResult [g] (Either [String] r)
+-- | The result of parsing a mode command line.
+data ModeResult g r
+  = ModeResult [g] (Either [String] r)
+  -- ^ @ModeResult a b@ is a successfully parsed mode command line,
+  -- where:
+  --
+  -- @a@ is a list of all global options parsed; and
+  --
+  -- @b@ indicates the result of parsing the mode.  It is @Either c
+  -- d@, where @Left c@ indicates that no mode was parsed.  This
+  -- arises under two circumstances.  If the user did not include any
+  -- words after the global options, then @c@ will be the empty list,
+  -- @[]@.  If the user did include words after the global options,
+  -- but the first word was not recognized as a mode, then this list
+  -- will contain the first word and any subsequent words.  Therefore,
+  -- note that if the user attempted to use a mode that does not exist
+  -- (e.g. she misspelled it), this is not treated as an error.  It's
+  -- up to the client code to deal with this issue (for instance, your
+  -- program might not view this situation as being an error.)
+  --
+  -- If @b@ is @Right d@, this indicates that the user entered a
+  -- recognized mode, and the result is @d@.
+
   deriving (Eq, Ord, Show)
 
 getModeResult
@@ -137,14 +172,23 @@ optNameToError :: OptName -> String
 optNameToError = undefined
 
 
+-- | Parses a command line that may contain modes.
 parseModeLine
   :: [OptSpec g]
-  -- ^ Global options
+  -- ^ Global options.  This might, for example, include a @--help@
+  -- option.
   -> [Mode r]
   -- ^ All modes
   -> [String]
   -- ^ All command line tokens
-  -> (Either (String, [String]) (ModeResult g r))
+  -> Either (String, [String]) (ModeResult g r)
+  -- ^ Returns @Either a b@.  @Left a@ represents an error.  Each
+  -- String represents a single error (this is returned as a pair
+  -- because there must be at least one error; a simple list would not
+  -- reflect this requirement.)
+  --
+  -- @Right b@ indicates that parsing proceeded successfully; consult
+  -- 'ModeResult' to see what is returned.
 parseModeLine glbl mds =
   getModeResult
   . parseModeLineWithErrors glbl mds

@@ -18,6 +18,7 @@ module Multiarg.Types
   , splitShortTail
   ) where
 
+-- | Specifies how many arguments an option takes.
 data ArgSpec a
   = ZeroArg a
   -- ^ This option takes no arguments
@@ -40,13 +41,15 @@ instance Show (ArgSpec a) where
   show (TwoArg _) = "TwoArg"
   show (ThreeArg _) = "ThreeArg"
 
+-- | Specifies an option.  Typically you will use 'optSpec' to create
+-- an 'OptSpec' rather than using the constructor directly.
 data OptSpec a = OptSpec [ShortName] [LongName] (ArgSpec a)
   deriving Show
 
 instance Functor OptSpec where
   fmap f (OptSpec s l p) = OptSpec s l (fmap f p)
 
--- | Creates an OptSpec.
+-- | Creates an 'OptSpec'.
 optSpec
   :: [Char]
   -- ^ There is one character for each desired short option name.
@@ -61,11 +64,12 @@ optSpec
   --
   -- * must not begin with a hyphen; and
   --
-  -- * must not contain an equal sign;
+  -- * must not contain an equal sign.
   --
-  -- otherwise, 'optSpec' will apply 'error'.
+  -- Otherwise, 'optSpec' will apply 'error'.
 
   -> ArgSpec a
+  -- ^ How many arguments this option takes.
   -> OptSpec a
 optSpec ss ls = OptSpec (map mkShort ss) (map mkLong ls)
   where

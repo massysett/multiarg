@@ -5,7 +5,6 @@ import Ernie
 import Grover
 import Control.Applicative
 import Test.QuickCheck hiding (Result)
-import Data.List (inits)
 
 genGlobal :: Gen Global
 genGlobal = oneof

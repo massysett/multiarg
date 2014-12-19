@@ -1,3 +1,10 @@
+-- | Functions and types used by the "Multiarg" module.  You don't
+-- have to worry about \"breaking\" anything by using this module.
+-- This module is separate from "Multiarg" only because it makes the
+-- documentation in that module cleaner, as that module should satisfy
+-- most use cases.  Use this module if you want more control over
+-- error handling, or if you want to process arguments using pure
+-- functions rather than IO functions.
 module Multiarg.Internal where
 
 import Multiarg.Maddash
@@ -24,16 +31,18 @@ limelineOutputToParsedCommandLine (ls, mayOpt) =
 
 
 -- | Indicates the result of parsing a command line.
-data ParsedCommandLine a = ParsedCommandLine
-  { pclOutput :: [Either OptionError a]
-  -- ^ A list of errors and results, in the original order in which
-  -- they appeared on the command line.
-
-  , pclInsufficientOptArgs :: Maybe OptName
-  -- ^ 'Just' if the user included an option at the end of the command
-  -- line and there were not enough following words to provide the
-  -- option with its necessary arguments; otherwise 'Nothing'.
-  } deriving (Eq, Ord, Show)
+data ParsedCommandLine a
+  = ParsedCommandLine [Either OptionError a] (Maybe OptName)
+  -- ^ @ParsedCommandLine a b@, where:
+  --
+  -- @a@ is a list of errors and results, in the original order in
+  -- which they appeared on the command line.
+  --
+  -- @b@ is @Just p@ if the user included an option at the end of the
+  -- command line and there were not enough following words to provide
+  -- the option with its necessary arguments, where @p@ is the name of
+  -- the option with insufficient arguments; otherwise 'Nothing'.
+  deriving (Eq, Ord, Show)
 
 instance Functor ParsedCommandLine where
   fmap f (ParsedCommandLine ls m) = ParsedCommandLine
@@ -48,6 +57,8 @@ parsedResults
 parsedResults = undefined
 
 
+-- | Parses a command line; a pure function (unlike
+-- 'parseCommandLineIO').
 parseCommandLine
 
   :: [OptSpec a]
@@ -67,6 +78,21 @@ parseCommandLine os fPos inp = limelineOutputToParsedCommandLine limeOut
     limeOut = interspersed shrts lngs fPos (map Token inp)
     (shrts, lngs) = splitOptSpecs os
 
+-- | Parses a command line.  Runs in the IO monad so that it can do
+-- some tedious things for you:
+--
+-- * fetches command line arguments using 'getArgs' and the name of
+-- the program with 'getProgName'
+--
+-- * prints help, if the user requested help, and exits
+-- successfully
+--
+-- * prints an error message and exits unsuccessfully, if the user
+-- entered a bad command line (such as an unknown option)
+--
+-- If you don't want this degree of automation or if you want a pure
+-- function, see the 'parseCommandLine' function in the
+-- "Multiarg.Internal" module.
 parseCommandLineIO
   :: (String -> String)
   -- ^ Returns help for your command.  This function is applied to the
