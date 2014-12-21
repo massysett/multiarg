@@ -5,6 +5,7 @@ import Ernie
 import Grover
 import Control.Applicative
 import Test.QuickCheck hiding (Result)
+import Multiarg.Mode
 
 genGlobal :: Gen Global
 genGlobal = oneof
@@ -77,20 +78,47 @@ instance Arbitrary ValidGrover where
     globals <- listOf genGlobal
     glblStrings <- fmap concat . mapM pickItem
       . map globalToNestedList $ globals
-    (ei, endStrings) <- oneof [ modeInt, modeString, modeMaybe, noMode ]
+    (ei, endStrings) <- oneof
+      [ resultAndStrings Ints "int"
+      , resultAndStrings Strings "string"
+      , resultAndStrings Maybes "maybe"
+      ]
     return $ ValidGrover globals ei (glblStrings ++ endStrings)
 
-modeInt :: Gen (Either [String] Result, [String])
-modeInt = undefined
+-- | Generates a list of String, where the first String will not be
+-- interpreted as a mode.
 
-modeString :: Gen (Either [String] Result, [String])
-modeString = undefined
+genNonModePosArg :: Gen [String]
+genNonModePosArg = frequency ([ (1, return []), (3, nonEmpty)])
+  where
+    nonEmpty = (:) <$> firstWord <*> listOf arbitrary
+      where
+        firstWord = arbitrary `suchThat`
+          (\s -> not (s `elem` ["int", "string", "maybe"]))
 
-modeMaybe :: Gen (Either [String] Result, [String])
-modeMaybe = undefined
+resultAndStrings
+  :: (Arbitrary a, Show a)
 
-noMode :: Gen (Either [String] Result, [String])
-noMode = undefined
+  => ([Either String (GroverOpt a)] -> Result)
+  -- ^ Function that creates a Result
+
+  -> String
+  -- ^ Name of mode
+
+  -> Gen (Either [String] Result, [String])
+resultAndStrings fRes modeName = frequency [(1, nonMode), (4, withMode)]
+  where
+    nonMode = fmap (\ls -> (Left ls, ls)) genNonModePosArg
+    withMode = do
+      ispLine <- interspersedLine (genGroverOpt arbitrary) PosArg
+      strings <- interspersedLineToStrings ispLine groverOptToNestedList
+      return ( Right . fRes . map Right $ fst ispLine ++ snd ispLine
+             , modeName : strings )
+
+prop_ValidGrover (ValidGrover globals ei strings) = result === expected
+  where
+    result = parseModeLine globalOptSpecs modes strings
+    expected = Right (ModeResult (map Right globals) ei)
 
 
 prop_alwaysTrue = True
