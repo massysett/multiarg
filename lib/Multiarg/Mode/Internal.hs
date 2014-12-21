@@ -231,11 +231,11 @@ parseModeLineWithErrors glbl mds tokStrings = GlobalLocal lsErrsGoods end
     end = case eiOptTok of
       Left (opt, _) -> GlobalInsufficientOptArgs opt
       Right [] -> NoMode
-      Right modeToks@(x:xs) -> case findExactMode x mds of
+      Right (x:xs) -> case findExactMode x mds of
         Nothing -> ModeNotFound (unToken x) (map unToken xs)
           where
             unToken (Token t) = t
-        Just (Mode _ f) -> ModeFound (f modeToks)
+        Just (Mode _ f) -> ModeFound (f xs)
 
 -- | Takes a token and a list of all modes; returns the matching mode
 -- if there is one, or Nothing if there is no match.
