@@ -93,3 +93,17 @@ interspersedLine genOpt fPos =
   (,)
   <$> preStopper genOpt fPos
   <*> postStopper fPos
+
+{-
+-- | Takes an interspersed line and creates a set of strings that
+-- would, when parsed, yield the interspersed line.
+interspersedLineToStrings
+  :: ([a], [a])
+  -- ^ @(a, b)@, where
+  --
+  -- @a@ is everything to the left of the stopper, and
+  --
+  -- @b@ is everything to the right of the stopper
+  -> (a -> [[String]])
+  -- ^ Converts a single item to a nested list of String.  Each list of String is a possible way to 
+-}

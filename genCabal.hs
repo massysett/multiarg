@@ -25,6 +25,9 @@ quickpull = C.closedOpen "quickpull" [0,4,0,0] [0,5]
 barecheck :: C.Package
 barecheck = C.closedOpen "barecheck" [0,2,0,6] [0,3]
 
+semigroups :: C.Package
+semigroups = C.closedOpen "semigroups" [0,16] [0,17]
+
 properties :: C.Properties
 properties = C.empty
   { C.prName = "multiarg"
@@ -88,7 +91,8 @@ tests ms ts = C.TestSuite "multiarg-tests" $ commonOptions ++
   ]
 
 testDepends :: C.Field a => a
-testDepends = C.buildDepends [ quickCheck, quickpull, barecheck ]
+testDepends = C.buildDepends [ quickCheck, quickpull, barecheck,
+                               semigroups ]
 
 grover
   :: [String]

@@ -58,5 +58,39 @@ groverOptToNestedList gvr = case gvr of
       ls = [show a, show b, show c]
   PosArg s -> [[s]]
 
+-- | A valid Grover AST, combined with a set of strings that, when
+-- parsed, should yield that AST.
+data ValidGrover
+  = ValidGrover [Global] (Either [String] Result) [String]
+  -- ^ @ValidGrover a b c@, where
+  --
+  -- @a@ is the list of global options
+  --
+  -- @b@ is either a list of strings (indicates that the user entered
+  -- no mode), or the mode, and its associated options
+  --
+  -- @c@ is a list of strings that, when parsed, should return @a@ and @b@.
+  deriving (Eq, Ord, Show)
+
+instance Arbitrary ValidGrover where
+  arbitrary = do
+    globals <- listOf genGlobal
+    glblStrings <- fmap concat . mapM pickItem
+      . map globalToNestedList $ globals
+    (ei, endStrings) <- oneof [ modeInt, modeString, modeMaybe, noMode ]
+    return $ ValidGrover globals ei (glblStrings ++ endStrings)
+
+modeInt :: Gen (Either [String] Result, [String])
+modeInt = undefined
+
+modeString :: Gen (Either [String] Result, [String])
+modeString = undefined
+
+modeMaybe :: Gen (Either [String] Result, [String])
+modeMaybe = undefined
+
+noMode :: Gen (Either [String] Result, [String])
+noMode = undefined
+
 
 prop_alwaysTrue = True
