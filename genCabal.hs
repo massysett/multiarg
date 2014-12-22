@@ -29,7 +29,7 @@ properties :: C.Properties
 properties = C.empty
   { C.prName = "multiarg"
   , C.prVersion = version
-  , C.prCabalVersion = (1,20)
+  , C.prCabalVersion = (1,16)
   , C.prBuildType = C.Simple
   , C.prLicense = C.BSD3
   , C.prLicenseFile = "LICENSE"
