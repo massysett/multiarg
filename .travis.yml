@@ -4,3 +4,6 @@ before-install:
   - cabal install cartel
   - cabal install quickpull
   - sh generate
+
+install:
+  - true
