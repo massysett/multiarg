@@ -46,3 +46,5 @@ https://travis-ci.org/massysett/multiarg
 It shows successful builds and the versions of any package
 dependencies that were installed when that build succeeded, so it
 might help you diagnose any dependency issues.
+
+[![Build Status](https://travis-ci.org/massysett/multiarg.svg?branch=master)](https://travis-ci.org/massysett/multiarg)
