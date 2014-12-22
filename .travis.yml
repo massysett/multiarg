@@ -1,1 +1,6 @@
 language: haskell
+before-install:
+  - cabal update
+  - cabal install cartel
+  - cabal install quickpull
+  - sh generate
