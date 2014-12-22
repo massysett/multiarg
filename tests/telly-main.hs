@@ -1,6 +1,6 @@
 module Main where
 
-import Telly
+import Multiarg.Examples.Telly
 
 main :: IO ()
 main = parse >>= print

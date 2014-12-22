@@ -83,7 +83,7 @@ optError oe = case oe of
 
 -- | Parses a command line; a pure function (unlike
 -- 'parseCommandLineIO').
-parseCommandLine
+parseCommandLinePure
 
   :: [OptSpec a]
   -- ^ All program options
@@ -97,7 +97,8 @@ parseCommandLine
 
   -> ParsedCommandLine a
 
-parseCommandLine os fPos inp = limelineOutputToParsedCommandLine limeOut
+parseCommandLinePure os fPos inp =
+  limelineOutputToParsedCommandLine limeOut
   where
     limeOut = interspersed shrts lngs fPos (map Word inp)
     (shrts, lngs) = splitOptSpecs os
@@ -115,9 +116,9 @@ parseCommandLine os fPos inp = limelineOutputToParsedCommandLine limeOut
 -- entered a bad command line (such as an unknown option)
 --
 -- If you don't want this degree of automation or if you want a pure
--- function, see the 'parseCommandLine' function in the
+-- function, see the 'parseCommandLinePure' function in the
 -- "Multiarg.Internal" module.
-parseCommandLineIO
+parseCommandLine
   :: (String -> String)
   -- ^ Returns help for your command.  This function is applied to the
   -- name of the program being run, which is obtained from
@@ -142,7 +143,7 @@ parseCommandLineIO
   -- result, where each item in the list corresponds to a parsed
   -- /option/ or /positional argument/ in the order in which it
   -- appeared on the command line.
-parseCommandLineIO fHelp os fPos = do
+parseCommandLine fHelp os fPos = do
   progName <- getProgName
   args <- getArgs
   case parsedResults $ parseCommandLineHelp os fPos args of

@@ -1,4 +1,8 @@
 -- | Types used throughout Multiarg, and associated functions.
+-- Ordinarily you should not need this module; "Multiarg" and
+-- "Multiarg.Mode" export all the types and constructors you should
+-- ordinarily need.  However, if you want more control than those
+-- modules afford, you can import this one.
 module Multiarg.Types
   ( ArgSpec(..)
   , OptSpec(..)

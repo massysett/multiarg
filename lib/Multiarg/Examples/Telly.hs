@@ -1,6 +1,11 @@
--- | Types for the testing of non-mode parsers.
+-- | Telly is a simple command-line program to test command-line
+-- parsers that do not have multiple modes.  This includes most
+-- command-line programs; you build parsers like this using
+-- "Multiarg".  This module provides an example for documentation
+-- purposes; it also provides fodder for the QuickCheck test cases.
+-- You will want to look at the source code.
 
-module Telly where
+module Multiarg.Examples.Telly where
 
 import Multiarg
 
@@ -79,5 +84,5 @@ help progName = unlines
   ]
 
 parse :: IO [Telly]
-parse = parseCommandLineIO help optSpecs PosArg
+parse = parseCommandLine help optSpecs PosArg
 

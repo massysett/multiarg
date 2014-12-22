@@ -1,7 +1,8 @@
 -- | Grover is a simple example program that shows how to write a
--- parser for commands with multiple modes.  It provides an example
--- for the documentation, and it also provides fodder for the
--- QuickCheck tests.
+-- parser for commands with multiple modes.  You build such parsers
+-- using "Multiarg.Mode".  It provides an example for the
+-- documentation, and it also provides fodder for the QuickCheck
+-- tests.  You will want to look at the source code.
 --
 -- Grover has three modes: @int@, @string@, and @maybe@.  Each of
 -- these modes has three options: @-z@ or @--zero@, which takes no
@@ -18,7 +19,7 @@
 -- Grover handles simple errors right inside the parser by using the
 -- @Either@ type as a return value.
 
-module Grover where
+module Multiarg.Examples.Grover where
 
 import Control.Applicative
 import Multiarg.Mode

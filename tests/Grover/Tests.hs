@@ -2,7 +2,7 @@
 module Grover.Tests where
 
 import Ernie
-import Grover
+import Multiarg.Examples.Grover
 import Control.Applicative
 import Test.QuickCheck hiding (Result)
 import Multiarg.Mode

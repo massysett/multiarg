@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Telly.Tests where
 
-import Telly
+import Multiarg.Examples.Telly
 import Test.QuickCheck
 import Control.Applicative
 import Ernie
@@ -64,11 +64,11 @@ validTellyStrings = do
 prop_parseStringsYieldsTellies
   = forAll validTellyStrings $ \(tellies, strings) ->
   let ParsedCommandLine ls _
-        = parseCommandLine optSpecs PosArg strings
+        = parseCommandLinePure optSpecs PosArg strings
   in map Right tellies === ls
 
 prop_parseStringsYieldsNoEndError
   = forAll validTellyStrings $ \(_, strings) ->
   let ParsedCommandLine _ mayOpt
-        = parseCommandLine optSpecs PosArg strings
+        = parseCommandLinePure optSpecs PosArg strings
   in mayOpt === Nothing

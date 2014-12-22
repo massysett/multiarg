@@ -1,6 +1,6 @@
 module Main where
 
-import Grover
+import Multiarg.Examples.Grover
 import System.Environment
 
 main :: IO ()

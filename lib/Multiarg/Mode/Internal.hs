@@ -67,7 +67,7 @@ mode
 mode name opts fPos fMode
   = Mode (ModeName name)
   $ parsedCommandLineToParsedMode fMode
-  . parseCommandLine opts fPos
+  . parseCommandLinePure opts fPos
   . map (\(Word s) -> s)
 
 data GlobalLocalEnd a

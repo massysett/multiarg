@@ -14,7 +14,7 @@
 -- that appear in /italics/ are defined in "Multiarg.Vocabulary".
 --
 -- Use this module to build parsers for simple commands.  The
--- 'parseCommandLineIO' function runs in the IO monad and will cause
+-- 'parseCommandLine' function runs in the IO monad and will cause
 -- your program to exit unsuccessfully if there are any errors in the
 -- command line, printing an error message in the process.  If you
 -- want more control over error handling, use the "Multiarg.Internal"
@@ -23,11 +23,14 @@
 -- To write parsers for commands with multiple modes (for instance,
 -- @ghc-pkg@ has multiple modes, such as @ghc-pkg list@ and @ghc-pkg
 -- check@) use the "Multiarg.Mode" module.
+--
+-- You will find examples in "Multiarg.Examples.Telly" for non-mode
+-- parsers, and in "Multiarg.Examples.Grover" for mode parsers.
 module Multiarg
   ( ArgSpec(..)
   , OptSpec
   , optSpec
-  , parseCommandLineIO
+  , parseCommandLine
   ) where
 
 import Multiarg.Internal

@@ -86,7 +86,7 @@
 -- want to see by using /positional arguments/. In the command @tail -n
 -- 10 myfile@, @myfile@ is a /positional argument/.
 --
--- [/stopper/] A  word consisting solely of two hyphens,
+-- [/stopper/] A  /word/ consisting solely of two hyphens,
 -- @--@. The user types this to indicate that all subsequent words
 -- on the command line are /positional arguments/, even if they begin
 -- with hyphens and therefore look like they might be /options/.
