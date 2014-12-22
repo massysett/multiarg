@@ -35,3 +35,14 @@ Package Versioning Policy.
 Currently the multiarg library depends only on the "base" package, so
 multiarg should have wide compatibility with different compilers and
 sets of libraries.  The tests have some additional dependencies.
+
+## Build history
+
+If you're having trouble building multiarg, try looking at the
+travis-ci build history at:
+
+https://travis-ci.org/massysett/multiarg
+
+It shows successful builds and the versions of any package
+dependencies that were installed when that build succeeded, so it
+might help you diagnose any dependency issues.

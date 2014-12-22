@@ -9,7 +9,8 @@ before_install:
   - cabal install quickpull
   - sh generate
 
-install:
+script:
+  - ghc-pkg list
   - cabal sdist --output-directory=tarball
   - cd tarball
   - cabal configure --enable-tests
