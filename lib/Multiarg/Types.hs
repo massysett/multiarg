@@ -1,3 +1,4 @@
+-- | Types used throughout Multiarg, and associated functions.
 module Multiarg.Types
   ( ArgSpec(..)
   , OptSpec(..)
@@ -8,27 +9,27 @@ module Multiarg.Types
   , LongName
   , longNameToString
   , longName
-  , Token(..)
+  , Word(..)
   , OptName(..)
   , optNameToString
   , OptArg(..)
   , ShortTail(..)
   , isLong
   , isShort
-  , tokenToOptArg
+  , wordToOptArg
   , splitShortTail
   ) where
 
--- | Specifies how many arguments an option takes.
+-- | Specifies how many /option arguments/ an /option/ takes.
 data ArgSpec a
   = ZeroArg a
-  -- ^ This option takes no arguments
+  -- ^ This /option/ takes no /option arguments/
   | OneArg (String -> a)
-  -- ^ This option takes one argument
+  -- ^ This /option/ takes one /option argument/
   | TwoArg (String -> String -> a)
-  -- ^ This option takes two arguments
+  -- ^ This /option/ takes two /option arguments/
   | ThreeArg (String -> String -> String -> a)
-  -- ^ This option takes three arguments
+  -- ^ This /option/ takes three /option arguments/
 
 instance Functor ArgSpec where
   fmap f (ZeroArg a) = ZeroArg (f a)
@@ -42,8 +43,12 @@ instance Show (ArgSpec a) where
   show (TwoArg _) = "TwoArg"
   show (ThreeArg _) = "ThreeArg"
 
--- | Specifies an option.  Typically you will use 'optSpec' to create
--- an 'OptSpec' rather than using the constructor directly.
+-- | Specifies an /option/.  Typically you will use 'optSpec' to
+-- create an 'OptSpec' rather than using the constructor directly.
+-- Each 'OptSpec' may contain mulitple /short option names/ and
+-- /long option names/; but each 'OptSpec' contains only one 'ArgSpec'.
+-- Therefore, all /short option names/ and /long option names/
+-- specified in a single 'OptSpec' are synonymous.
 data OptSpec a = OptSpec [ShortName] [LongName] (ArgSpec a)
   deriving Show
 
@@ -53,12 +58,12 @@ instance Functor OptSpec where
 -- | Creates an 'OptSpec'.
 optSpec
   :: [Char]
-  -- ^ There is one character for each desired short option name.
+  -- ^ There is one character for each desired /short option name/.
   -- Each of these characters may not be a hyphen; otherwise,
   -- 'optSpec' will apply 'error'.
 
   -> [String]
-  -- ^ There is one string for each desired long option name.  Each
+  -- ^ There is one string for each desired /long option name/.  Each
   -- string:
   --
   -- * cannot be empty;
@@ -70,7 +75,10 @@ optSpec
   -- Otherwise, 'optSpec' will apply 'error'.
 
   -> ArgSpec a
-  -- ^ How many arguments this option takes.
+  -- ^ How many /option arguments/ this /option/ takes.  This also
+  -- specifies what is returned when the /option/ is parsed on the
+  -- command line.
+
   -> OptSpec a
 optSpec ss ls = OptSpec (map mkShort ss) (map mkLong ls)
   where
@@ -82,21 +90,21 @@ optSpec ss ls = OptSpec (map mkShort ss) (map mkLong ls)
       Just n -> n
 
 
--- | A short option name.
+-- | A /short option name/.
 newtype ShortName = ShortName { shortNameToChar ::  Char }
   deriving (Eq, Ord, Show)
 
--- | A long option name.
+-- | A /long option name/.
 newtype LongName = LongName { longNameToString :: String }
   deriving (Eq, Ord, Show)
 
--- | Creates a short option name.  Any character other than a single
+-- | Creates a /short option name/.  Any character other than a single
 -- hyphen will succeed.
 shortName :: Char -> Maybe ShortName
 shortName '-' = Nothing
 shortName x = Just $ ShortName x
 
--- | Creates a long option name.  The string may not be empty, and the
+-- | Creates a /long option name/.  The string may not be empty, and the
 -- first character may not be a hyphen.  In addition, no character may
 -- be an equal sign.
 longName :: String -> Maybe LongName
@@ -106,7 +114,8 @@ longName s = case s of
   xs | '=' `elem` xs -> Nothing
      | otherwise -> Just $ LongName xs
 
--- | The name of an option (either short or long).
+-- | The /name/ of an /option/ (either a /short option name/
+-- or a /long option name/).
 newtype OptName = OptName (Either ShortName LongName)
   deriving (Eq, Ord, Show)
 
@@ -115,17 +124,17 @@ optNameToString (OptName ei) = case ei of
   Left shrt -> '-' : shortNameToChar shrt : []
   Right lng -> "--" ++ longNameToString lng
 
--- | A token supplied by the user on the command line.
-newtype Token = Token String
+-- | A /word/ supplied by the user on the command line.
+newtype Word = Word String
   deriving (Eq, Ord, Show)
 
--- | An option argument.
+-- | An /option argument/.
 newtype OptArg = OptArg { optArgToString :: String }
   deriving (Eq, Ord, Show)
 
--- | Is this token an input for a long option?
+-- | Is this /word/ an input for a /long option/?
 isLong
-  :: Token
+  :: Word
   -> Maybe (LongName, Maybe OptArg)
   -- ^ Nothing if the option does not begin with a double dash and is
   -- not at least three characters long.  Otherwise, returns the
@@ -133,8 +142,8 @@ isLong
   -- sign.  The Maybe in the tuple is Nothing if there is no equal
   -- sign, or Just followed by characters following the equal sign if
   -- there is one.
-isLong (Token ('-':'-':[])) = Nothing
-isLong (Token ('-':'-':xs)) = Just (LongName optName, arg)
+isLong (Word ('-':'-':[])) = Nothing
+isLong (Word ('-':'-':xs)) = Just (LongName optName, arg)
   where
     (optName, end) = span (/= '=') xs
     arg = case end of
@@ -142,25 +151,25 @@ isLong (Token ('-':'-':xs)) = Just (LongName optName, arg)
       _:rs -> Just . OptArg $ rs
 isLong _ = Nothing
 
--- | Characters after the first character in a short option; for
--- instance, if the user supplies @-afoobar@, then this will be
--- @foobar@.
+-- | Characters after the first /short option name/ in a /flag/ that
+-- specifies a /short option/ instance, if the user supplies
+-- @-afoobar@, then this will be @foobar@.
 newtype ShortTail = ShortTail String
   deriving (Eq, Ord, Show)
 
--- | Is this the input token for a short argument?
+-- | Is this an input /word/ for a /short argument/?
 isShort
-  :: Token
+  :: Word
   -> Maybe (ShortName, ShortTail)
-isShort (Token ('-':'-':_)) = Nothing
-isShort (Token ('-':[])) = Nothing
-isShort (Token ('-':x:xs)) = Just (ShortName x, ShortTail xs)
+isShort (Word ('-':'-':_)) = Nothing
+isShort (Word ('-':[])) = Nothing
+isShort (Word ('-':x:xs)) = Just (ShortName x, ShortTail xs)
 isShort _ = Nothing
 
-tokenToOptArg :: Token -> OptArg
-tokenToOptArg (Token t) = OptArg t
+wordToOptArg :: Word -> OptArg
+wordToOptArg (Word t) = OptArg t
 
--- | If possible, splits a ShortTail into a short option name and a
+-- | If possible, splits a ShortTail into a /short option name/ and a
 -- remaining tail.
 splitShortTail :: ShortTail -> Maybe (ShortName, ShortTail)
 splitShortTail (ShortTail s) = case s of

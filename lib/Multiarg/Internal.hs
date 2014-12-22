@@ -39,10 +39,12 @@ data ParsedCommandLine a
   -- @a@ is a list of errors and results, in the original order in
   -- which they appeared on the command line.
   --
-  -- @b@ is @Just p@ if the user included an option at the end of the
-  -- command line and there were not enough following words to provide
-  -- the option with its necessary arguments, where @p@ is the name of
-  -- the option with insufficient arguments; otherwise 'Nothing'.
+  -- @b@ is @Just p@ if the user included an /option/ at the end of
+  -- the command line and there were not enough following /words/ to
+  -- provide the /option/ with its necessary /option arguments/, where
+  -- @p@ is the /name/ of the /option/ with insufficient
+  -- /option arguments/;
+  -- otherwise 'Nothing'.
   deriving (Eq, Ord, Show)
 
 instance Functor ParsedCommandLine where
@@ -97,14 +99,14 @@ parseCommandLine
 
 parseCommandLine os fPos inp = limelineOutputToParsedCommandLine limeOut
   where
-    limeOut = interspersed shrts lngs fPos (map Token inp)
+    limeOut = interspersed shrts lngs fPos (map Word inp)
     (shrts, lngs) = splitOptSpecs os
 
 -- | Parses a command line.  Runs in the IO monad so that it can do
 -- some tedious things for you:
 --
--- * fetches command line arguments using 'getArgs' and the name of
--- the program with 'getProgName'
+-- * fetches the /words/ on command line using 'getArgs' and the name
+-- of the program with 'getProgName'
 --
 -- * prints help, if the user requested help, and exits
 -- successfully
@@ -123,7 +125,7 @@ parseCommandLineIO
   -- help for how to use your command; this string is printed as-is.
 
   -> [OptSpec a]
-  -- ^ All program options.  An option for @-h@ and for @--help@ is
+  -- ^ All program /options/.  An /option/ for @-h@ and for @--help@ is
   -- added for you, using the help function given above.  If the user
   -- asks for help, then it is printed and the program exits
   -- successfully.  If the user gives a command line with one or more
@@ -131,13 +133,15 @@ parseCommandLineIO
   -- like @Enter program-name --help for help@.
 
   -> (String -> a)
-  -- ^ Processes positional arguments
+  -- ^ Processes /positional arguments/.
 
   -> IO [a]
-  -- ^ Fetches the command line arguments using 'getArgs' and
-  -- processes them.  If there is an error, prints an error message
-  -- and exits unsuccessfully.  Otherwise, returns the options parsed
-  -- in.
+  -- ^ Fetches the /words/ from the command line arguments using
+  -- 'getArgs' and parses them.  If there is an error, prints an error
+  -- message and exits unsuccessfully.  Otherwise, returns the parsed
+  -- result, where each item in the list corresponds to a parsed
+  -- /option/ or /positional argument/ in the order in which it
+  -- appeared on the command line.
 parseCommandLineIO fHelp os fPos = do
   progName <- getProgName
   args <- getArgs
@@ -155,8 +159,9 @@ parseCommandLineIO fHelp os fPos = do
       Just ls -> return ls
 
 
--- | Automatically adds a @-h@ and @--help@ option.  Intended
--- primarily for use by the 'parseCommandLineIO' function.
+-- | Automatically adds a /short option/, @-h@, and a /long option/,
+-- @--help@.  Intended primarily for use by the 'parseCommandLineIO'
+-- function.
 parseCommandLineHelp
   :: [OptSpec a]
   -> (String -> a)
@@ -164,7 +169,7 @@ parseCommandLineHelp
   -> ParsedCommandLine (Maybe a)
 parseCommandLineHelp os fPos inp =
   limelineOutputToParsedCommandLine
-  $ interspersed shrts lngs (fmap Just fPos) (map Token inp)
+  $ interspersed shrts lngs (fmap Just fPos) (map Word inp)
   where
     (shrts, lngs) = addHelpOption os
 

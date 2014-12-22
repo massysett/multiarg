@@ -31,10 +31,10 @@ instance Functor ParsedMode where
 
 -- | A 'Mode' represents a single command line mode, such as @check@
 -- for @ghc-pkg check@.  It contains the name of the mode, as well as
--- a parser that handles all options and positional arguments for the
--- mode.  Ordinarily you will create a 'Mode' using the 'mode'
+-- a parser that handles all /options/ and /positional arguments/ for
+-- the mode.  Ordinarily you will create a 'Mode' using the 'mode'
 -- function rather than by using the constructor directly.
-data Mode r = Mode ModeName ([Token] -> ParsedMode r)
+data Mode r = Mode ModeName ([Word] -> ParsedMode r)
 
 instance Functor Mode where
   fmap f (Mode s p) = Mode s (fmap (fmap f) p)
@@ -58,17 +58,17 @@ mode
   -- ^ Mode name.  For instance, for the @check@ mode of @ghc-pkg@,
   -- this would be @check@.
   -> [OptSpec a]
-  -- ^ Mode options
+  -- ^ Mode /options/
   -> (String -> a)
-  -- ^ Parses non-option positional arguments
+  -- ^ Parses /positional arguments/
   -> ([a] -> r)
-  -- ^ Processes the result of all mode options
+  -- ^ Processes the result of all mode /options/
   -> Mode r
 mode name opts fPos fMode
   = Mode (ModeName name)
   $ parsedCommandLineToParsedMode fMode
   . parseCommandLine opts fPos
-  . map (\(Token s) -> s)
+  . map (\(Word s) -> s)
 
 data GlobalLocalEnd a
   = GlobalInsufficientOptArgs OptName
@@ -92,14 +92,15 @@ data ModeResult g r
   -- @b@ indicates the result of parsing the mode.  It is @Either c
   -- d@, where @Left c@ indicates that no mode was parsed.  This
   -- arises under two circumstances.  If the user did not include any
-  -- words after the global options, then @c@ will be the empty list,
-  -- @[]@.  If the user did include words after the global options,
-  -- but the first word was not recognized as a mode, then this list
-  -- will contain the first word and any subsequent words.  Therefore,
-  -- note that if the user attempted to use a mode that does not exist
-  -- (e.g. she misspelled it), this is not treated as an error.  It's
-  -- up to the client code to deal with this issue (for instance, your
-  -- program might not view this situation as being an error.)
+  -- /words/ after the global /options/, then @c@ will be the empty
+  -- list, @[]@.  If the user did include /words/ after the global
+  -- options, but the first /word/ was not recognized as a mode, then
+  -- this list will contain the first /word/ and any subsequent /words/.
+  -- Therefore, note that if the user attempted to use a mode that
+  -- does not exist (e.g. she misspelled it), this is not treated as
+  -- an error.  It's up to the client code to deal with this issue
+  -- (for instance, your program might not view this situation as
+  -- being an error.)
   --
   -- If @b@ is @Right d@, this indicates that the user entered a
   -- recognized mode, and the result is @d@.
@@ -120,18 +121,19 @@ getModeResult (GlobalLocal eis end)
 combine
   :: Either (OptionError, [OptionError]) [g]
   -- ^ Global result.  Contains either one or more errors, or global
-  -- option results.
+  -- /option/ results.
 
   -> Either (String, [String]) (Either [String] r)
-  -- ^ Result of parsing mode word, and the mode options and posargs.
-  -- May be @Left a@, where @a@ is one or more errors, or @Right b@,
-  -- where @b@ is a good result.  A good result @b@ may be either
-  -- @Left c@, where @c@ is a list of non-option positional arguments,
-  -- or @Right d@, where @d@ is the mode result.  @c@ indicates that
-  -- no mode was recognized and may be either @[]@, which indicates
-  -- that the user passed no words at all after the global options, or
-  -- @x:xs@, indicating that the user did pass words after the global
-  -- option, but the first word was not recognized as a mode.
+  -- ^ Result of parsing mode /word/, and the mode /options/ and
+  -- /positional arguments/.  May be @Left a@, where @a@ is one or
+  -- more errors, or @Right b@, where @b@ is a good result.  A good
+  -- result @b@ may be either @Left c@, where @c@ is a list of
+  -- /positional arguments/, or @Right d@, where @d@ is the mode
+  -- result.  @c@ indicates that no mode was recognized and may be
+  -- either @[]@, which indicates that the user passed no /words/ at
+  -- all after the global /options/, or @x:xs@, indicating that the
+  -- user did pass /words/ after the global /options/, but the first
+  -- /word/ was not recognized as a mode.
 
   -> Either (String, [String]) (ModeResult g r)
 combine (Left (oe1, oes)) (Left (me1, mes)) =
@@ -193,12 +195,12 @@ labeledInsufficientOptArgs lbl on = "insufficient option arguments "
 -- | Parses a command line that may contain modes.
 parseModeLine
   :: [OptSpec g]
-  -- ^ Global options.  This might, for example, include a @--help@
-  -- option.
+  -- ^ Global /options/.  This might, for example, include a @--help@
+  -- /option/.
   -> [Mode r]
   -- ^ All modes
   -> [String]
-  -- ^ All command line tokens
+  -- ^ All command line /words/
   -> Either (String, [String]) (ModeResult g r)
   -- ^ Returns @Either a b@.  @Left a@ represents an error.  Each
   -- String represents a single error (this is returned as a pair
@@ -221,9 +223,9 @@ parseModeLineWithErrors
   -> GlobalLocal g r
 parseModeLineWithErrors glbl mds tokStrings = GlobalLocal lsErrsGoods end
   where
-    toks = map Token tokStrings
+    toks = map Word tokStrings
     (shorts, longs) = splitOptSpecs glbl
-    (outs, eiOptTok) = processTokens shorts longs toks
+    (outs, eiOptTok) = processWords shorts longs toks
     lsErrsGoods = map f . concat $ outs
       where
         f (Good a) = Right a
@@ -232,19 +234,19 @@ parseModeLineWithErrors glbl mds tokStrings = GlobalLocal lsErrsGoods end
       Left (opt, _) -> GlobalInsufficientOptArgs opt
       Right [] -> NoMode
       Right (x:xs) -> case findExactMode x mds of
-        Nothing -> ModeNotFound (unToken x) (map unToken xs)
+        Nothing -> ModeNotFound (unWord x) (map unWord xs)
           where
-            unToken (Token t) = t
+            unWord (Word t) = t
         Just (Mode _ f) -> ModeFound (f xs)
 
 -- | Takes a token and a list of all modes; returns the matching mode
 -- if there is one, or Nothing if there is no match.
 findExactMode
-  :: Token
+  :: Word
   -> [Mode a]
   -> Maybe (Mode a)
 findExactMode _ [] = Nothing
-findExactMode tok@(Token s) (m@(Mode (ModeName n) _) : ms)
+findExactMode tok@(Word s) (m@(Mode (ModeName n) _) : ms)
   | s == n = Just m
   | otherwise = findExactMode tok ms
 

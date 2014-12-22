@@ -2,6 +2,7 @@
 module Multiarg.Maddash.Tests where
 
 import Control.Applicative
+import Multiarg.Types
 import Multiarg.Maddash
 import Test.QuickCheck
   ( Gen, Arbitrary(..), CoArbitrary(..),
@@ -50,27 +51,27 @@ genArgSpec = oneof
                              arbitrary)
   ]
 
-genToken :: Gen Token
-genToken = fmap Token arbitrary
+genWord :: Gen Word
+genWord = fmap Word arbitrary
 
-singleDash :: Token
-singleDash = Token "-"
+singleDash :: Word
+singleDash = Word "-"
 
-stopper :: Token
-stopper = Token "--"
+stopper :: Word
+stopper = Word "--"
 
-genNonOptToken :: Gen Token
-genNonOptToken = oneof
+genNonOptWord :: Gen Word
+genNonOptWord = oneof
   [ return singleDash
   , return stopper
   , do
       c1 <- arbitrary `suchThat` (/= '-')
       cs <- listOf arbitrary
-      return $ Token (c1 : cs)
+      return $ Word (c1 : cs)
   ]
 
-coaToken :: Token -> Gen b -> Gen b
-coaToken (Token s) = coarbitrary s
+coaWord :: Word -> Gen b -> Gen b
+coaWord (Word s) = coarbitrary s
 
 genOptArg :: Gen OptArg
 genOptArg = fmap OptArg arbitrary
@@ -96,7 +97,7 @@ genPallet = oneof
 genPending :: Gen (State Int)
 genPending = Pending <$> genOptName <*> genF
   where
-    genF = function1 coaToken
+    genF = function1 coaWord
       ((,) <$> listOf genOutput <*> genState)
 
 genState :: Gen (State Int)
@@ -114,12 +115,12 @@ genLongArgSpecs = listOf ((,) <$> genLongName <*> genArgSpec)
 -- * Properties
 
 -- | Non-option token always returns NotAnOption if State is Ready
-prop_nonOptTokenNotAnOptionIfStateIsReady :: Property
-prop_nonOptTokenNotAnOptionIfStateIsReady =
+prop_nonOptWordNotAnOptionIfStateIsReady :: Property
+prop_nonOptWordNotAnOptionIfStateIsReady =
   forAll genShortArgSpecs $ \shorts ->
   forAll genLongArgSpecs $ \longs ->
-  forAll genNonOptToken $ \token ->
-  let (pallet, _) = processToken shorts longs Ready token
+  forAll genNonOptWord $ \token ->
+  let (pallet, _) = processWord shorts longs Ready token
   in pallet == NotAnOption
 
 -- | Stopper always returns NotAnOption if State is Ready
@@ -127,7 +128,7 @@ prop_stopperNotAnOptionIfStateIsReady :: Property
 prop_stopperNotAnOptionIfStateIsReady =
   forAll genShortArgSpecs $ \shorts ->
   forAll genLongArgSpecs $ \longs ->
-  let (pallet, _) = processToken shorts longs Ready stopper
+  let (pallet, _) = processWord shorts longs Ready stopper
   in pallet == NotAnOption
 
 -- | Single dash always returns NotAnOption if State is Ready
@@ -135,25 +136,25 @@ prop_singleDashNotAnOptionIfStateIsReady :: Property
 prop_singleDashNotAnOptionIfStateIsReady =
   forAll genShortArgSpecs $ \shorts ->
   forAll genLongArgSpecs $ \longs ->
-  let (pallet, _) = processToken shorts longs Ready singleDash
+  let (pallet, _) = processWord shorts longs Ready singleDash
   in pallet == NotAnOption
 
--- | processToken never returns NotAnOption when input is Pending
-prop_processTokenNeverReturnsNotAnOptionOnPending =
+-- | processWord never returns NotAnOption when input is Pending
+prop_processWordNeverReturnsNotAnOptionOnPending =
   forAll genShortArgSpecs $ \shorts ->
   forAll genLongArgSpecs $ \longs ->
   forAll genPending $ \state ->
-  forAll genToken $ \token ->
-  let (pallet, _) = processToken shorts longs state token
+  forAll genWord $ \token ->
+  let (pallet, _) = processWord shorts longs state token
   in pallet /= NotAnOption
 
 -- | NotAnOption is always returned with Ready
-prop_processTokenNotAnOptionWithReady =
+prop_processWordNotAnOptionWithReady =
   forAll genShortArgSpecs $ \shorts ->
   forAll genLongArgSpecs $ \longs ->
   forAll genState $ \state ->
-  forAll genToken $ \token ->
-  let (pallet, state') = processToken shorts longs state token
+  forAll genWord $ \token ->
+  let (pallet, state') = processWord shorts longs state token
   in pallet == NotAnOption ==> isReady state'
 
 pickOne :: [a] -> Gen a
@@ -165,9 +166,9 @@ data OptionWithToks = OptionWithToks
   { owtOptName :: OptName
   , owtArgSpec :: ArgSpec Int
   , owtArgs :: [String]
-  , owtTokens :: [Token]
+  , owtWords :: [Word]
   , owtResultOuts :: [[Output Int]]
-  , owtResultToks :: Maybe [Token]
+  , owtResultToks :: Maybe [Word]
   , owtExpected :: Int
   } deriving Show
 
@@ -189,11 +190,11 @@ instance Arbitrary OptionWithToks where
     let strings = case on of
           Left shrt -> processShortOptions [] (shrt, args)
           Right lng -> processLongOption lng args
-    toks <- fmap (map Token) $ pickOne strings
+    toks <- fmap (map Word) $ pickOne strings
     let (shrts, lngs) = case on of
           Left shrt -> ([(shrt, as)], [])
           Right lng -> ([], [(lng, as)])
-        (procRslts, procEi) = processTokens shrts lngs toks
+        (procRslts, procEi) = processWords shrts lngs toks
         mayToks = either (const Nothing) Just procEi
     return $ OptionWithToks (OptName on) as args toks procRslts
       mayToks expected

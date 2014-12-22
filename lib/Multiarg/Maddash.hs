@@ -1,4 +1,4 @@
--- | Maddash is a Mealy finite state machine that processes options.
+-- | Maddash is a Mealy finite state machine that processes /options/.
 -- Ordinarily you will not need this module; instead, see "Multiarg"
 -- for most uses or "Multiarg.Mode" for commands that have more than
 -- one mode.
@@ -9,12 +9,12 @@
 --
 -- * The start state, which is 'Ready'
 --
--- * The input alphabet, which is all 'Token's.  A 'Token' is an
--- input token from the command line.
+-- * The input alphabet, which is all 'Word's.  A 'Word' is an
+-- input /word/ from the command line.
 --
 -- * The output alphabet, which is 'Pallet'.  A 'Pallet' indicates
 -- whether its input is not an option at all with 'NotAnOption'.  This
--- indicates that the input 'Token' was not a short option and was not
+-- indicates that the input 'Word' was not a short option and was not
 -- a long option; that is, it was not a single dash followed by a
 -- non-dash character and it was not a double dash followed by another
 -- character.  (Neither a single dash alone nor a double dash alone is
@@ -23,10 +23,10 @@
 -- error or a good result.
 --
 -- * The transition function and the output function are combined into
--- a single function, 'processToken'.
+-- a single function, 'processWord'.
 
 module Multiarg.Maddash
-  ( -- * Options and option arguments
+  ( -- * /Options/ and /option arguments/
     OptName(..)
   , optSpec
   , ArgSpec(..)
@@ -38,16 +38,15 @@ module Multiarg.Maddash
   , longNameToString
 
   -- * Machine components
-  , Token(..)
   , Output(..)
   , Pallet(..)
   , State(..)
   , isReady
   , isPending
-  , processToken
+  , processWord
 
-  -- * Multi-token processor
-  , processTokens
+  -- * Multi-word processor
+  , processWords
 
   -- * Errors
   , OptArg(..)
@@ -79,11 +78,11 @@ instance Functor Pallet where
 
 data State a
   = Ready
-  -- ^ Accepting new tokens
+  -- ^ Accepting new words
 
-  | Pending OptName (Token -> ([Output a], State a))
-  -- ^ In the middle of processing an option; this function will be
-  -- applied to the next token to get a result
+  | Pending OptName (Word -> ([Output a], State a))
+  -- ^ In the middle of processing an /option/; this function will be
+  -- applied to the next word to get a result
 
 
 instance Functor State where
@@ -104,14 +103,14 @@ isPending :: State a -> Bool
 isPending (Pending _ _) = True
 isPending _ = False
 
--- | Process a single token in the machine.
-processToken
+-- | Process a single word in the machine.
+processWord
   :: [(ShortName, ArgSpec a)]
   -> [(LongName, ArgSpec a)]
   -> State a
-  -> Token
+  -> Word
   -> (Pallet a, State a)
-processToken shorts longs st inp = case st of
+processWord shorts longs st inp = case st of
   Pending _ f -> (Full os, st')
     where
       (os, st') = f inp
@@ -121,29 +120,30 @@ processToken shorts longs st inp = case st of
     where
       procOpt = procShort shorts inp <|> procLong longs inp
 
--- * Multi-token processor
+-- * Multi-word processor
 
--- | Processes multiple tokens in the machine.  Processing ends with
--- the first token that is 'NotAnOption'.  This first token that is
--- 'NotAnOption', and all remaining tokens, are returned in the
+-- | Processes multiple /words/ in the machine.  Processing ends with
+-- the first /word/ that is 'NotAnOption'.  This first /word/ that is
+-- 'NotAnOption', and all remaining /words/, are returned in the
 -- result.  A list of all lists of 'Output' are also returned, with
--- one list for each input 'Token' that was processed.  Each of these
--- lists may be of any length.  For instance, if the input token is
--- the flag token for a long option that takes two arguments, the
--- corresponding list will be empty.  If the input token is a short
--- flag token, this list may have more than one element.
-processTokens
+-- one list for each input 'Word' that was processed.  Each of these
+-- lists may be of any length.  For instance, if the input /word/ is
+-- the /flag/ for a /long option/ that takes two /option arguments/,
+-- the corresponding list will be empty.  If the input /word/ is a
+-- /flag/ for a /short option/, this list may have more than one
+-- element.
+processWords
   :: [(ShortName, ArgSpec a)]
   -> [(LongName, ArgSpec a)]
-  -> [Token]
-  -> ([[Output a]], Either (OptName, Token -> ([Output a], State a)) [Token])
-processTokens shorts longs = go Ready
+  -> [Word]
+  -> ([[Output a]], Either (OptName, Word -> ([Output a], State a)) [Word])
+processWords shorts longs = go Ready
   where
     go Ready [] = ([], Right [])
     go (Pending opt f) [] = ([], Left (opt, f))
     go st (t:ts) = (rs, eiToksPend)
       where
-        (pallet, st') = processToken shorts longs st t
+        (pallet, st') = processWord shorts longs st t
         (rs, eiToksPend) = case pallet of
           NotAnOption -> ([], Right (t:ts))
           Full out -> (out : outRest, ei)
@@ -163,11 +163,11 @@ data OptionError
 
 -- * Internal functions - not exported
 
--- | Examines a token to determine if it is a short option.  If so,
+-- | Examines a word to determine if it is a short option.  If so,
 -- processes it; otherwise, returns Nothing.
 procShort
   :: [(ShortName, ArgSpec a)]
-  -> Token
+  -> Word
   -> Maybe ([Output a], State a)
 procShort shorts inp = fmap (getShortOpt shorts) (isShort inp)
 
@@ -198,7 +198,7 @@ procShortOpt _ shrt (OneArg f) (ShortTail inp) = case inp of
       g tok = ([res], Ready)
         where
           res = Good . f . optArgToString $ arg
-          arg = tokenToOptArg tok
+          arg = wordToOptArg tok
   xs -> ([res], Ready)
     where
       res = Good . f . optArgToString $ optArg
@@ -213,7 +213,7 @@ procShortOpt _ shrt (TwoArg f) (ShortTail inp) = ([], Pending opt g)
         where
           h tok2 = ([res], Ready)
             where
-              oa2 = tokenToOptArg tok2
+              oa2 = wordToOptArg tok2
               res = Good $ f (optArgToString oa1) (optArgToString oa2)
 
       xs -> ([res], Ready)
@@ -221,7 +221,7 @@ procShortOpt _ shrt (TwoArg f) (ShortTail inp) = ([], Pending opt g)
           res = Good $ f (optArgToString tokArg) (optArgToString oa1)
           tokArg = OptArg xs
       where
-        oa1 = tokenToOptArg tok1
+        oa1 = wordToOptArg tok1
     opt = OptName (Left shrt)
 
 procShortOpt _ shrt (ThreeArg f) (ShortTail inp) = ([], Pending opt g)
@@ -229,26 +229,26 @@ procShortOpt _ shrt (ThreeArg f) (ShortTail inp) = ([], Pending opt g)
     opt = OptName (Left shrt)
     g tok1 = ([], Pending opt h)
       where
-        oa1 = tokenToOptArg tok1
+        oa1 = wordToOptArg tok1
         h tok2 = case inp of
           [] -> ([], Pending opt i)
             where
               i tok3 = ([res], Ready)
                 where
-                  oa3 = tokenToOptArg tok3
+                  oa3 = wordToOptArg tok3
                   res = Good $ f (optArgToString oa1) (optArgToString oa2)
                                  (optArgToString oa3)
           tokInp -> ([res], Ready)
             where
-              tokArg = tokenToOptArg (Token tokInp)
+              tokArg = wordToOptArg (Word tokInp)
               res = Good $ f (optArgToString tokArg) (optArgToString oa1)
                              (optArgToString oa2)
           where
-            oa2 = tokenToOptArg tok2
+            oa2 = wordToOptArg tok2
 
 procLong
   :: [(LongName, ArgSpec a)]
-  -> Token
+  -> Word
   -> Maybe ([Output a], State a)
 procLong longs inp = fmap (procLongOpt longs) (isLong inp)
 
@@ -270,7 +270,7 @@ procLongOpt longs (inp, mayArg) = case lookup inp longs of
         run tok = ([out], Ready)
           where
             out = Good $ f (optArgToString arg1)
-            arg1 = tokenToOptArg tok
+            arg1 = wordToOptArg tok
     Just arg -> ([out], Ready)
       where
         out = Good $ f (optArgToString arg)
@@ -287,15 +287,15 @@ procLongOpt longs (inp, mayArg) = case lookup inp longs of
               where
                 out = Good $ f (optArgToString gArg)
                                (optArgToString hArg)
-                hArg = tokenToOptArg hTok
+                hArg = wordToOptArg hTok
         where
-          gArg = tokenToOptArg gTok
+          gArg = wordToOptArg gTok
 
   Just (ThreeArg f) -> ([], Pending opt g)
     where
       g gTok = ([], Pending opt h)
         where
-          gArg = tokenToOptArg gTok
+          gArg = wordToOptArg gTok
           h hTok = case mayArg of
             Just arg1 -> ([out], Ready)
               where
@@ -305,12 +305,12 @@ procLongOpt longs (inp, mayArg) = case lookup inp longs of
               where
                 i iTok = ([out], Ready)
                   where
-                    iArg = tokenToOptArg iTok
+                    iArg = wordToOptArg iTok
                     out = Good $ f (optArgToString gArg)
                                    (optArgToString hArg)
                                    (optArgToString iArg)
             where
-              hArg = tokenToOptArg hTok
+              hArg = wordToOptArg hTok
   where
     opt = OptName (Right inp)
 

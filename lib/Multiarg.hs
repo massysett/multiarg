@@ -1,16 +1,17 @@
--- | Parse command lines with options that might take multiple
--- arguments.
+-- | Parse command lines with /options/ that might take multiple
+-- /option arguments/.
 --
--- I built this library could not find anything that would
--- readily parse command lines where the options took more than one
--- argument. For example, for the @tail@ command on GNU systems, the
--- @--lines@ option takes one argument to specify how many lines you
--- want to see. Well, what if you want to build a program with an
--- option that takes /two/ arguments, like @--foo bar baz@? I found no
--- such library so I built this one.
+-- I built this library could not find anything that would readily
+-- parse command lines where the /options/ took more than one
+-- /option argument/. For example, for the @tail@ command on GNU systems, the
+-- @--lines@ /option/ takes one /option argument/ to specify how many
+-- lines you want to see. Well, what if you want to build a program
+-- with an option that takes two /option arguments/, like @--foo bar
+-- baz@? I found no such library so I built this one.
 --
 -- Please consult the "Multiarg.Vocabulary" module to learn common
--- vocabulary used throughout Multiarg and its documentation.
+-- vocabulary used throughout Multiarg and its documentation.  Words
+-- that appear in /italics/ are defined in "Multiarg.Vocabulary".
 --
 -- Use this module to build parsers for simple commands.  The
 -- 'parseCommandLineIO' function runs in the IO monad and will cause

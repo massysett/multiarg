@@ -25,9 +25,6 @@ quickpull = C.closedOpen "quickpull" [0,4,0,0] [0,5]
 barecheck :: C.Package
 barecheck = C.closedOpen "barecheck" [0,2,0,6] [0,3]
 
-semigroups :: C.Package
-semigroups = C.closedOpen "semigroups" [0,16] [0,17]
-
 properties :: C.Properties
 properties = C.empty
   { C.prName = "multiarg"
@@ -91,8 +88,7 @@ tests ms ts = C.TestSuite "multiarg-tests" $ commonOptions ++
   ]
 
 testDepends :: C.Field a => a
-testDepends = C.buildDepends [ quickCheck, quickpull, barecheck,
-                               semigroups ]
+testDepends = C.buildDepends [ quickCheck, quickpull, barecheck ]
 
 grover
   :: [String]
@@ -102,6 +98,23 @@ grover
   -> C.Executable
 grover ms ts = C.Executable "grover"
   [ C.ExeMainIs "grover-main.hs"
+  , C.cif (C.flag "programs") (commonOptions ++
+    [ testDepends
+    , C.buildable True
+    , C.otherModules (ms ++ ts)
+    , C.hsSourceDirs ["tests"]
+    ])
+    [ C.buildable False ]
+  ]
+
+telly
+  :: [String]
+  -- ^ Library modules
+  -> [String]
+  -- ^ Test modules
+  -> C.Executable
+telly ms ts = C.Executable "telly"
+  [ C.ExeMainIs "telly-main.hs"
   , C.cif (C.flag "programs") (commonOptions ++
     [ testDepends
     , C.buildable True
@@ -127,7 +140,8 @@ cabal ms ts = C.empty
   , C.cRepositories = [repo]
   , C.cLibrary = Just $ library ms
   , C.cTestSuites = [tests ms ts]
-  , C.cExecutables = [ grover ms ts ]
+  , C.cExecutables = [ grover ms ts
+                     , telly ms ts ]
   , C.cFlags = [ programs ]
   }
 

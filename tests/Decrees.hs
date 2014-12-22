@@ -7,20 +7,20 @@ module Decrees where
 import Quickpull
 import qualified Grover.Tests
 import qualified Multiarg.Maddash.Tests
-import qualified Telly
+import qualified Telly.Tests
 
 decrees :: [Decree]
 decrees =
 
-  [ Decree ( Meta {modDesc = ModDesc {modPath = "tests/Telly.hs", modName = ["Telly"]}, linenum = 120, qName = "prop_parseStringsYieldsTellies"} ) ( Single Telly.prop_parseStringsYieldsTellies )
-  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Telly.hs", modName = ["Telly"]}, linenum = 126, qName = "prop_parseStringsYieldsNoEndError"} ) ( Single Telly.prop_parseStringsYieldsNoEndError )
-  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Grover/Tests.hs", modName = ["Grover","Tests"]}, linenum = 118, qName = "prop_ValidGrover"} ) ( Single Grover.Tests.prop_ValidGrover )
+  [ Decree ( Meta {modDesc = ModDesc {modPath = "tests/Grover/Tests.hs", modName = ["Grover","Tests"]}, linenum = 118, qName = "prop_ValidGrover"} ) ( Single Grover.Tests.prop_ValidGrover )
   , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Grover/Tests.hs", modName = ["Grover","Tests"]}, linenum = 124, qName = "prop_alwaysTrue"} ) ( Single Grover.Tests.prop_alwaysTrue )
-  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 118, qName = "prop_nonOptTokenNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_nonOptTokenNotAnOptionIfStateIsReady )
-  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 127, qName = "prop_stopperNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_stopperNotAnOptionIfStateIsReady )
-  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 135, qName = "prop_singleDashNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_singleDashNotAnOptionIfStateIsReady )
-  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 142, qName = "prop_processTokenNeverReturnsNotAnOptionOnPending"} ) ( Single Multiarg.Maddash.Tests.prop_processTokenNeverReturnsNotAnOptionOnPending )
-  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 151, qName = "prop_processTokenNotAnOptionWithReady"} ) ( Single Multiarg.Maddash.Tests.prop_processTokenNotAnOptionWithReady )
-  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 201, qName = "prop_optionWithToksResultToksEmpty"} ) ( Single Multiarg.Maddash.Tests.prop_optionWithToksResultToksEmpty )
-  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 203, qName = "prop_optionWithToksResultIsExpected"} ) ( Single Multiarg.Maddash.Tests.prop_optionWithToksResultIsExpected )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 119, qName = "prop_nonOptWordNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_nonOptWordNotAnOptionIfStateIsReady )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 128, qName = "prop_stopperNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_stopperNotAnOptionIfStateIsReady )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 136, qName = "prop_singleDashNotAnOptionIfStateIsReady"} ) ( Single Multiarg.Maddash.Tests.prop_singleDashNotAnOptionIfStateIsReady )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 143, qName = "prop_processWordNeverReturnsNotAnOptionOnPending"} ) ( Single Multiarg.Maddash.Tests.prop_processWordNeverReturnsNotAnOptionOnPending )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 152, qName = "prop_processWordNotAnOptionWithReady"} ) ( Single Multiarg.Maddash.Tests.prop_processWordNotAnOptionWithReady )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 202, qName = "prop_optionWithToksResultToksEmpty"} ) ( Single Multiarg.Maddash.Tests.prop_optionWithToksResultToksEmpty )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Multiarg/Maddash/Tests.hs", modName = ["Multiarg","Maddash","Tests"]}, linenum = 204, qName = "prop_optionWithToksResultIsExpected"} ) ( Single Multiarg.Maddash.Tests.prop_optionWithToksResultIsExpected )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Telly/Tests.hs", modName = ["Telly","Tests"]}, linenum = 64, qName = "prop_parseStringsYieldsTellies"} ) ( Single Telly.Tests.prop_parseStringsYieldsTellies )
+  , Decree ( Meta {modDesc = ModDesc {modPath = "tests/Telly/Tests.hs", modName = ["Telly","Tests"]}, linenum = 70, qName = "prop_parseStringsYieldsNoEndError"} ) ( Single Telly.Tests.prop_parseStringsYieldsNoEndError )
   ]
