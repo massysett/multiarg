@@ -2,8 +2,19 @@ language: haskell
 ghc:
   - 7.6
   - 7.8
+
 before_install:
   - cabal update
   - cabal install cartel
   - cabal install quickpull
   - sh generate
+
+install:
+  - cabal sdist --output-directory=tarball
+  - cd tarball
+  - cabal configure --enable-tests
+  - cabal build
+  - cabal test
+  - cabal clean
+  - cabal configure -fprograms
+  - cabal build
