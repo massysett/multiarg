@@ -1,3 +1,15 @@
+Release 0.30.0.0
+
+* Completely changed the API.  This version is much better tested than
+  previous versions.  Instead of using parser combinators as a model,
+  this version is built on a Mealy finite state machine.
+
+* The tests are particularly exhaustive; there is a module that
+  produces all possible command-line words that can parse to a
+  particular option (for instance, the user might enter "-a -b foo" or
+  "-abfoo" if -b is an option that takes a single option argument.)
+  Different combinations are tested randomly.
+
 Release 0.28.0.0
 
 * Renamed everything from System.Console.MultiArg to Multiarg

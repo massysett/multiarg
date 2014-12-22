@@ -1,5 +1,5 @@
--- | Makeopt is a Mealy finite state machine that produces all
--- possible partitions for a given set of command line options.
+-- | Makeopt produces all possible partitions for a given set of
+-- command line options.
 
 module Makeopt where
 
