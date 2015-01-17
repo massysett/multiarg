@@ -8,18 +8,18 @@
 -- shell is responsible for splitting the command line into
 -- /words/. Typically you separate /words/ with spaces, although
 -- quoting can affect this. multiarg parses lists of /words/. Each
--- /word/ can consist of a single /long option/, a single /long
--- option/ and an accompanying /option argument/, a single /short
--- option/, multiple /short options/, and even one or more /short
--- options/ with the last /short option/ being accompanied by an
+-- /word/ can consist of a single /long option/, a single /long option/
+-- and an accompanying /option argument/, a single /short option/,
+-- multiple /short options/, and even one or more /short options/
+-- with the last /short option/ being accompanied by an
 -- /option argument/.  Or, a word can be a /positional argument/ or a
 -- /stopper/. All these are described below.
 --
 -- [/option/] /Options/ allow a user to specify ways to tune the
 -- operation of a program. Typically /options/ are indeed optional,
 -- although some programs do sport \"required options\" (a bit of an
--- oxymoron). /Options/ can be either /short options/ or /long
--- options/.  options. Also, /options/ can take /option arguments/.
+-- oxymoron). /Options/ can be either /short options/ or /long options/.
+-- Also, /options/ can take /option arguments/.
 -- The option is specified on the command line with both the /flag/
 -- that specifies the option and of any /option arguments/ that are
 -- included with the /option/.  Therefore the /option/ might be
@@ -62,8 +62,7 @@
 -- single letter. For example, @tail(1)@ has long options including
 -- @follow@ and @verbose@. The user would specify these on the command
 -- line by typing @tail --follow --verbose@.  A long option is
--- specified on the command line with a /flag/ and any /option
--- arguments/.
+-- specified on the command line with a /flag/ and any /option arguments/.
 --
 -- [/option argument/] An /option/ may take anywhere from zero to
 -- three /option arguments/.  When using a /short option/, the first
@@ -81,10 +80,10 @@
 -- appear in its own /word/.
 --
 -- [/positional argument/] A /word/ on the command line that does not
--- contain a /flag/, is not a /stopper/, and is not an /option
--- argument/.  For instance, with @tail(1)@, you specify the files you
--- want to see by using /positional arguments/. In the command @tail -n
--- 10 myfile@, @myfile@ is a /positional argument/.
+-- contain a /flag/, is not a /stopper/, and is not an /option argument/.
+-- For instance, with @tail(1)@, you specify the files you
+-- want to see by using /positional arguments/. In the command @tail -n 10 myfile@,
+-- @myfile@ is a /positional argument/.
 --
 -- [/stopper/] A  /word/ consisting solely of two hyphens,
 -- @--@. The user types this to indicate that all subsequent words
