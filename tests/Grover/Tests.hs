@@ -94,7 +94,12 @@ genNonModePosArg = frequency ([ (1, return []), (3, nonEmpty)])
     nonEmpty = (:) <$> firstWord <*> listOf arbitrary
       where
         firstWord = arbitrary `suchThat`
-          (\s -> not (s `elem` ["int", "string", "maybe"]))
+          (\s -> not (s `elem` ["int", "string", "maybe"])
+                 && not (startsWithHyphen s))
+        startsWithHyphen s = case s of
+          '-':_ -> True
+          _ -> False
+
 
 resultAndStrings
   :: (Arbitrary a, Show a)
