@@ -1,66 +1,53 @@
 module Main where
 
-import qualified Cartel as C
+import Cartel
 
-version :: C.Version
-version = C.Version [0,30,0,0]
+ver :: Version
+ver = [0,30,0,2]
 
-base :: C.Package
-base = C.closedOpen "base" [4,5,0,0] [5]
+base :: Package
+base = closedOpen "base" [4,5,0,0] [5]
 
--- Note as of 2014-12-03
---
--- Do not use QuickCheck 2.7 features; this will
--- cause problems with Stackage, which currently builds using
--- QuickCheck 2.6 for older Haskell Platform versions and QuickCheck
--- 2.7 for GHC 7.8.  Should such features become necessary to use, you
--- will have to use shims to allow for compatibility with QuickCheck
--- versions 2.6 and 2.7.x.
-quickCheck :: C.Package
-quickCheck = C.closedOpen "QuickCheck" [2,6] [2,8]
+quickCheck :: Package
+quickCheck = closedOpen "QuickCheck" [2,7] [2,8]
 
-quickpull :: C.Package
-quickpull = C.closedOpen "quickpull" [0,4,0,0] [0,5]
+quickpull :: Package
+quickpull = closedOpen "quickpull" [0,4,0,0] [0,5]
 
-barecheck :: C.Package
-barecheck = C.closedOpen "barecheck" [0,2,0,6] [0,3]
+barecheck :: Package
+barecheck = closedOpen "barecheck" [0,2,0,6] [0,3]
 
-properties :: C.Properties
-properties = C.empty
-  { C.prName = "multiarg"
-  , C.prVersion = version
-  , C.prCabalVersion = (1,16)
-  , C.prBuildType = C.Simple
-  , C.prLicense = C.BSD3
-  , C.prLicenseFile = "LICENSE"
-  , C.prCopyright = "Copyright 2011-2014 Omari Norman"
-  , C.prAuthor = "Omari Norman"
-  , C.prMaintainer = "omari@smileystation.com"
-  , C.prStability = "Experimental"
-  , C.prHomepage = "https://github.com/massysett/multiarg"
-  , C.prBugReports = "https://github.com/massysett/multiarg/issues"
-  , C.prSynopsis = "Command lines for options that take multiple arguments"
-  , C.prDescription =
+properties :: Properties
+properties = blank
+  { name = "multiarg"
+  , version = ver
+  , cabalVersion = Just (1,16)
+  , buildType = Just simple
+  , license = Just bsd3
+  , licenseFile = "LICENSE"
+  , copyright = "Copyright 2011-2015 Omari Norman"
+  , author = "Omari Norman"
+  , maintainer = "omari@smileystation.com"
+  , stability = "Experimental"
+  , homepage = "https://github.com/massysett/multiarg"
+  , bugReports = "https://github.com/massysett/multiarg/issues"
+  , synopsis = "Command lines for options that take multiple arguments"
+  , description =
     [ "multiarg helps you build command-line parsers for"
     , "programs with options that take more than one argument."
     , "See the documentation in the Multiarg module for details."
     ]
-  , C.prCategory = "Console, Parsing"
-  , C.prExtraSourceFiles =
+  , category = "Console, Parsing"
+  , extraSourceFiles =
     [ "ChangeLog", "README.md" ]
   }
 
-repo :: C.Repository
-repo = C.empty
-  { C.repoLocation = "git://github.com/massysett/multiarg.git"
-  }
-
-commonOptions :: C.Field a => [a]
+commonOptions :: HasBuildInfo a => [a]
 commonOptions =
-  [ C.hsSourceDirs [ "lib" ]
-  , C.ghcOptions ["-Wall"]
-  , C.defaultLanguage C.Haskell2010
-  , C.buildDepends
+  [ hsSourceDirs [ "lib" ]
+  , ghcOptions ["-Wall"]
+  , haskell2010
+  , buildDepends
     [ base
     ]
   ]
@@ -68,9 +55,9 @@ commonOptions =
 library
   :: [String]
   -- ^ List of all modules
-  -> C.Library
-library ms = C.Library $ commonOptions ++
-  [ C.LibExposedModules ms
+  -> [LibraryField]
+library ms = commonOptions ++
+  [ exposedModules ms
   ]
 
 tests
@@ -78,75 +65,75 @@ tests
   -- ^ Library modules
   -> [String]
   -- ^ Test modules
-  -> C.TestSuite
-tests ms ts = C.TestSuite "multiarg-tests" $ commonOptions ++
-  [ C.TestType C.ExitcodeStdio
-  , C.TestMainIs "multiarg-tests.hs"
-  , C.otherModules (ms ++ ts)
-  , C.hsSourceDirs [ "tests" ]
+  -> Section
+tests ms ts = testSuite "multiarg-tests" $ commonOptions ++
+  [ exitcodeStdio
+  , mainIs "multiarg-tests.hs"
+  , otherModules (ms ++ ts)
+  , hsSourceDirs [ "tests" ]
   , testDepends
   ]
 
-testDepends :: C.Field a => a
-testDepends = C.buildDepends [ quickCheck, quickpull, barecheck ]
+testDepends :: HasBuildInfo a => a
+testDepends = buildDepends [ quickCheck, quickpull, barecheck ]
 
 grover
-  :: [String]
+  :: FlagName
+  -- ^ Programs flag
+  -> [String]
   -- ^ Library modules
   -> [String]
   -- ^ Test modules
-  -> C.Executable
-grover ms ts = C.Executable "grover"
-  [ C.ExeMainIs "grover-main.hs"
-  , C.cif (C.flag "programs") (commonOptions ++
-    [ testDepends
-    , C.buildable True
-    , C.otherModules (ms ++ ts)
-    , C.hsSourceDirs ["tests"]
-    ])
-    [ C.buildable False ]
+  -> Section
+grover fl ms ts = executable "grover"
+  [ mainIs "grover-main.hs"
+  , condBlock (flag fl)
+    ( buildable True
+    , commonOptions ++
+        [ testDepends
+        , otherModules (ms ++ ts)
+        , hsSourceDirs ["tests"]
+        ]
+    )
+    [ buildable False ]
   ]
 
 telly
-  :: [String]
+  :: FlagName
+  -- ^ Programs flag
+  -> [String]
   -- ^ Library modules
   -> [String]
   -- ^ Test modules
-  -> C.Executable
-telly ms ts = C.Executable "telly"
-  [ C.ExeMainIs "telly-main.hs"
-  , C.cif (C.flag "programs") (commonOptions ++
-    [ testDepends
-    , C.buildable True
-    , C.otherModules (ms ++ ts)
-    , C.hsSourceDirs ["tests"]
-    ])
-    [ C.buildable False ]
+  -> Section
+telly fl ms ts = executable "telly"
+  [ mainIs "telly-main.hs"
+  , condBlock (flag fl)
+    ( buildable True
+    , commonOptions ++
+        [ testDepends
+        , otherModules (ms ++ ts)
+        , hsSourceDirs ["tests"]
+        ]
+    )
+    [ buildable False ]
   ]
 
-programs :: C.Flag
-programs = C.Flag "programs"
-  "Build test programs."
-  False True
-
-cabal
-  :: [String]
-  -- ^ List of all library modules
-  -> [String]
-  -- ^ Test modules
-  -> C.Cabal
-cabal ms ts = C.empty
-  { C.cProperties = properties
-  , C.cRepositories = [repo]
-  , C.cLibrary = Just $ library ms
-  , C.cTestSuites = [tests ms ts]
-  , C.cExecutables = [ grover ms ts
-                     , telly ms ts ]
-  , C.cFlags = [ programs ]
-  }
-
 main :: IO ()
-main = do
-  ms <- C.modules "lib"
-  ts <- C.modules "tests"
-  C.render "genCabal.hs" $ cabal ms ts
+main = defaultMain $ do
+  ms <- modules "lib"
+  ts <- modules "tests"
+  fl <- makeFlag "programs" $ FlagOpts
+    { flagDescription = "Build sample programs"
+    , flagDefault = False
+    , flagManual = True
+    }
+  return
+    ( properties
+    , library ms
+    , [ githubHead "massysett" "multiarg"
+      , grover fl ms ts
+      , telly fl ms ts
+      , tests ms ts
+      ]
+    )
