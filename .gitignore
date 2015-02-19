@@ -3,3 +3,4 @@ dist/
 cabal.sandbox.config
 multiarg.cabal
 tarball/
+tests/Decrees.hs
