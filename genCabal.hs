@@ -3,13 +3,13 @@ module Main where
 import Cartel
 
 ver :: Version
-ver = [0,30,0,2]
+ver = [0,30,0,4]
 
 base :: Package
 base = closedOpen "base" [4,5,0,0] [5]
 
 quickCheck :: Package
-quickCheck = closedOpen "QuickCheck" [2,7] [2,8]
+quickCheck = closedOpen "QuickCheck" [2,7] [2,9]
 
 quickpull :: Package
 quickpull = closedOpen "quickpull" [0,4,0,0] [0,5]
