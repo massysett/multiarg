@@ -1,58 +1,24 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Multiarg.Maddash.Tests where
 
 import Control.Applicative
 import Multiarg.Types
 import Multiarg.Maddash
-import Test.QuickCheck
-  ( Gen, Arbitrary(..), CoArbitrary(..),
-    suchThat, listOf, oneof, forAll, Property,
-    (==>), choose, vectorOf )
-import Prelude.Generators (function1, function2, function3)
-import qualified Prelude.Generators as G
 import Makeopt
+import Test.QuickCheck
+import Test.Tasty
+import Test.Tasty.TH
+import Test.Tasty.QuickCheck
+import Multiarg.Types.Instances ()
+import Multiarg.Maddash.Instances ()
+import Multiarg.Types.Instances ()
+
+tests :: TestTree
+tests = $(testGroupGenerator)
 
 genInt :: Gen Int
 genInt = arbitrary
-
-genStringF1 :: Gen (String -> Int)
-genStringF1 = function1 coarbitrary arbitrary
-
-genStringF2 :: Gen (String -> String -> Int)
-genStringF2 = function2 coarbitrary coarbitrary arbitrary
-
-genStringF3 :: Gen (String -> String -> String -> Int)
-genStringF3 = function3 coarbitrary coarbitrary coarbitrary arbitrary
-
-genShortName :: Gen ShortName
-genShortName = do
-  c <- arbitrary
-  case shortName c of
-    Nothing -> genShortName
-    Just n -> return n
-
-genLongName :: Gen LongName
-genLongName = do
-  c1 <- arbitrary `suchThat` (\c -> c /= '-' && c /= '=')
-  cs <- listOf (arbitrary `suchThat` (/= '='))
-  case longName (c1 : cs) of
-    Nothing -> error $ "could not generate long name: " ++ (c1:cs)
-    Just n -> return n
-
-genOptName :: Gen OptName
-genOptName = fmap OptName $ G.either genShortName genLongName
-
-genArgSpec :: Gen (ArgSpec Int)
-genArgSpec = oneof
-  [ fmap ZeroArg arbitrary
-  , fmap OneArg (function1 coarbitrary arbitrary)
-  , fmap TwoArg (function2 coarbitrary coarbitrary arbitrary)
-  , fmap ThreeArg (function3 coarbitrary coarbitrary coarbitrary
-                             arbitrary)
-  ]
-
-genWord :: Gen Word
-genWord = fmap Word arbitrary
 
 singleDash :: Word
 singleDash = Word "-"
@@ -70,91 +36,57 @@ genNonOptWord = oneof
       return $ Word (c1 : cs)
   ]
 
-coaWord :: Word -> Gen b -> Gen b
-coaWord (Word s) = coarbitrary s
-
-genOptArg :: Gen OptArg
-genOptArg = fmap OptArg arbitrary
-
-genOptionError :: Gen OptionError
-genOptionError = oneof
-  [ fmap BadOption genOptName
-  , LongArgumentForZeroArgumentOption <$> genLongName <*> genOptArg
-  ]
-
-genOutput :: Gen (Output Int)
-genOutput = oneof
-  [ fmap Good arbitrary
-  , fmap OptionError genOptionError
-  ]
-
-genPallet :: Gen (Pallet Int)
-genPallet = oneof
-  [ return NotAnOption
-  , fmap Full $ listOf genOutput
-  ]
-
-genPending :: Gen (State Int)
-genPending = Pending <$> genOptName <*> genF
-  where
-    genF = function1 coaWord
-      ((,) <$> listOf genOutput <*> genState)
-
-genState :: Gen (State Int)
-genState = oneof
-  [ return Ready
-  , genPending
-  ]
-
-genShortArgSpecs :: Gen [(ShortName, ArgSpec Int)]
-genShortArgSpecs = listOf ((,) <$> genShortName <*> genArgSpec)
-
-genLongArgSpecs :: Gen [(LongName, ArgSpec Int)]
-genLongArgSpecs = listOf ((,) <$> genLongName <*> genArgSpec)
+genPending :: Arbitrary a => Gen (State a)
+genPending = Pending <$> arbitrary <*> arbitrary
 
 -- * Properties
 
 -- | Non-option token always returns NotAnOption if State is Ready
 prop_nonOptWordNotAnOptionIfStateIsReady :: Property
 prop_nonOptWordNotAnOptionIfStateIsReady =
-  forAll genShortArgSpecs $ \shorts ->
-  forAll genLongArgSpecs $ \longs ->
+  forAll arbitrary $ \shorts ->
+  forAll arbitrary $ \longs ->
   forAll genNonOptWord $ \token ->
   let (pallet, _) = processWord shorts longs Ready token
+      _types = shorts :: [(ShortName, ArgSpec Int)]
   in pallet == NotAnOption
 
 -- | Stopper always returns NotAnOption if State is Ready
 prop_stopperNotAnOptionIfStateIsReady :: Property
 prop_stopperNotAnOptionIfStateIsReady =
-  forAll genShortArgSpecs $ \shorts ->
-  forAll genLongArgSpecs $ \longs ->
+  forAll arbitrary $ \shorts ->
+  forAll arbitrary $ \longs ->
   let (pallet, _) = processWord shorts longs Ready stopper
+      _types = shorts :: [(ShortName, ArgSpec Int)]
   in pallet == NotAnOption
 
 -- | Single dash always returns NotAnOption if State is Ready
 prop_singleDashNotAnOptionIfStateIsReady :: Property
 prop_singleDashNotAnOptionIfStateIsReady =
-  forAll genShortArgSpecs $ \shorts ->
-  forAll genLongArgSpecs $ \longs ->
+  forAll arbitrary $ \shorts ->
+  forAll arbitrary $ \longs ->
   let (pallet, _) = processWord shorts longs Ready singleDash
+      _types = shorts :: [(ShortName, ArgSpec Int)]
   in pallet == NotAnOption
 
 -- | processWord never returns NotAnOption when input is Pending
 prop_processWordNeverReturnsNotAnOptionOnPending =
-  forAll genShortArgSpecs $ \shorts ->
-  forAll genLongArgSpecs $ \longs ->
+  forAll arbitrary $ \shorts ->
+  forAll arbitrary $ \longs ->
   forAll genPending $ \state ->
-  forAll genWord $ \token ->
+  forAll arbitrary $ \token ->
   let (pallet, _) = processWord shorts longs state token
+      _types = shorts :: [(ShortName, ArgSpec Int)]
   in pallet /= NotAnOption
 
 -- | NotAnOption is always returned with Ready
 prop_processWordNotAnOptionWithReady =
-  forAll genShortArgSpecs $ \shorts ->
-  forAll genLongArgSpecs $ \longs ->
-  forAll genState $ \state ->
-  forAll genWord $ \token ->
+  forAll arbitrary $ \shorts ->
+  forAll arbitrary $ \longs ->
+  forAll arbitrary $ \state ->
+  forAll arbitrary $ \token ->
   let (pallet, state') = processWord shorts longs state token
+      _types = shorts :: [(ShortName, ArgSpec Int)]
   in pallet == NotAnOption ==> isReady state'
 
 pickOne :: [a] -> Gen a
@@ -174,8 +106,8 @@ data OptionWithToks = OptionWithToks
 
 instance Arbitrary OptionWithToks where
   arbitrary = do
-    OptName on <- genOptName
-    as <- genArgSpec
+    OptName on <- arbitrary
+    as <- arbitrary
     (args, expected) <- case as of
       ZeroArg a -> return ([], a)
       OneArg f -> do

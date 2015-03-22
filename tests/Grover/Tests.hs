@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Grover.Tests where
 
 import Ernie
@@ -6,6 +7,12 @@ import Multiarg.Examples.Grover
 import Control.Applicative
 import Test.QuickCheck hiding (Result)
 import Multiarg.Mode
+import Test.Tasty
+import Test.Tasty.TH
+import Test.Tasty.QuickCheck
+
+tests :: TestTree
+tests = $(testGroupGenerator)
 
 genGlobal :: Gen Global
 genGlobal = oneof

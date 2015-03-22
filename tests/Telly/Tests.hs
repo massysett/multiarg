@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Telly.Tests where
 
 import Multiarg.Examples.Telly
@@ -6,6 +7,12 @@ import Test.QuickCheck
 import Control.Applicative
 import Ernie
 import Multiarg.Internal
+import Test.Tasty
+import Test.Tasty.TH
+import Test.Tasty.QuickCheck
+
+tests :: TestTree
+tests = $(testGroupGenerator)
 
 -- | Generates any option.
 option :: Gen Telly

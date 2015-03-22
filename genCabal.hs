@@ -3,7 +3,7 @@ module Main where
 import Cartel
 
 ver :: Version
-ver = [0,30,0,4]
+ver = [0,30,0,6]
 
 base :: Package
 base = closedOpen "base" [4,5,0,0] [5]
@@ -16,6 +16,15 @@ quickpull = closedOpen "quickpull" [0,4,0,0] [0,5]
 
 barecheck :: Package
 barecheck = closedOpen "barecheck" [0,2,0,6] [0,3]
+
+tasty :: Package
+tasty = nextBreaking "tasty" [0,10]
+
+tastyQuickcheck :: Package
+tastyQuickcheck = nextBreaking "tasty-quickcheck" [0,8]
+
+tastyTh :: Package
+tastyTh = nextBreaking "tasty-th" [0,1]
 
 properties :: Properties
 properties = blank
@@ -71,11 +80,12 @@ tests ms ts = testSuite "multiarg-tests" $ commonOptions ++
   , mainIs "multiarg-tests.hs"
   , otherModules (ms ++ ts)
   , hsSourceDirs [ "tests" ]
+  , otherExtensions ["TemplateHaskell"]
   , testDepends
   ]
 
 testDepends :: HasBuildInfo a => a
-testDepends = buildDepends [ quickCheck, quickpull, barecheck ]
+testDepends = buildDepends [ quickCheck, tasty, tastyQuickcheck, tastyTh ]
 
 grover
   :: FlagName
