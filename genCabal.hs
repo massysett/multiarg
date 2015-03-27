@@ -6,7 +6,7 @@ ver :: Version
 ver = [0,30,0,8]
 
 base :: Package
-base = closedOpen "base" [4,5,0,0] [5]
+base = closedOpen "base" [4,7,0,0] [5]
 
 quickCheck :: Package
 quickCheck = closedOpen "QuickCheck" [2,7] [2,9]
@@ -30,7 +30,7 @@ properties :: Properties
 properties = blank
   { name = "multiarg"
   , version = ver
-  , cabalVersion = Just (1,16)
+  , cabalVersion = Just (1,18)
   , buildType = Just simple
   , license = Just bsd3
   , licenseFile = "LICENSE"
