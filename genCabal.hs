@@ -3,7 +3,7 @@ module Main where
 import Cartel
 
 ver :: Version
-ver = [0,30,0,6]
+ver = [0,30,0,8]
 
 base :: Package
 base = closedOpen "base" [4,5,0,0] [5]
