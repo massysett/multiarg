@@ -31,11 +31,11 @@ instance Arbitrary LongName where
 instance Arbitrary OptName where
   arbitrary = fmap OptName arbitrary
 
-instance Arbitrary Word where
-  arbitrary = Word <$> arbitrary
+instance Arbitrary Multiarg.Types.Word where
+  arbitrary = Multiarg.Types.Word <$> arbitrary
 
-instance CoArbitrary Word where
-  coarbitrary (Word s) = coarbitrary s
+instance CoArbitrary Multiarg.Types.Word where
+  coarbitrary (Multiarg.Types.Word s) = coarbitrary s
 
 instance Arbitrary OptArg where
   arbitrary = OptArg <$> arbitrary

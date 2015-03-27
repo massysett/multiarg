@@ -20,20 +20,20 @@ tests = $(testGroupGenerator)
 genInt :: Gen Int
 genInt = arbitrary
 
-singleDash :: Word
-singleDash = Word "-"
+singleDash :: Multiarg.Types.Word
+singleDash = Multiarg.Types.Word "-"
 
-stopper :: Word
-stopper = Word "--"
+stopper :: Multiarg.Types.Word
+stopper = Multiarg.Types.Word "--"
 
-genNonOptWord :: Gen Word
+genNonOptWord :: Gen Multiarg.Types.Word
 genNonOptWord = oneof
   [ return singleDash
   , return stopper
   , do
       c1 <- arbitrary `suchThat` (/= '-')
       cs <- listOf arbitrary
-      return $ Word (c1 : cs)
+      return $ Multiarg.Types.Word (c1 : cs)
   ]
 
 genPending :: Arbitrary a => Gen (State a)
@@ -98,9 +98,9 @@ data OptionWithToks = OptionWithToks
   { owtOptName :: OptName
   , owtArgSpec :: ArgSpec Int
   , owtArgs :: [String]
-  , owtWords :: [Word]
+  , owtWords :: [Multiarg.Types.Word]
   , owtResultOuts :: [[Output Int]]
-  , owtResultToks :: Maybe [Word]
+  , owtResultToks :: Maybe [Multiarg.Types.Word]
   , owtExpected :: Int
   } deriving Show
 
@@ -122,7 +122,7 @@ instance Arbitrary OptionWithToks where
     let strings = case on of
           Left shrt -> processShortOptions [] (shrt, args)
           Right lng -> processLongOption lng args
-    toks <- fmap (map Word) $ pickOne strings
+    toks <- fmap (map Multiarg.Types.Word) $ pickOne strings
     let (shrts, lngs) = case on of
           Left shrt -> ([(shrt, as)], [])
           Right lng -> ([], [(lng, as)])

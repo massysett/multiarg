@@ -6,6 +6,8 @@ module Multiarg.Limeline where
 
 import Multiarg.Types
 import Multiarg.Maddash
+-- GHC 7.10 exports Word from the Prelude
+import Prelude hiding (Word)
 
 data PosArg a = PosArg a
   deriving (Eq, Ord, Show)

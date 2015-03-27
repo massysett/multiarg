@@ -55,6 +55,8 @@ module Multiarg.Maddash
 
 import Control.Applicative
 import Multiarg.Types
+-- GHC 7.10 exports Word from the Prelude
+import Prelude hiding (Word)
 
 -- * Machine components
 

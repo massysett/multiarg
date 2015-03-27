@@ -24,6 +24,10 @@ module Multiarg.Types
   , splitShortTail
   ) where
 
+-- GHC 7.10 incorporates 'Data.Word' into the Prelude, which clashes
+-- with a binding below.
+import Prelude hiding (Word)
+
 -- | Specifies how many /option arguments/ an /option/ takes.
 data ArgSpec a
   = ZeroArg a

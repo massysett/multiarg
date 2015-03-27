@@ -11,6 +11,8 @@ import Multiarg.Maddash
 import Multiarg.Internal
 import Multiarg.Util
 import Multiarg.Types
+-- GHC 7.10 exports Word from the Prelude
+import Prelude hiding (Word)
 
 newtype ModeName = ModeName String
   deriving (Eq, Ord, Show)
