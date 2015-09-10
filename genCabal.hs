@@ -3,28 +3,31 @@ module Main where
 import Cartel
 
 ver :: Version
-ver = [0,30,0,8]
+ver = [0,30,0,10]
+
+atLeast :: NonEmptyString -> [Word] -> Package
+atLeast name ver = package name (gtEq ver)
 
 base :: Package
 base = closedOpen "base" [4,7,0,0] [5]
 
 quickCheck :: Package
-quickCheck = closedOpen "QuickCheck" [2,7] [2,9]
+quickCheck = atLeast "QuickCheck" [2,7]
 
 quickpull :: Package
-quickpull = closedOpen "quickpull" [0,4,0,0] [0,5]
+quickpull = atLeast "quickpull" [0,4,0,0]
 
 barecheck :: Package
-barecheck = closedOpen "barecheck" [0,2,0,6] [0,3]
+barecheck = atLeast "barecheck" [0,2,0,6]
 
 tasty :: Package
-tasty = nextBreaking "tasty" [0,10]
+tasty = atLeast "tasty" [0,10]
 
 tastyQuickcheck :: Package
-tastyQuickcheck = nextBreaking "tasty-quickcheck" [0,8]
+tastyQuickcheck = atLeast "tasty-quickcheck" [0,8]
 
 tastyTh :: Package
-tastyTh = nextBreaking "tasty-th" [0,1]
+tastyTh = atLeast "tasty-th" [0,1]
 
 properties :: Properties
 properties = blank
